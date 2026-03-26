@@ -14,6 +14,7 @@ return [
         'plural' => 'Teams',
         'fields' => [
             'name' => 'Name',
+            'users' => 'Users',
         ],
     ],
     'project' => [
@@ -27,6 +28,12 @@ return [
             'customer' => 'Customer',
             'team' => 'Team',
             'is_muted' => 'Muted',
+            'is_muted_help' => 'Muted projects will not send alert notifications.',
+        ],
+        'sections' => [
+            'general' => 'General',
+            'assignment' => 'Assignment',
+            'settings' => 'Settings',
         ],
     ],
     'environment' => [
@@ -36,6 +43,7 @@ return [
             'name' => 'Name',
             'scanned_at' => 'Last Scanned',
         ],
+        'never_scanned' => 'Never scanned',
     ],
     'package' => [
         'label' => 'Package',
@@ -45,6 +53,7 @@ return [
             'type' => 'Type',
             'latest_version' => 'Latest Version',
             'latest_version_updated_at' => 'Latest Version Updated',
+            'installations' => 'Installations',
         ],
     ],
     'environment_package' => [

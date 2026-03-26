@@ -4,6 +4,10 @@ namespace Statikbe\FilamentVoight;
 
 use Filament\Contracts\Plugin;
 use Filament\Panel;
+use Statikbe\FilamentVoight\Resources\CustomerResource;
+use Statikbe\FilamentVoight\Resources\PackageResource;
+use Statikbe\FilamentVoight\Resources\ProjectResource;
+use Statikbe\FilamentVoight\Resources\TeamResource;
 
 class FilamentVoightPlugin implements Plugin
 {
@@ -16,7 +20,12 @@ class FilamentVoightPlugin implements Plugin
 
     public function register(Panel $panel): void
     {
-        //
+        $panel->resources([
+            CustomerResource::class,
+            TeamResource::class,
+            ProjectResource::class,
+            PackageResource::class,
+        ]);
     }
 
     public function boot(Panel $panel): void
