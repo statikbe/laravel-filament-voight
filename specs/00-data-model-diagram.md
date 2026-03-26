@@ -5,7 +5,7 @@ erDiagram
     Customer {
         ulid id PK
         string name
-        string slug UK
+        string slug UK "auto-generated via spatie/laravel-sluggable"
     }
 
     Team {
@@ -30,13 +30,13 @@ erDiagram
     Team ||--o{ Project : owns
 
     Project {
-        ulid id PK
+        int id PK "auto-increment, for Sanctum compatibility"
         string project_code UK
-        string name
-        text description
-        string repo_url
-        ulid customer_id FK
-        ulid team_id FK
+        string name "nullable"
+        text description "nullable"
+        string repo_url "nullable"
+        ulid customer_id FK "nullable"
+        ulid team_id FK "nullable"
         bool is_muted
     }
 
@@ -44,7 +44,7 @@ erDiagram
 
     Environment {
         ulid id PK
-        ulid project_id FK
+        int project_id FK
         string name
         timestamp scanned_at
     }
@@ -131,7 +131,7 @@ erDiagram
 
     AlertSetting {
         ulid id PK
-        ulid project_id FK
+        int project_id FK
         enum channel
         decimal severity_threshold
         enum frequency

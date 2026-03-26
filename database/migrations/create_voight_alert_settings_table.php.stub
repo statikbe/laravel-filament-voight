@@ -10,7 +10,7 @@ return new class extends Migration
     {
         Schema::create('voight_alert_settings', function (Blueprint $table) {
             $table->ulid('id')->primary();
-            $table->foreignUlid('project_id')->nullable()->constrained('voight_projects')->cascadeOnDelete();
+            $table->foreignId('project_id')->nullable()->constrained('voight_projects')->cascadeOnDelete();
             $table->string('channel');
             $table->decimal('severity_threshold', 3, 1);
             $table->string('frequency');

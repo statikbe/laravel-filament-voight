@@ -9,13 +9,13 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('voight_projects', function (Blueprint $table) {
-            $table->ulid('id')->primary();
+            $table->id();
             $table->string('project_code')->unique();
-            $table->string('name');
+            $table->string('name')->nullable();
             $table->text('description')->nullable();
-            $table->string('repo_url');
-            $table->foreignUlid('customer_id')->constrained('voight_customers')->cascadeOnDelete();
-            $table->foreignUlid('team_id')->constrained('voight_teams')->cascadeOnDelete();
+            $table->string('repo_url')->nullable();
+            $table->foreignUlid('customer_id')->nullable()->constrained('voight_customers')->nullOnDelete();
+            $table->foreignUlid('team_id')->nullable()->constrained('voight_teams')->nullOnDelete();
             $table->boolean('is_muted')->default(false);
             $table->timestamps();
         });

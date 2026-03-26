@@ -2,14 +2,17 @@
 
 namespace Statikbe\FilamentVoight\Resources\ProjectResource\Schemas;
 
+use Filament\Actions\Action;
+use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
+use Filament\Notifications\Notification;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
-use Statikbe\FilamentVoight\Models\Customer;
-use Statikbe\FilamentVoight\Models\Team;
+use Statikbe\FilamentVoight\Models\Project;
+use Statikbe\FilamentVoight\Resources\CustomerResource\Schemas\CustomerFormSchema;
 
 class ProjectFormSchema
 {
@@ -44,7 +47,8 @@ class ProjectFormSchema
                             ->relationship('customer', 'name')
                             ->searchable()
                             ->preload()
-                            ->required(),
+                            ->required()
+                            ->createOptionForm(CustomerFormSchema::fields()),
                         Select::make('team_id')
                             ->label(voightTrans('models.project.fields.team'))
                             ->relationship('team', 'name')
@@ -57,6 +61,44 @@ class ProjectFormSchema
                         Toggle::make('is_muted')
                             ->label(voightTrans('models.project.fields.is_muted'))
                             ->helperText(voightTrans('models.project.fields.is_muted_help')),
+                    ]),
+                Section::make(voightTrans('models.project.sections.api_token'))
+                    ->description(voightTrans('models.project.sections.api_token_description'))
+                    ->visible(fn (?Project $record): bool => $record !== null)
+                    ->components([
+                        Placeholder::make('active_tokens')
+                            ->label(voightTrans('models.project.fields.active_tokens'))
+                            ->content(fn (Project $record): string => $record->tokens()->count() . ' ' . voightTrans('models.project.fields.active_tokens_count'))
+                            ->afterContent(
+                                Action::make('generate_token')
+                                    ->label(voightTrans('models.project.actions.generate_token'))
+                                    ->requiresConfirmation()
+                                    ->action(function (Project $record) {
+                                        $token = $record->createToken('api');
+
+                                        Notification::make()
+                                            ->title(voightTrans('models.project.actions.token_generated'))
+                                            ->body($token->plainTextToken)
+                                            ->persistent()
+                                            ->success()
+                                            ->send();
+                                    }),
+                            )
+                            ->afterContent(
+                                Action::make('revoke_tokens')
+                                    ->label(voightTrans('models.project.actions.revoke_tokens'))
+                                    ->color('danger')
+                                    ->requiresConfirmation()
+                                    ->visible(fn (Project $record): bool => $record->tokens()->count() > 0)
+                                    ->action(function (Project $record) {
+                                        $record->tokens()->delete();
+
+                                        Notification::make()
+                                            ->title(voightTrans('models.project.actions.tokens_revoked'))
+                                            ->success()
+                                            ->send();
+                                    }),
+                            ),
                     ]),
             ]);
     }

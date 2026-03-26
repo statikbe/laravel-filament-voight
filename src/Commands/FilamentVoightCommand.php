@@ -8,7 +8,7 @@ class FilamentVoightCommand extends Command
 {
     public $signature = 'laravel-filament-voight';
 
-    public $description = 'My command';
+    public $description = 'Filament Voight base command';
 
     public function handle(): int
     {

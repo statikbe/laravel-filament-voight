@@ -7,11 +7,22 @@
       "Bash(vendor/bin/pest)",
       "Bash(composer dump-autoload:*)",
       "mcp__plugin_context7_context7__resolve-library-id",
-      "mcp__plugin_context7_context7__query-docs"
+      "mcp__plugin_context7_context7__query-docs",
+      "Bash(vendor/bin/pest --filter=\"ProcessLockFilesJobTest\")",
+      "Bash(vendor/bin/pest --filter=\"it processes composer.lock\")",
+      "Read(//Users/sten/PhpStormProjects/voight/**)",
+      "Bash(php artisan:*)",
+      "Bash(composer update:*)",
+      "Bash(composer require:*)",
+      "Bash(ddev status:*)",
+      "Bash(ddev artisan:*)",
+      "Bash(find ~/.claude -name *.log -o -name mcp*)",
+      "Bash(ddev --help)",
+      "Bash(/bin/sh -c 'cd ../voight && ddev exec php artisan boost:mcp')"
     ]
   },
   "enableAllProjectMcpServers": true,
   "enabledMcpjsonServers": [
-    "laravel-boost"
+    "voight-boost"
   ]
 }

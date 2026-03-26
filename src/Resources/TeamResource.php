@@ -10,6 +10,7 @@ use Statikbe\FilamentVoight\Models\Team;
 use Statikbe\FilamentVoight\Resources\TeamResource\Pages\CreateTeam;
 use Statikbe\FilamentVoight\Resources\TeamResource\Pages\EditTeam;
 use Statikbe\FilamentVoight\Resources\TeamResource\Pages\ListTeams;
+use Statikbe\FilamentVoight\Resources\TeamResource\RelationManagers\UsersRelationManager;
 use Statikbe\FilamentVoight\Resources\TeamResource\Schemas\TeamFormSchema;
 use Statikbe\FilamentVoight\Resources\TeamResource\Schemas\TeamTableSchema;
 
@@ -46,6 +47,13 @@ class TeamResource extends Resource
     public static function table(Table $table): Table
     {
         return TeamTableSchema::configure($table);
+    }
+
+    public static function getRelations(): array
+    {
+        return [
+            UsersRelationManager::class,
+        ];
     }
 
     public static function getPages(): array

@@ -6,9 +6,13 @@ Projects push their lockfiles to the application via an authenticated API. The s
 
 ## Sync Flow
 
-1. A CI/CD script or manual trigger sends lockfiles to the API.
-2. The API validates the payload, creates a `DependencySync` record with status `pending`.
-3. A queued job processes the lockfiles:
+1. A CI/CD script or manual trigger sends lockfiles as file uploads to the API.
+2. The `LockFileController` validates the request via `SyncLockFileRequest` and delegates to `LockFileSyncService`.
+3. `LockFileSyncService` resolves (or auto-creates) the Project and Environment:
+   - If the project doesn't exist, it is created with just the `project_code` and a `ProjectCreatedViaApi` event is dispatched.
+   - If the environment doesn't exist, it is created and an `EnvironmentCreatedViaApi` event is dispatched.
+4. Lockfiles are stored on the configured disk, a `DependencySync` record is created with status `pending`, and `ProcessLockFilesJob` is dispatched.
+5. The queued job processes the lockfiles:
    - Parses `composer.lock` and/or `package-lock.json` (or `yarn.lock`, `pnpm-lock.yaml`).
    - Extracts all packages with versions, direct/dev flags, and dependency relationships.
    - Upserts `Package` records (name + type).
@@ -17,22 +21,17 @@ Projects push their lockfiles to the application via an authenticated API. The s
 
 ## API Endpoints
 
-### POST /api/v1/sync
+### POST /api/voight/lock-file
 
-Authenticated via API token (Laravel Sanctum or project-scoped token).
+Authenticated via project-scoped Sanctum tokens (M2M). The middleware is configurable via `FilamentVoightConfig::getApiMiddleware()` and defaults to `AuthenticateProjectToken`, which validates the bearer token against Sanctum's `personal_access_tokens` table and ensures it belongs to a `Project` model.
 
-**Request:**
+**Request:** `multipart/form-data`
 
-```json
-{
-  "project_code": "my-project",
-  "environment": "production",
-  "lockfiles": {
-    "composer.lock": "<base64 encoded content>",
-    "package-lock.json": "<base64 encoded content>"
-  }
-}
-```
+| Field          | Type   | Notes                              |
+|----------------|--------|------------------------------------|
+| project_code   | string | required                           |
+| environment    | string | required                           |
+| lockfiles[]    | file   | required, one or more file uploads |
 
 **Response (202 Accepted):**
 
@@ -43,19 +42,18 @@ Authenticated via API token (Laravel Sanctum or project-scoped token).
 }
 ```
 
-### GET /api/v1/sync/{id}
-
-Returns sync status and summary.
+There is no sync status endpoint — processing is fire-and-forget from the client's perspective.
 
 ## Lockfile Storage
 
-Lockfiles are stored on a private disk for later use by osv-scanner and auditing jobs.
+Lockfiles are stored on a configurable disk for later use by osv-scanner and auditing jobs.
 
-- Dedicated Laravel disk `voight-lockfiles` configured in the package's config file.
+- Disk name is configurable via `FilamentVoightConfig::getLockfilesDisk()` (default: `voight-lockfiles`).
 - Default driver: `local`, root: `storage/app/private/voight/lockfiles`.
 - Directory structure: `{project_code}/{environment}/` — e.g. `my-project/production/composer.lock`.
 - Files are overwritten on each sync (only latest version kept).
 - Relative paths stored in `DependencySync.lockfile_paths` (JSON array) for traceability.
+- Allowed lockfile names are configurable via `FilamentVoightConfig::getAllowedLockfileNames()` (defaults: `composer.lock`, `package-lock.json`, `yarn.lock`, `pnpm-lock.yaml`).
 - The osv-scanner audit job reads lockfiles from this disk to perform scanning.
 
 ## Lockfile Parsing

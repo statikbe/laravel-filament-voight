@@ -14,6 +14,7 @@ use Filament\Schemas\Schema;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Model;
 use Statikbe\FilamentVoight\Enums\AlertChannel;
 use Statikbe\FilamentVoight\Enums\AlertFrequency;
 
@@ -21,7 +22,7 @@ class AlertSettingsRelationManager extends RelationManager
 {
     protected static string $relationship = 'alertSettings';
 
-    public static function getTitle(\Illuminate\Database\Eloquent\Model $ownerRecord, string $pageClass): string
+    public static function getTitle(Model $ownerRecord, string $pageClass): string
     {
         return voightTrans('models.alert_setting.plural');
     }
@@ -62,13 +63,13 @@ class AlertSettingsRelationManager extends RelationManager
             ->columns([
                 TextColumn::make('channel')
                     ->label(voightTrans('models.alert_setting.fields.channel'))
-                    ->formatStateUsing(fn (string $state): string => AlertChannel::from($state)->label()),
+                    ->formatStateUsing(fn (AlertChannel $state): string => $state->label()),
                 TextColumn::make('severity_threshold')
                     ->label(voightTrans('models.alert_setting.fields.severity_threshold'))
                     ->sortable(),
                 TextColumn::make('frequency')
                     ->label(voightTrans('models.alert_setting.fields.frequency'))
-                    ->formatStateUsing(fn (string $state): string => AlertFrequency::from($state)->label()),
+                    ->formatStateUsing(fn (AlertFrequency $state): string => $state->label()),
                 IconColumn::make('is_enabled')
                     ->label(voightTrans('models.alert_setting.fields.is_enabled'))
                     ->boolean(),

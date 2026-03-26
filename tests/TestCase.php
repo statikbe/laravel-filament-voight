@@ -60,6 +60,14 @@ class TestCase extends Orchestra
     public function getEnvironmentSetUp($app): void
     {
         $app['config']->set('database.default', 'testing');
+
+        $app['config']->set('filesystems.disks.voight-lockfiles', [
+            'driver' => 'local',
+            'root' => storage_path('app/private/voight/lockfiles'),
+        ]);
+
+        $app['config']->set('laravel-filament-voight.lockfiles.disk', 'voight-lockfiles');
+        $app['config']->set('laravel-filament-voight.api.middleware', ['auth']);
     }
 
     protected function defineDatabaseMigrations(): void

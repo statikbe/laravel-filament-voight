@@ -30,7 +30,7 @@ Represents a client whose projects are managed.
 |-------------|--------|------------------|
 | id          | ulid   | PK               |
 | name        | string |                  |
-| slug        | string | unique           |
+| slug        | string | unique, auto-generated via spatie/laravel-sluggable |
 | created_at  | timestamp |               |
 | updated_at  | timestamp |               |
 
@@ -49,17 +49,17 @@ Pivot: `team_user` (team_id ULID, user_id int)
 
 ### Project
 
-A codebase tracked by the system.
+A codebase tracked by the system. Uses auto-increment `int` ID (not ULID) for Sanctum token compatibility. Fields `name`, `repo_url`, `customer_id`, and `team_id` are nullable because the API can auto-create projects with just a `project_code`.
 
 | Field        | Type   | Notes                        |
 |--------------|--------|------------------------------|
-| id           | ulid   | PK                           |
+| id           | int    | PK, auto-increment           |
 | project_code | string | unique, human-readable ID    |
-| name         | string |                              |
+| name         | string | nullable                     |
 | description  | text   | nullable                     |
-| repo_url     | string | git repository URL           |
-| customer_id  | ulid   | FK → Customer                |
-| team_id      | ulid   | FK → Team                    |
+| repo_url     | string | nullable, git repository URL |
+| customer_id  | ulid   | nullable, FK → Customer      |
+| team_id      | ulid   | nullable, FK → Team          |
 | is_muted     | bool   | default false, global mute   |
 | created_at   | timestamp |                            |
 | updated_at   | timestamp |                            |
@@ -71,7 +71,7 @@ A deployment context for a project (e.g. production, staging, development).
 | Field       | Type   | Notes            |
 |-------------|--------|------------------|
 | id          | ulid   | PK               |
-| project_id  | ulid   | FK → Project     |
+| project_id  | int    | FK → Project     |
 | name        | string | e.g. "production"|
 | scanned_at  | timestamp | nullable, last successful scan |
 | created_at  | timestamp |               |
@@ -198,7 +198,7 @@ Configures how and when notifications are sent.
 | Field              | Type   | Notes                                   |
 |--------------------|--------|-----------------------------------------|
 | id                 | ulid   | PK                                      |
-| project_id         | ulid   | nullable, FK → Project (null = global)  |
+| project_id         | int    | nullable, FK → Project (null = global)  |
 | channel            | enum   | `email`, `slack`                        |
 | severity_threshold | decimal(3,1) | minimum CVSS score to trigger alert |
 | frequency          | enum   | `immediate`, `daily`, `weekly`          |
@@ -209,8 +209,10 @@ Configures how and when notifications are sent.
 
 ## Notes
 
-- All package-owned primary keys use ULIDs for sortability and uniqueness.
+- Most package-owned primary keys use ULIDs for sortability and uniqueness. The exception is `Project`, which uses auto-increment `int` for compatibility with Laravel Sanctum's `HasApiTokens` trait.
 - Laravel's default tables (users, etc.) keep their original `int` auto-increment IDs. Foreign keys referencing these tables must use `int` accordingly.
+- Customer uses `spatie/laravel-sluggable` (`HasSlug` trait) for automatic slug generation from the `name` field.
+- All models are overridable via the `FilamentVoightConfig` class (accessed via `FilamentVoight::config()` facade). A configurable morph map is registered for all models.
 - Authorization handled via Laravel policies — no roles table needed in v1.
 - Severity is derived from `vulnerability_score` using CVSS v3 ranges: critical (9.0–10.0), high (7.0–8.9), medium (4.0–6.9), low (0.1–3.9), none (0.0). Implemented as an accessor on the Vulnerability model, not stored.
 - The `parent_package_id` on EnvironmentPackage enables reconstructing the dependency tree, but a package can be pulled in by multiple parents. Consider this a "primary parent" for display purposes; full graph may need a separate edge table in a future iteration.

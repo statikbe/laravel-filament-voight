@@ -31,7 +31,7 @@ Automated vulnerability scanning of dependencies using Google's OSV-scanner, wit
 - osv-scanner reads lockfiles directly — no need for PHP/Node runtime per version.
 - Single Go binary, easy to install on the server or run in CI.
 - Supports `--format json` for machine-readable output.
-- Lockfiles are read from the `voight-lockfiles` disk where they were stored during sync.
+- Lockfiles are read from the configurable lockfiles disk (default `voight-lockfiles`, configured via `FilamentVoightConfig::getLockfilesDisk()`) where they were stored during sync.
 - Fallback: if osv-scanner coverage is insufficient, consider supplementing with Packagist advisories or GitHub Advisory Database.
 
 ## Audit Scheduling
