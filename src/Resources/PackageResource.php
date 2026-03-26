@@ -13,7 +13,7 @@ class PackageResource extends Resource
 {
     protected static ?string $model = Package::class;
 
-    protected static string|\BackedEnum|null $navigationIcon = Heroicon::OutlinedCube;
+    protected static string | \BackedEnum | null $navigationIcon = Heroicon::OutlinedCube;
 
     protected static ?string $recordTitleAttribute = 'name';
 
