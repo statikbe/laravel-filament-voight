@@ -1,5 +1,18 @@
 <?php
 
+use Statikbe\FilamentVoight\Http\Middleware\AuthenticateProjectToken;
+use Statikbe\FilamentVoight\Models\AlertSetting;
+use Statikbe\FilamentVoight\Models\AuditFinding;
+use Statikbe\FilamentVoight\Models\AuditRun;
+use Statikbe\FilamentVoight\Models\Customer;
+use Statikbe\FilamentVoight\Models\DependencySync;
+use Statikbe\FilamentVoight\Models\Environment;
+use Statikbe\FilamentVoight\Models\EnvironmentPackage;
+use Statikbe\FilamentVoight\Models\Package;
+use Statikbe\FilamentVoight\Models\Project;
+use Statikbe\FilamentVoight\Models\Vulnerability;
+use Statikbe\FilamentVoight\Models\VulnerablePackageRange;
+
 // config for Statikbe/FilamentVoight
 return [
     /*
@@ -27,7 +40,7 @@ return [
     ],
 
     'api' => [
-        'middleware' => [\Statikbe\FilamentVoight\Http\Middleware\AuthenticateProjectToken::class],
+        'middleware' => [AuthenticateProjectToken::class],
     ],
 
     /*
@@ -64,16 +77,16 @@ return [
     |
     */
     'morph_map' => [
-        'voight-customer' => \Statikbe\FilamentVoight\Models\Customer::class,
-        'voight-project' => \Statikbe\FilamentVoight\Models\Project::class,
-        'voight-environment' => \Statikbe\FilamentVoight\Models\Environment::class,
-        'voight-package' => \Statikbe\FilamentVoight\Models\Package::class,
-        'voight-environment-package' => \Statikbe\FilamentVoight\Models\EnvironmentPackage::class,
-        'voight-dependency-sync' => \Statikbe\FilamentVoight\Models\DependencySync::class,
-        'voight-vulnerability' => \Statikbe\FilamentVoight\Models\Vulnerability::class,
-        'voight-vulnerable-package-range' => \Statikbe\FilamentVoight\Models\VulnerablePackageRange::class,
-        'voight-audit-run' => \Statikbe\FilamentVoight\Models\AuditRun::class,
-        'voight-audit-finding' => \Statikbe\FilamentVoight\Models\AuditFinding::class,
-        'voight-alert-setting' => \Statikbe\FilamentVoight\Models\AlertSetting::class,
+        'voight-customer' => Customer::class,
+        'voight-project' => Project::class,
+        'voight-environment' => Environment::class,
+        'voight-package' => Package::class,
+        'voight-environment-package' => EnvironmentPackage::class,
+        'voight-dependency-sync' => DependencySync::class,
+        'voight-vulnerability' => Vulnerability::class,
+        'voight-vulnerable-package-range' => VulnerablePackageRange::class,
+        'voight-audit-run' => AuditRun::class,
+        'voight-audit-finding' => AuditFinding::class,
+        'voight-alert-setting' => AlertSetting::class,
     ],
 ];

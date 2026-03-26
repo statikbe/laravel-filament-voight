@@ -1,5 +1,6 @@
 <?php
 
+use Illuminate\Foundation\Auth\User;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
@@ -16,7 +17,7 @@ it('accepts a lockfile sync request and dispatches job', function () {
     Queue::fake();
 
     $project = Project::factory()->create(['project_code' => 'my-project']);
-    $user = \Illuminate\Foundation\Auth\User::forceCreate([
+    $user = User::forceCreate([
         'name' => 'Test',
         'email' => 'test@example.com',
         'password' => bcrypt('password'),
@@ -54,7 +55,7 @@ it('creates the environment if it does not exist', function () {
     Queue::fake();
 
     Project::factory()->create(['project_code' => 'new-project']);
-    $user = \Illuminate\Foundation\Auth\User::forceCreate([
+    $user = User::forceCreate([
         'name' => 'Test',
         'email' => 'test@example.com',
         'password' => bcrypt('password'),
@@ -76,7 +77,7 @@ it('creates the environment if it does not exist', function () {
 it('auto-creates project if it does not exist', function () {
     Queue::fake();
 
-    $user = \Illuminate\Foundation\Auth\User::forceCreate([
+    $user = User::forceCreate([
         'name' => 'Test',
         'email' => 'test@example.com',
         'password' => bcrypt('password'),
@@ -110,7 +111,7 @@ it('rejects unauthenticated requests', function () {
 });
 
 it('rejects request without lockfiles', function () {
-    $user = \Illuminate\Foundation\Auth\User::forceCreate([
+    $user = User::forceCreate([
         'name' => 'Test',
         'email' => 'test@example.com',
         'password' => bcrypt('password'),

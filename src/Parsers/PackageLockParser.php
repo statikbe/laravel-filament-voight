@@ -7,7 +7,7 @@ use Statikbe\FilamentVoight\Enums\PackageType;
 class PackageLockParser
 {
     /**
-     * @param string $content Raw package-lock.json content
+     * @param  string  $content  Raw package-lock.json content
      * @return array<int, array{name: string, version: string, type: PackageType, is_direct: bool, is_dev: bool, require: array<string>}>
      */
     public function parse(string $content): array
