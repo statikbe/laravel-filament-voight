@@ -1,6 +1,15 @@
 {
+  "permissions": {
+    "allow": [
+      "Bash(ls /Users/sten/PhpStormProjects/laravel-filament-voight/phpunit.xml*)",
+      "Bash(ls /Users/sten/PhpStormProjects/laravel-filament-voight/phpstan.neon*)",
+      "Bash(composer run:*)",
+      "Bash(vendor/bin/pest)",
+      "Bash(composer dump-autoload:*)"
+    ]
+  },
+  "enableAllProjectMcpServers": true,
   "enabledMcpjsonServers": [
     "laravel-boost"
-  ],
-  "enableAllProjectMcpServers": true
+  ]
 }

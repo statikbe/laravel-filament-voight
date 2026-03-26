@@ -8,12 +8,15 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('laravel_filament_voight_table', function (Blueprint $table) {
-            $table->id();
-
-            // add fields
-
+        Schema::create('voight_teams', function (Blueprint $table) {
+            $table->ulid('id')->primary();
+            $table->string('name');
             $table->timestamps();
         });
+    }
+
+    public function down(): void
+    {
+        Schema::dropIfExists('voight_teams');
     }
 };
