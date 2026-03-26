@@ -30,6 +30,7 @@ class FilamentVoightServiceProvider extends PackageServiceProvider
          * More info: https://github.com/spatie/laravel-package-tools
          */
         $package->name(static::$name)
+            ->hasRoutes($this->getRoutes())
             ->hasCommands($this->getCommands())
             ->hasInstallCommand(function (InstallCommand $command) {
                 $command
@@ -129,7 +130,9 @@ class FilamentVoightServiceProvider extends PackageServiceProvider
      */
     protected function getRoutes(): array
     {
-        return [];
+        return [
+            'api',
+        ];
     }
 
     /**
