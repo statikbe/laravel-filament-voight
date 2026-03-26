@@ -1,10 +1,10 @@
 {
     "mcpServers": {
-        "laravel-boost": {
-            "command": "php",
+        "voight-boost": {
+            "command": "/bin/sh",
             "args": [
-                "artisan",
-                "boost:mcp"
+                "-c",
+                "cd ../voight && ddev exec php artisan boost:mcp 2>/dev/null"
             ]
         }
     }

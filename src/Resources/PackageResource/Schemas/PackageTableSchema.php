@@ -19,7 +19,7 @@ class PackageTableSchema
                     ->sortable(),
                 TextColumn::make('type')
                     ->label(voightTrans('models.package.fields.type'))
-                    ->formatStateUsing(fn (string $state): string => PackageType::from($state)->label())
+                    ->formatStateUsing(fn (PackageType $state): string => $state->label())
                     ->sortable(),
                 TextColumn::make('latest_version')
                     ->label(voightTrans('models.package.fields.latest_version'))

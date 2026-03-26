@@ -2,18 +2,17 @@
 
 namespace Statikbe\FilamentVoight;
 
-use Filament\Support\Assets\AlpineComponent;
 use Filament\Support\Assets\Asset;
-use Filament\Support\Assets\Css;
-use Filament\Support\Assets\Js;
 use Filament\Support\Facades\FilamentAsset;
 use Filament\Support\Facades\FilamentIcon;
+use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Filesystem\Filesystem;
 use Livewire\Features\SupportTesting\Testable;
 use Spatie\LaravelPackageTools\Commands\InstallCommand;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
 use Statikbe\FilamentVoight\Commands\FilamentVoightCommand;
+use Statikbe\FilamentVoight\Facades\FilamentVoight;
 use Statikbe\FilamentVoight\Testing\TestsFilamentVoight;
 
 class FilamentVoightServiceProvider extends PackageServiceProvider
@@ -22,11 +21,6 @@ class FilamentVoightServiceProvider extends PackageServiceProvider
 
     public function configurePackage(Package $package): void
     {
-        /*
-         * This class is a Package Service Provider
-         *
-         * More info: https://github.com/spatie/laravel-package-tools
-         */
         $package->name(FilamentVoightPlugin::ID)
             ->hasCommands($this->getCommands())
             ->hasInstallCommand(function (InstallCommand $command) {
@@ -62,7 +56,8 @@ class FilamentVoightServiceProvider extends PackageServiceProvider
 
     public function packageBooted(): void
     {
-        // Asset Registration
+        Relation::morphMap(FilamentVoight::config()->getMorphMap());
+
         FilamentAsset::register(
             $this->getAssets(),
             $this->getAssetPackageName()
@@ -73,10 +68,8 @@ class FilamentVoightServiceProvider extends PackageServiceProvider
             $this->getAssetPackageName()
         );
 
-        // Icon Registration
         FilamentIcon::register($this->getIcons());
 
-        // Handle Stubs
         if (app()->runningInConsole()) {
             foreach (app(Filesystem::class)->files(__DIR__ . '/../stubs/') as $file) {
                 $this->publishes([
@@ -85,7 +78,6 @@ class FilamentVoightServiceProvider extends PackageServiceProvider
             }
         }
 
-        // Testing
         Testable::mixin(new TestsFilamentVoight);
     }
 
@@ -99,11 +91,7 @@ class FilamentVoightServiceProvider extends PackageServiceProvider
      */
     protected function getAssets(): array
     {
-        return [
-            // AlpineComponent::make('laravel-filament-voight', __DIR__ . '/../resources/dist/components/laravel-filament-voight.js'),
-            // Css::make('laravel-filament-voight-styles', __DIR__ . '/../resources/dist/laravel-filament-voight.css'),
-            // Js::make('laravel-filament-voight-scripts', __DIR__ . '/../resources/dist/laravel-filament-voight.js'),
-        ];
+        return [];
     }
 
     /**
@@ -113,6 +101,8 @@ class FilamentVoightServiceProvider extends PackageServiceProvider
     {
         return [
             FilamentVoightCommand::class,
+            Commands\SyncLockFileCommand::class,
+            Commands\CreateProjectTokenCommand::class,
         ];
     }
 

@@ -10,7 +10,7 @@ return new class extends Migration
     {
         Schema::create('voight_environments', function (Blueprint $table) {
             $table->ulid('id')->primary();
-            $table->foreignUlid('project_id')->constrained('voight_projects')->cascadeOnDelete();
+            $table->foreignId('project_id')->constrained('voight_projects')->cascadeOnDelete();
             $table->string('name');
             $table->timestamp('scanned_at')->nullable();
             $table->timestamps();
