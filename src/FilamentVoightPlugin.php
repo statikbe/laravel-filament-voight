@@ -7,9 +7,11 @@ use Filament\Panel;
 
 class FilamentVoightPlugin implements Plugin
 {
+    const string ID = 'laravel-filament-voight';
+
     public function getId(): string
     {
-        return 'laravel-filament-voight';
+        return static::ID;
     }
 
     public function register(Panel $panel): void

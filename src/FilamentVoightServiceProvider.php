@@ -18,8 +18,6 @@ use Statikbe\FilamentVoight\Testing\TestsFilamentVoight;
 
 class FilamentVoightServiceProvider extends PackageServiceProvider
 {
-    public static string $name = 'laravel-filament-voight';
-
     public static string $viewNamespace = 'laravel-filament-voight';
 
     public function configurePackage(Package $package): void
@@ -29,7 +27,7 @@ class FilamentVoightServiceProvider extends PackageServiceProvider
          *
          * More info: https://github.com/spatie/laravel-package-tools
          */
-        $package->name(static::$name)
+        $package->name(FilamentVoightPlugin::ID)
             ->hasCommands($this->getCommands())
             ->hasInstallCommand(function (InstallCommand $command) {
                 $command
@@ -56,6 +54,8 @@ class FilamentVoightServiceProvider extends PackageServiceProvider
         if (file_exists($package->basePath('/../resources/views'))) {
             $package->hasViews(static::$viewNamespace);
         }
+
+        $package->hasRoutes($this->getRoutes());
     }
 
     public function packageRegistered(): void {}
@@ -146,7 +146,19 @@ class FilamentVoightServiceProvider extends PackageServiceProvider
     protected function getMigrations(): array
     {
         return [
-            'create_laravel-filament-voight_table',
+            'create_voight_customers_table',
+            'create_voight_teams_table',
+            'create_voight_team_user_table',
+            'create_voight_projects_table',
+            'create_voight_environments_table',
+            'create_voight_packages_table',
+            'create_voight_environment_packages_table',
+            'create_voight_dependency_syncs_table',
+            'create_voight_vulnerabilities_table',
+            'create_voight_vulnerable_package_ranges_table',
+            'create_voight_audit_runs_table',
+            'create_voight_audit_findings_table',
+            'create_voight_alert_settings_table',
         ];
     }
 }

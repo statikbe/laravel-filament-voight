@@ -43,7 +43,10 @@
         "psr-4": {
             "Statikbe\\FilamentVoight\\": "src/",
             "Statikbe\\FilamentVoight\\Database\\Factories\\": "database/factories/"
-        }
+        },
+        "files": [
+            "src/helpers.php"
+        ]
     },
     "autoload-dev": {
         "psr-4": {
