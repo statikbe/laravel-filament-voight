@@ -14,6 +14,7 @@ use Filament\Schemas\Schema;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Model;
 use Statikbe\FilamentVoight\Enums\AlertChannel;
 use Statikbe\FilamentVoight\Enums\AlertFrequency;
 
@@ -21,7 +22,7 @@ class AlertSettingsRelationManager extends RelationManager
 {
     protected static string $relationship = 'alertSettings';
 
-    public static function getTitle(\Illuminate\Database\Eloquent\Model $ownerRecord, string $pageClass): string
+    public static function getTitle(Model $ownerRecord, string $pageClass): string
     {
         return voightTrans('models.alert_setting.plural');
     }

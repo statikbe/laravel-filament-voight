@@ -8,8 +8,6 @@ use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
-use Statikbe\FilamentVoight\Models\Customer;
-use Statikbe\FilamentVoight\Models\Team;
 
 class ProjectFormSchema
 {
