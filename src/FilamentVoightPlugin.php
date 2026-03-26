@@ -1,15 +1,15 @@
 <?php
 
-namespace VendorName\Skeleton;
+namespace Statikbe\FilamentVoight;
 
 use Filament\Contracts\Plugin;
 use Filament\Panel;
 
-class SkeletonPlugin implements Plugin
+class FilamentVoightPlugin implements Plugin
 {
     public function getId(): string
     {
-        return 'skeleton';
+        return 'laravel-filament-voight';
     }
 
     public function register(Panel $panel): void
