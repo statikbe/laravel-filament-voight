@@ -1,17 +1,12 @@
 #!/bin/sh
 set -eu
 
-# Read only the required vars from .env
+# Load .env if present
 if [ -f ".env" ]; then
-  for var in API_URL API_TOKEN PROJECT_CODE APP_ENV; do
-    line=$(grep "^${var}=" .env | head -1)
-    if [ -n "$line" ]; then
-      # Strip optional surrounding single or double quotes from the value
-      value=$(printf '%s' "${line#*=}" | sed "s/^['\"]//;s/['\"]$//")
-      export "${var}=${value}"
-    fi
-  done
+  . ./.env
 fi
+
+export API_URL API_TOKEN PROJECT_CODE APP_ENV
 
 # Required env vars
 : "${API_URL:?API_URL is not set}"
