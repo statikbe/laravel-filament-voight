@@ -1,12 +1,16 @@
-#!/usr/bin/env bash
-set -euo pipefail
+#!/bin/sh
+set -eu
 
-# Load .env file if present
-if [[ -f ".env" ]]; then
-  set -a
-  # shellcheck source=.env
-  source .env
-  set +a
+# Read only the required vars from .env
+if [ -f ".env" ]; then
+  for var in API_URL API_TOKEN PROJECT_CODE APP_ENV; do
+    line=$(grep "^${var}=" .env | head -1)
+    if [ -n "$line" ]; then
+      # Strip optional surrounding single or double quotes from the value
+      value=$(printf '%s' "${line#*=}" | sed "s/^['\"]//;s/['\"]$//")
+      export "${var}=${value}"
+    fi
+  done
 fi
 
 # Required env vars
@@ -20,23 +24,15 @@ fi
 echo ""
 echo "Collecting lock files..."
 
-declare -a LOCK_FILES=(
-  "yarn.lock"
-  "package-lock.json"
-  "pnpm-lock.yaml"
-  "bun.lock"
-  "composer.lock"
-)
-
-declare -a FOUND_LOCKS=()
-for lock in "${LOCK_FILES[@]}"; do
-  if [[ -f "$lock" ]]; then
-    FOUND_LOCKS+=("$lock")
+FOUND_LOCKS=""
+for lock in yarn.lock package-lock.json pnpm-lock.yaml bun.lock composer.lock; do
+  if [ -f "$lock" ]; then
+    FOUND_LOCKS="${FOUND_LOCKS}${FOUND_LOCKS:+ }${lock}"
     echo "  Found: $lock"
   fi
 done
 
-if [[ ${#FOUND_LOCKS[@]} -eq 0 ]]; then
+if [ -z "$FOUND_LOCKS" ]; then
   echo "No lock files found. Exiting."
   exit 0
 fi
@@ -47,30 +43,28 @@ echo ""
 echo "Sending lock files to API..."
 
 # Build multipart form-data with all lock files
-CURL_ARGS=(
-  -s -w "\n%{http_code}"
-  -X POST "$API_URL"
-  -H "Authorization: Bearer $API_TOKEN"
-  -F "project_code=$PROJECT_CODE"
+set -- \
+  -s -w "\n%{http_code}" \
+  -X POST "$API_URL" \
+  -H "Authorization: Bearer $API_TOKEN" \
+  -F "project_code=$PROJECT_CODE" \
   -F "environment=$APP_ENV"
-)
 
-for lock in "${FOUND_LOCKS[@]}"; do
-  # Use the filename as the field name (dots replaced with underscores)
-  field_name="${lock//[.\/]/_}"
-  CURL_ARGS+=(-F "${field_name}=@${lock};filename=${lock}")
+for lock in $FOUND_LOCKS; do
+  field_name=$(printf '%s' "$lock" | tr './' '_')
+  set -- "$@" -F "${field_name}=@${lock};filename=${lock}"
 done
 
-RESPONSE=$(curl "${CURL_ARGS[@]}")
-HTTP_STATUS=$(echo "$RESPONSE" | tail -n1)
-BODY=$(echo "$RESPONSE" | sed '$d')
+RESPONSE=$(curl "$@")
+HTTP_STATUS=$(printf '%s' "$RESPONSE" | tail -n1)
+BODY=$(printf '%s' "$RESPONSE" | sed '$d')
 
 echo "  HTTP status: $HTTP_STATUS"
-if [[ -n "$BODY" ]]; then
+if [ -n "$BODY" ]; then
   echo "  Response: $BODY"
 fi
 
-if [[ "$HTTP_STATUS" -ge 200 && "$HTTP_STATUS" -lt 300 ]]; then
+if [ "$HTTP_STATUS" -ge 200 ] && [ "$HTTP_STATUS" -lt 300 ]; then
   echo ""
   echo "Done. Lock files sent successfully."
 else
