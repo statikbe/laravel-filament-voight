@@ -16,7 +16,7 @@ use Statikbe\FilamentVoight\Models\Project;
 class LockFileSyncService
 {
     /**
-     * @param array<string, UploadedFile> $lockfiles
+     * @param  array<string, UploadedFile>  $lockfiles
      */
     public function sync(string $projectCode, string $environmentName, array $lockfiles, ?Project $project = null): DependencySync
     {
@@ -65,7 +65,7 @@ class LockFileSyncService
     }
 
     /**
-     * @param array<string, UploadedFile> $lockfiles
+     * @param  array<string, UploadedFile>  $lockfiles
      * @return array<string>
      */
     private function storeLockFiles(Project $project, Environment $environment, array $lockfiles): array
@@ -84,7 +84,7 @@ class LockFileSyncService
     }
 
     /**
-     * @param array<string, UploadedFile> $lockfiles
+     * @param  array<string, UploadedFile>  $lockfiles
      */
     private function computeHash(array $lockfiles): string
     {

@@ -7,7 +7,7 @@ use Statikbe\FilamentVoight\Enums\PackageType;
 class ComposerLockParser
 {
     /**
-     * @param string $content Raw composer.lock JSON content
+     * @param  string  $content  Raw composer.lock JSON content
      * @return array<int, array{name: string, version: string, type: PackageType, is_direct: bool, is_dev: bool, require: array<string>}>
      */
     public function parse(string $content): array

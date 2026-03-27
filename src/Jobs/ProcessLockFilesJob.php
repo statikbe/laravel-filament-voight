@@ -87,7 +87,7 @@ class ProcessLockFilesJob implements ShouldQueue
     }
 
     /**
-     * @param array<int, array{name: string, version: string, type: PackageType, is_direct: bool, is_dev: bool, require: array<string>}> $parsedPackages
+     * @param  array<int, array{name: string, version: string, type: PackageType, is_direct: bool, is_dev: bool, require: array<string>}>  $parsedPackages
      */
     private function syncPackages(array $parsedPackages): void
     {
@@ -112,6 +112,7 @@ class ProcessLockFilesJob implements ShouldQueue
                 foreach ($parsedPackages as $potentialParent) {
                     if (in_array($parsed['name'], $potentialParent['require'], true)) {
                         $parentPackageId = $packageModels[$potentialParent['name']]->id ?? null;
+
                         break;
                     }
                 }

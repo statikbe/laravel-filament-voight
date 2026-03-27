@@ -26,7 +26,7 @@ it('processes composer.lock and creates packages', function () {
         ],
     ]);
 
-    $lockfilePath = "test-project/production/composer.lock";
+    $lockfilePath = 'test-project/production/composer.lock';
     Storage::disk('voight-lockfiles')->put($lockfilePath, $composerLock);
 
     $sync = DependencySync::factory()->for($environment)->create([
@@ -62,7 +62,7 @@ it('processes package-lock.json and creates packages', function () {
         'devDependencies' => ['vite' => '^5.0.0'],
     ]);
 
-    $lockfilePath = "test-project/production/package-lock.json";
+    $lockfilePath = 'test-project/production/package-lock.json';
     Storage::disk('voight-lockfiles')->put($lockfilePath, $packageLock);
 
     $sync = DependencySync::factory()->for($environment)->create([
@@ -90,7 +90,7 @@ it('replaces existing environment packages on re-sync', function () {
         'packages-dev' => [],
     ]);
 
-    $lockfilePath = "test-project/production/composer.lock";
+    $lockfilePath = 'test-project/production/composer.lock';
     Storage::disk('voight-lockfiles')->put($lockfilePath, $composerLock);
 
     $sync1 = DependencySync::factory()->for($environment)->create([
@@ -135,7 +135,7 @@ it('updates environment scanned_at after successful sync', function () {
     $environment = Environment::factory()->create(['scanned_at' => null]);
 
     $composerLock = json_encode(['packages' => [], 'packages-dev' => []]);
-    $lockfilePath = "test-project/production/composer.lock";
+    $lockfilePath = 'test-project/production/composer.lock';
     Storage::disk('voight-lockfiles')->put($lockfilePath, $composerLock);
 
     $sync = DependencySync::factory()->for($environment)->create([
