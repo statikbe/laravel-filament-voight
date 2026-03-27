@@ -29,7 +29,7 @@ class CreateProjectTokenCommand extends Command
             return self::FAILURE;
         }
 
-        $tokenName = $this->option('name') ?? $this->ask('Token name', 'ci-pipeline');
+        $tokenName = $this->option('name') ?? $this->ask('Token name', Project::DEFAULT_API_TOKEN_NAME);
 
         $token = $project->createToken($tokenName);
 
