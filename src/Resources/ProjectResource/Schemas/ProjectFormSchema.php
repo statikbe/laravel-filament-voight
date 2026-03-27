@@ -3,11 +3,12 @@
 namespace Statikbe\FilamentVoight\Resources\ProjectResource\Schemas;
 
 use Filament\Actions\Action;
-use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
+use Filament\Infolists\Components\RepeatableEntry;
+use Filament\Infolists\Components\TextEntry;
 use Filament\Notifications\Notification;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
@@ -66,39 +67,49 @@ class ProjectFormSchema
                     ->description(voightTrans('models.project.sections.api_token_description'))
                     ->visible(fn (?Project $record): bool => $record !== null)
                     ->components([
-                        Placeholder::make('active_tokens')
-                            ->label(voightTrans('models.project.fields.active_tokens'))
-                            ->content(fn (Project $record): string => $record->tokens()->count() . ' ' . voightTrans('models.project.fields.active_tokens_count'))
-                            ->afterContent(
-                                Action::make('generate_token')
-                                    ->label(voightTrans('models.project.actions.generate_token'))
-                                    ->requiresConfirmation()
-                                    ->action(function (Project $record) {
-                                        $token = $record->createToken('api');
+                        RepeatableEntry::make('tokens')
+                            ->label('')
+                            ->schema([
+                                TextEntry::make('name')
+                                    ->label(voightTrans('models.project.fields.token_name')),
+                                TextEntry::make('last_used_at')
+                                    ->label(voightTrans('models.project.fields.token_last_used'))
+                                    ->since()
+                                    ->placeholder(voightTrans('models.project.fields.never_used')),
+                                TextEntry::make('created_at')
+                                    ->label(voightTrans('fields.created_at'))
+                                    ->since(),
+                            ])
+                            ->columns(3)
+                            ->placeholder(voightTrans('models.project.fields.no_tokens')),
+                    ])
+                    ->afterHeader([
+                        Action::make('generate_token')
+                            ->label(voightTrans('models.project.actions.generate_token'))
+                            ->requiresConfirmation()
+                            ->action(function (Project $record) {
+                                $token = $record->createToken(Project::DEFAULT_API_TOKEN_NAME);
 
-                                        Notification::make()
-                                            ->title(voightTrans('models.project.actions.token_generated'))
-                                            ->body($token->plainTextToken)
-                                            ->persistent()
-                                            ->success()
-                                            ->send();
-                                    }),
-                            )
-                            ->afterContent(
-                                Action::make('revoke_tokens')
-                                    ->label(voightTrans('models.project.actions.revoke_tokens'))
-                                    ->color('danger')
-                                    ->requiresConfirmation()
-                                    ->visible(fn (Project $record): bool => $record->tokens()->count() > 0)
-                                    ->action(function (Project $record) {
-                                        $record->tokens()->delete();
+                                Notification::make()
+                                    ->title(voightTrans('models.project.actions.token_generated'))
+                                    ->body($token->plainTextToken)
+                                    ->persistent()
+                                    ->success()
+                                    ->send();
+                            }),
+                        Action::make('revoke_tokens')
+                            ->label(voightTrans('models.project.actions.revoke_tokens'))
+                            ->color('danger')
+                            ->requiresConfirmation()
+                            ->visible(fn (Project $record): bool => $record->tokens()->count() > 0)
+                            ->action(function (Project $record) {
+                                $record->tokens()->delete();
 
-                                        Notification::make()
-                                            ->title(voightTrans('models.project.actions.tokens_revoked'))
-                                            ->success()
-                                            ->send();
-                                    }),
-                            ),
+                                Notification::make()
+                                    ->title(voightTrans('models.project.actions.tokens_revoked'))
+                                    ->success()
+                                    ->send();
+                            }),
                     ]),
             ]);
     }

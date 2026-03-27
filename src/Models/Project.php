@@ -13,6 +13,8 @@ class Project extends Model
     use HasApiTokens;
     use HasFactory;
 
+    const DEFAULT_API_TOKEN_NAME = 'ci-pipeline';
+
     protected $table = 'voight_projects';
 
     protected $guarded = [];

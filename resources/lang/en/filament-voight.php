@@ -94,6 +94,10 @@ return [
                 'is_muted_help' => 'Muted projects will not send alert notifications.',
                 'active_tokens' => 'Active Tokens',
                 'active_tokens_count' => 'token(s) active',
+                'no_tokens' => 'No API tokens have been generated yet.',
+                'token_name' => 'Name',
+                'token_last_used' => 'Last Used',
+                'never_used' => 'Never',
             ],
             'sections' => [
                 'general' => 'General',
@@ -103,9 +107,9 @@ return [
                 'api_token_description' => 'Generate tokens for CI/CD pipelines to sync lockfiles.',
             ],
             'actions' => [
-                'generate_token' => 'Generate Token',
+                'generate_token' => 'Generate',
                 'token_generated' => 'Token generated — copy it now, it won\'t be shown again',
-                'revoke_tokens' => 'Revoke All Tokens',
+                'revoke_tokens' => 'Revoke All',
                 'tokens_revoked' => 'All tokens revoked',
             ],
         ],
