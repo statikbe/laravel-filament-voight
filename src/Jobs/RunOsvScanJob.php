@@ -91,7 +91,11 @@ class RunOsvScanJob implements ShouldQueue
             ->latest()
             ->first();
 
-        return $latestSync?->lockfile_paths ?? [];
+        if (! $latestSync) {
+            return [];
+        }
+
+        return $latestSync->lockfile_paths ?? [];
     }
 
     /**

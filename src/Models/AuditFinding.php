@@ -7,6 +7,16 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
+/**
+ * @property string $id
+ * @property string $audit_run_id
+ * @property string $package_id
+ * @property string $vulnerability_id
+ * @property string $installed_version
+ * @property string|null $fixed_version
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ */
 class AuditFinding extends Model
 {
     use HasFactory;

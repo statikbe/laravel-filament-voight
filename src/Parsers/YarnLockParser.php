@@ -47,7 +47,7 @@ class YarnLockParser
     }
 
     /**
-     * @return array{0: array<string, true>, 1: array<string, true>}
+     * @return array{0: array<string, int>, 1: array<string, int>}
      */
     private function parsePackageJson(?string $packageJsonContent): array
     {
@@ -61,9 +61,14 @@ class YarnLockParser
             return [[], []];
         }
 
+        /** @var array<string, mixed> $deps */
+        $deps = $packageJson['dependencies'] ?? [];
+        /** @var array<string, mixed> $devDeps */
+        $devDeps = $packageJson['devDependencies'] ?? [];
+
         return [
-            array_flip(array_keys($packageJson['dependencies'] ?? [])),
-            array_flip(array_keys($packageJson['devDependencies'] ?? [])),
+            array_flip(array_keys($deps)),
+            array_flip(array_keys($devDeps)),
         ];
     }
 

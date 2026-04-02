@@ -14,9 +14,6 @@ class DependencySyncFactory extends Factory
 {
     protected $model = DependencySync::class;
 
-    /**
-     * @return array<string, mixed>
-     */
     public function definition(): array
     {
         return [

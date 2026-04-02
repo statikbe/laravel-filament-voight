@@ -15,9 +15,6 @@ class AuditFindingFactory extends Factory
 {
     protected $model = AuditFinding::class;
 
-    /**
-     * @return array<string, mixed>
-     */
     public function definition(): array
     {
         return [

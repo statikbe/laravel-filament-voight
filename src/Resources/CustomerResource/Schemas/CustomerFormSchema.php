@@ -2,8 +2,8 @@
 
 namespace Statikbe\FilamentVoight\Resources\CustomerResource\Schemas;
 
-use Filament\Forms\Components\Component;
 use Filament\Forms\Components\TextInput;
+use Filament\Schemas\Components\Component;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 

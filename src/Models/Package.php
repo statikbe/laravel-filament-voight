@@ -8,6 +8,15 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Statikbe\FilamentVoight\Enums\PackageType;
 
+/**
+ * @property string $id
+ * @property string $name
+ * @property PackageType $type
+ * @property string|null $latest_version
+ * @property \Illuminate\Support\Carbon|null $latest_version_updated_at
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ */
 class Package extends Model
 {
     use HasFactory;

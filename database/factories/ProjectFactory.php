@@ -14,9 +14,6 @@ class ProjectFactory extends Factory
 {
     protected $model = Project::class;
 
-    /**
-     * @return array<string, mixed>
-     */
     public function definition(): array
     {
         return [

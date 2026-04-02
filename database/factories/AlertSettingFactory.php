@@ -15,9 +15,6 @@ class AlertSettingFactory extends Factory
 {
     protected $model = AlertSetting::class;
 
-    /**
-     * @return array<string, mixed>
-     */
     public function definition(): array
     {
         return [

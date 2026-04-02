@@ -8,6 +8,18 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Laravel\Sanctum\HasApiTokens;
 
+/**
+ * @property int $id
+ * @property string $project_code
+ * @property string|null $name
+ * @property string|null $description
+ * @property string|null $repo_url
+ * @property string|null $customer_id
+ * @property string|null $team_id
+ * @property bool $is_muted
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ */
 class Project extends Model
 {
     use HasApiTokens;

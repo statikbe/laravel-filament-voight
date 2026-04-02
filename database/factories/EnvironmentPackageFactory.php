@@ -14,9 +14,6 @@ class EnvironmentPackageFactory extends Factory
 {
     protected $model = EnvironmentPackage::class;
 
-    /**
-     * @return array<string, mixed>
-     */
     public function definition(): array
     {
         return [

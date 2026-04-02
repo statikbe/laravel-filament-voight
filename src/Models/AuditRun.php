@@ -9,6 +9,15 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Statikbe\FilamentVoight\Enums\AuditRunStatus;
 
+/**
+ * @property string $id
+ * @property string $environment_id
+ * @property AuditRunStatus $status
+ * @property \Illuminate\Support\Carbon|null $started_at
+ * @property \Illuminate\Support\Carbon|null $completed_at
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ */
 class AuditRun extends Model
 {
     use HasFactory;

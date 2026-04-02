@@ -14,9 +14,6 @@ class AuditRunFactory extends Factory
 {
     protected $model = AuditRun::class;
 
-    /**
-     * @return array<string, mixed>
-     */
     public function definition(): array
     {
         return [

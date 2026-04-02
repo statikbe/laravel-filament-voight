@@ -8,6 +8,18 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Statikbe\FilamentVoight\Enums\DependencySyncStatus;
 
+/**
+ * @property string $id
+ * @property string $environment_id
+ * @property string $lockfile_hash
+ * @property array<string>|null $lockfile_paths
+ * @property int $package_count
+ * @property DependencySyncStatus $status
+ * @property string|null $error_message
+ * @property \Illuminate\Support\Carbon|null $synced_at
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ */
 class DependencySync extends Model
 {
     use HasFactory;

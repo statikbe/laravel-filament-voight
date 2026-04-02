@@ -13,9 +13,6 @@ class PackageFactory extends Factory
 {
     protected $model = Package::class;
 
-    /**
-     * @return array<string, mixed>
-     */
     public function definition(): array
     {
         return [

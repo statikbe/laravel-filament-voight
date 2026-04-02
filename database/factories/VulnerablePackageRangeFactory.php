@@ -14,9 +14,6 @@ class VulnerablePackageRangeFactory extends Factory
 {
     protected $model = VulnerablePackageRange::class;
 
-    /**
-     * @return array<string, mixed>
-     */
     public function definition(): array
     {
         return [

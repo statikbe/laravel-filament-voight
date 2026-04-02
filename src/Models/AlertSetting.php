@@ -9,6 +9,17 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Statikbe\FilamentVoight\Enums\AlertChannel;
 use Statikbe\FilamentVoight\Enums\AlertFrequency;
 
+/**
+ * @property string $id
+ * @property int|null $project_id
+ * @property AlertChannel $channel
+ * @property float $severity_threshold
+ * @property AlertFrequency $frequency
+ * @property string|null $webhook_url
+ * @property bool $is_enabled
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ */
 class AlertSetting extends Model
 {
     use HasFactory;

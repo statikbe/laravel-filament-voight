@@ -19,7 +19,9 @@
       "Bash(find ~/.claude -name *.log -o -name mcp*)",
       "Bash(ddev --help)",
       "Bash(/bin/sh -c 'cd ../voight && ddev exec php artisan boost:mcp')",
-      "Bash(php:*)"
+      "Bash(php:*)",
+      "Bash(composer analyse:*)",
+      "Bash(grep -E '^\\\\s*\\(--|Line|[0-9]+|$\\)')"
     ]
   },
   "enableAllProjectMcpServers": true,

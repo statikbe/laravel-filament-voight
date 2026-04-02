@@ -50,7 +50,11 @@ class UsersRelationManager extends RelationManager
                                 ->pluck('name', 'id')
                                 ->toArray();
                         })
-                        ->getOptionLabelUsing(fn (mixed $value): ?string => $this->getRelationship()->getRelated()::find($value)?->name)),
+                        ->getOptionLabelUsing(function (mixed $value): ?string {
+                            $user = $this->getRelationship()->getRelated()::find($value);
+
+                            return $user?->getAttribute('name');
+                        })),
             ])
             ->recordActions([
                 DetachAction::make(),
