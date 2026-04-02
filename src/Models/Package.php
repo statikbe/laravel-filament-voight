@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Carbon;
 use Statikbe\FilamentVoight\Enums\PackageType;
 
 /**
@@ -13,9 +14,9 @@ use Statikbe\FilamentVoight\Enums\PackageType;
  * @property string $name
  * @property PackageType $type
  * @property string|null $latest_version
- * @property \Illuminate\Support\Carbon|null $latest_version_updated_at
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property Carbon|null $latest_version_updated_at
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
  */
 class Package extends Model
 {
