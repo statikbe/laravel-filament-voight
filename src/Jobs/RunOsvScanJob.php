@@ -167,8 +167,11 @@ class RunOsvScanJob implements ShouldQueue
         $packageType = $this->resolvePackageType($ecosystem);
         $package = Package::where('name', $packageName)->where('type', $packageType)->first();
 
+        $groupScores = $this->buildGroupScoreMap($pkgData['groups'] ?? []);
+
         foreach ($pkgData['vulnerabilities'] ?? [] as $vulnData) {
-            $vulnerability = $this->upsertVulnerability($vulnData);
+            $vulnId = $vulnData['id'] ?? '';
+            $vulnerability = $this->upsertVulnerability($vulnData, $groupScores[$vulnId] ?? null);
             $fixedVersion = $this->extractFixedVersion($vulnData, $packageName);
 
             if ($package) {
@@ -192,7 +195,7 @@ class RunOsvScanJob implements ShouldQueue
     /**
      * @param  array<string, mixed>  $vulnData
      */
-    private function upsertVulnerability(array $vulnData): Vulnerability
+    private function upsertVulnerability(array $vulnData, ?float $groupScore = null): Vulnerability
     {
         $sourceId = $vulnData['id'] ?? '';
         $publishedAt = isset($vulnData['published']) ? new DateTime($vulnData['published']) : null;
@@ -207,7 +210,7 @@ class RunOsvScanJob implements ShouldQueue
                 'aliases' => $vulnData['aliases'] ?? [],
                 'summary' => $vulnData['summary'] ?? $sourceId,
                 'details' => $vulnData['details'] ?? null,
-                'vulnerability_score' => $this->extractVulnerabilityScore($vulnData),
+                'vulnerability_score' => $this->extractVulnerabilityScore($vulnData, $groupScore),
                 'published_at' => $publishedAt,
                 'modified_at' => $modifiedAt,
             ],
@@ -217,8 +220,14 @@ class RunOsvScanJob implements ShouldQueue
     /**
      * @param  array<string, mixed>  $vulnData
      */
-    private function extractVulnerabilityScore(array $vulnData): float
+    private function extractVulnerabilityScore(array $vulnData, ?float $groupScore = null): float
     {
+        // Prefer the numeric CVSS score from groups.max_severity
+        if ($groupScore !== null && $groupScore > 0.0) {
+            return $groupScore;
+        }
+
+        // Fall back to the string severity label
         $severityString = $vulnData['database_specific']['severity'] ?? null;
 
         if ($severityString) {
@@ -226,6 +235,29 @@ class RunOsvScanJob implements ShouldQueue
         }
 
         return 0.0;
+    }
+
+    /**
+     * @param  array<int, mixed>  $groups
+     * @return array<string, float>
+     */
+    private function buildGroupScoreMap(array $groups): array
+    {
+        $map = [];
+
+        foreach ($groups as $group) {
+            $score = isset($group['max_severity']) ? (float) $group['max_severity'] : null;
+
+            if ($score === null) {
+                continue;
+            }
+
+            foreach ($group['ids'] ?? [] as $id) {
+                $map[(string) $id] = $score;
+            }
+        }
+
+        return $map;
     }
 
     /**

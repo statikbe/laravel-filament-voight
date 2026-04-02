@@ -27,7 +27,7 @@ enum Severity: string
         return match (strtoupper($severity)) {
             'CRITICAL' => self::Critical,
             'HIGH' => self::High,
-            'MEDIUM' => self::Medium,
+            'MEDIUM', 'MODERATE' => self::Medium,
             'LOW' => self::Low,
             default => self::None,
         };
