@@ -8,11 +8,14 @@ class YarnLockParser
 {
     /**
      * @param  string  $content  Raw yarn.lock content
+     * @param  string|null  $packageJsonContent  Raw package.json content for is_dev/is_direct detection
      * @return array<int, array{name: string, version: string, type: PackageType, is_direct: bool, is_dev: bool, require: array<string>}>
      */
-    public function parse(string $content): array
+    public function parse(string $content, ?string $packageJsonContent = null): array
     {
         $blocks = $this->parseBlocks($content);
+        [$directDeps, $directDevDeps] = $this->parsePackageJson($packageJsonContent);
+        $hasPackageJson = $packageJsonContent !== null;
 
         $packages = [];
 
@@ -23,17 +26,46 @@ class YarnLockParser
                 continue;
             }
 
+            $isDirect = $hasPackageJson
+                ? in_array($name, $directDeps) || in_array($name, $directDevDeps)
+                : true;
+
+            $isDev = $hasPackageJson
+                ? in_array($name, $directDevDeps)
+                : false;
+
             $packages[] = [
                 'name' => $name,
                 'version' => $block['version'] ?? 'unknown',
                 'type' => PackageType::Npm,
-                'is_direct' => true,
-                'is_dev' => false,
+                'is_direct' => $isDirect,
+                'is_dev' => $isDev,
                 'require' => $block['dependencies'],
             ];
         }
 
         return $packages;
+    }
+
+    /**
+     * @return array{0: array<string>, 1: array<string>}
+     */
+    private function parsePackageJson(?string $packageJsonContent): array
+    {
+        if ($packageJsonContent === null) {
+            return [[], []];
+        }
+
+        $packageJson = json_decode($packageJsonContent, true);
+
+        if (! is_array($packageJson)) {
+            return [[], []];
+        }
+
+        return [
+            array_keys($packageJson['dependencies'] ?? []),
+            array_keys($packageJson['devDependencies'] ?? []),
+        ];
     }
 
     /**

@@ -43,6 +43,50 @@ YARN;
     expect($vitest['version'])->toBe('1.0.0');
 });
 
+it('determines is_dev and is_direct from package.json', function () {
+    $yarnLock = <<<'YARN'
+# yarn lockfile v1
+
+lodash@^4.17.0:
+  version "4.17.21"
+  resolved "https://registry.yarnpkg.com/lodash/-/lodash-4.17.21.tgz"
+  dependencies:
+    lodash.merge "^4.6.2"
+
+lodash.merge@^4.6.2:
+  version "4.6.2"
+  resolved "https://registry.yarnpkg.com/lodash.merge/-/lodash.merge-4.6.2.tgz"
+
+vitest@^1.0.0:
+  version "1.0.0"
+  resolved "https://registry.yarnpkg.com/vitest/-/vitest-1.0.0.tgz"
+YARN;
+
+    $packageJson = json_encode([
+        'dependencies' => [
+            'lodash' => '^4.17.0',
+        ],
+        'devDependencies' => [
+            'vitest' => '^1.0.0',
+        ],
+    ]);
+
+    $parser = new YarnLockParser;
+    $packages = $parser->parse($yarnLock, $packageJson);
+
+    $lodash = collect($packages)->firstWhere('name', 'lodash');
+    expect($lodash['is_direct'])->toBeTrue()
+        ->and($lodash['is_dev'])->toBeFalse();
+
+    $lodashMerge = collect($packages)->firstWhere('name', 'lodash.merge');
+    expect($lodashMerge['is_direct'])->toBeFalse()
+        ->and($lodashMerge['is_dev'])->toBeFalse();
+
+    $vitest = collect($packages)->firstWhere('name', 'vitest');
+    expect($vitest['is_direct'])->toBeTrue()
+        ->and($vitest['is_dev'])->toBeTrue();
+});
+
 it('parses scoped packages', function () {
     $content = <<<'YARN'
 # yarn lockfile v1

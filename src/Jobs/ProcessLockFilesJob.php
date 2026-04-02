@@ -80,7 +80,10 @@ class ProcessLockFilesJob implements ShouldQueue
             $parsed = match ($filename) {
                 'composer.lock' => (new ComposerLockParser)->parse($content),
                 'package-lock.json' => (new PackageLockParser)->parse($content),
-                'yarn.lock' => (new YarnLockParser)->parse($content),
+                'yarn.lock' => (new YarnLockParser)->parse(
+                    $content,
+                    $this->findCompanionFile($path, 'package.json', $disk),
+                ),
                 default => [],
             };
 
@@ -88,6 +91,22 @@ class ProcessLockFilesJob implements ShouldQueue
         }
 
         return $packages;
+    }
+
+    /**
+     * Look for a companion file (e.g. package.json) in the same directory as the given lockfile path.
+     */
+    private function findCompanionFile(string $lockfilePath, string $companionFilename, \Illuminate\Contracts\Filesystem\Filesystem $disk): ?string
+    {
+        $directory = dirname($lockfilePath);
+        $companionPath = $directory . '/' . $companionFilename;
+
+        // Check if it was uploaded alongside the lockfile
+        if (in_array($companionPath, $this->sync->lockfile_paths ?? [], true)) {
+            return $disk->get($companionPath);
+        }
+
+        return null;
     }
 
     /**

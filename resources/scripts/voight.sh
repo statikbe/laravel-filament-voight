@@ -20,7 +20,7 @@ echo ""
 echo "Collecting lock files..."
 
 FOUND_LOCKS=""
-for lock in yarn.lock package-lock.json pnpm-lock.yaml bun.lock composer.lock; do
+for lock in yarn.lock package-lock.json pnpm-lock.yaml bun.lock composer.lock package.json; do
   if [ -f "$lock" ]; then
     FOUND_LOCKS="${FOUND_LOCKS}${FOUND_LOCKS:+ }${lock}"
     echo "  Found: $lock"

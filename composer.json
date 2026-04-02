@@ -57,8 +57,8 @@
     },
     "scripts": {
         "post-autoload-dump": "@php ./vendor/bin/testbench package:discover --ansi",
-        "analyse": "phpstan analyse",
-        "lint": "pint",
+        "analyse": "phpstan analyse --memory-limit 1G",
+        "format": "pint",
         "refactor": "rector",
         "test": "pest",
         "test:lint": "pint --test",
