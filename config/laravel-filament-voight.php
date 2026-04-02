@@ -45,6 +45,20 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | OSV Scanner Lambda
+    |--------------------------------------------------------------------------
+    |
+    | URL and bearer token for the voight-osv-scanner-lambda endpoint.
+    | The voight app calls this on its daily cron and after each sync.
+    |
+    */
+    'scanner' => [
+        'url' => env('VOIGHT_SCANNER_URL'),
+        'token' => env('VOIGHT_SCANNER_TOKEN'),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Models
     |--------------------------------------------------------------------------
     |

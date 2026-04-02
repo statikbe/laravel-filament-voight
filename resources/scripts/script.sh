@@ -46,8 +46,7 @@ set -- \
   -F "environment=$APP_ENV"
 
 for lock in $FOUND_LOCKS; do
-  field_name=$(printf '%s' "$lock" | tr './' '_')
-  set -- "$@" -F "${field_name}=@${lock};filename=${lock}"
+  set -- "$@" -F "lockfiles[${lock}]=@${lock};filename=${lock}"
 done
 
 RESPONSE=$(curl "$@")

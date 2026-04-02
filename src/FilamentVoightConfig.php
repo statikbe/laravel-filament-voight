@@ -23,6 +23,18 @@ class FilamentVoightConfig
         return $this->packageConfig('panel.path', 'voight');
     }
 
+    // -- Scanner --
+
+    public function getScannerUrl(): ?string
+    {
+        return $this->packageConfig('scanner.url');
+    }
+
+    public function getScannerToken(): ?string
+    {
+        return $this->packageConfig('scanner.token');
+    }
+
     // -- Lockfiles --
 
     public function getLockfilesDisk(): string
