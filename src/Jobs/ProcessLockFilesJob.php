@@ -3,6 +3,7 @@
 namespace Statikbe\FilamentVoight\Jobs;
 
 use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
@@ -96,7 +97,7 @@ class ProcessLockFilesJob implements ShouldQueue
     /**
      * Look for a companion file (e.g. package.json) in the same directory as the given lockfile path.
      */
-    private function findCompanionFile(string $lockfilePath, string $companionFilename, \Illuminate\Contracts\Filesystem\Filesystem $disk): ?string
+    private function findCompanionFile(string $lockfilePath, string $companionFilename, Filesystem $disk): ?string
     {
         $directory = dirname($lockfilePath);
         $companionPath = $directory . '/' . $companionFilename;
