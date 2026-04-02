@@ -20,12 +20,17 @@ echo ""
 echo "Collecting lock files..."
 
 FOUND_LOCKS=""
-for lock in yarn.lock package-lock.json pnpm-lock.yaml bun.lock composer.lock package.json; do
+for lock in yarn.lock package-lock.json pnpm-lock.yaml bun.lock composer.lock; do
   if [ -f "$lock" ]; then
     FOUND_LOCKS="${FOUND_LOCKS}${FOUND_LOCKS:+ }${lock}"
     echo "  Found: $lock"
   fi
 done
+
+if [ -f "package.json" ] && echo "$FOUND_LOCKS" | grep -q "yarn.lock"; then
+  FOUND_LOCKS="${FOUND_LOCKS} package.json"
+  echo "  Found: package.json"
+fi
 
 if [ -z "$FOUND_LOCKS" ]; then
   echo "No lock files found. Exiting."

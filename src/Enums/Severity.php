@@ -4,6 +4,7 @@ namespace Statikbe\FilamentVoight\Enums;
 
 enum Severity: string
 {
+    use Concerns\HasOptions;
     case None = 'none';
     case Low = 'low';
     case Medium = 'medium';
@@ -18,6 +19,28 @@ enum Severity: string
             $score >= 4.0 => self::Medium,
             $score >= 0.1 => self::Low,
             default => self::None,
+        };
+    }
+
+    public static function fromString(string $severity): self
+    {
+        return match (strtoupper($severity)) {
+            'CRITICAL' => self::Critical,
+            'HIGH' => self::High,
+            'MEDIUM' => self::Medium,
+            'LOW' => self::Low,
+            default => self::None,
+        };
+    }
+
+    public function toRepresentativeScore(): float
+    {
+        return match ($this) {
+            self::Critical => 9.5,
+            self::High => 7.5,
+            self::Medium => 5.0,
+            self::Low => 2.0,
+            self::None => 0.0,
         };
     }
 

@@ -14,6 +14,7 @@ use RuntimeException;
 use Statikbe\FilamentVoight\Enums\AuditRunStatus;
 use Statikbe\FilamentVoight\Enums\DependencySyncStatus;
 use Statikbe\FilamentVoight\Enums\PackageType;
+use Statikbe\FilamentVoight\Enums\Severity;
 use Statikbe\FilamentVoight\Enums\VulnerabilitySource;
 use Statikbe\FilamentVoight\Facades\FilamentVoight;
 use Statikbe\FilamentVoight\Models\AuditFinding;
@@ -34,11 +35,13 @@ class RunOsvScanJob implements ShouldQueue
         public Environment $environment,
     ) {}
 
+    private ?string $scannerUrl = null;
+
     public function handle(): void
     {
-        $scannerUrl = FilamentVoight::config()->getScannerUrl();
+        $this->scannerUrl = FilamentVoight::config()->getScannerUrl();
 
-        if (! $scannerUrl) {
+        if (! $this->scannerUrl) {
             return;
         }
 
@@ -113,7 +116,7 @@ class RunOsvScanJob implements ShouldQueue
             $request = $request->attach($filename, $content, $filename);
         }
 
-        $response = $request->post(FilamentVoight::config()->getScannerUrl(), [
+        $response = $request->post($this->scannerUrl, [
             'project_code' => $project->project_code,
             'environment' => $this->environment->name,
         ]);
@@ -215,13 +218,7 @@ class RunOsvScanJob implements ShouldQueue
         $severityString = $vulnData['database_specific']['severity'] ?? null;
 
         if ($severityString) {
-            return match (strtoupper((string) $severityString)) {
-                'CRITICAL' => 9.5,
-                'HIGH' => 7.5,
-                'MEDIUM' => 5.0,
-                'LOW' => 2.0,
-                default => 0.0,
-            };
+            return Severity::fromString((string) $severityString)->toRepresentativeScore();
         }
 
         return 0.0;

@@ -8,17 +8,14 @@ use Filament\Support\Facades\FilamentIcon;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Filesystem\Filesystem;
-use Livewire\Features\SupportTesting\Testable;
 use Spatie\LaravelPackageTools\Commands\InstallCommand;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
-use Statikbe\FilamentVoight\Commands\FilamentVoightCommand;
 use Statikbe\FilamentVoight\Facades\FilamentVoight;
-use Statikbe\FilamentVoight\Testing\TestsFilamentVoight;
 
 class FilamentVoightServiceProvider extends PackageServiceProvider
 {
-    public static string $viewNamespace = 'laravel-filament-voight';
+    public static string $viewNamespace = 'filament-voight';
 
     public function configurePackage(Package $package): void
     {
@@ -52,8 +49,6 @@ class FilamentVoightServiceProvider extends PackageServiceProvider
         }
     }
 
-    public function packageRegistered(): void {}
-
     public function packageBooted(): void
     {
         Relation::morphMap(FilamentVoight::config()->getMorphMap());
@@ -73,12 +68,10 @@ class FilamentVoightServiceProvider extends PackageServiceProvider
         if (app()->runningInConsole()) {
             foreach (app(Filesystem::class)->files(__DIR__ . '/../stubs/') as $file) {
                 $this->publishes([
-                    $file->getRealPath() => base_path("stubs/laravel-filament-voight/{$file->getFilename()}"),
-                ], 'laravel-filament-voight-stubs');
+                    $file->getRealPath() => base_path("stubs/filament-voight/{$file->getFilename()}"),
+                ], 'filament-voight-stubs');
             }
         }
-
-        Testable::mixin(new TestsFilamentVoight);
 
         $this->callAfterResolving(Schedule::class, function (Schedule $schedule) {
             $schedule->command('voight:run-osv-scan')->daily();
@@ -104,7 +97,6 @@ class FilamentVoightServiceProvider extends PackageServiceProvider
     protected function getCommands(): array
     {
         return [
-            FilamentVoightCommand::class,
             Commands\SyncLockFileCommand::class,
             Commands\CreateProjectTokenCommand::class,
             Commands\RunOsvScanCommand::class,

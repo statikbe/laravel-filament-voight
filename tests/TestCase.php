@@ -66,8 +66,8 @@ class TestCase extends Orchestra
             'root' => storage_path('app/private/voight/lockfiles'),
         ]);
 
-        $app['config']->set('laravel-filament-voight.lockfiles.disk', 'voight-lockfiles');
-        $app['config']->set('laravel-filament-voight.api.middleware', ['auth']);
+        $app['config']->set('filament-voight.lockfiles.disk', 'voight-lockfiles');
+        $app['config']->set('filament-voight.api.middleware', ['auth']);
     }
 
     protected function defineDatabaseMigrations(): void

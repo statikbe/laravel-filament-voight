@@ -4,6 +4,7 @@ namespace Statikbe\FilamentVoight\Enums;
 
 enum PackageType: string
 {
+    use Concerns\HasOptions;
     case Composer = 'composer';
     case Npm = 'npm';
 

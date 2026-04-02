@@ -26,7 +26,7 @@ class AuthenticateProjectToken
 
         $accessToken->forceFill(['last_used_at' => now()])->save();
 
-        $request->merge(['voight_project' => $accessToken->tokenable]);
+        $request->attributes->set('voight_project', $accessToken->tokenable);
 
         return $next($request);
     }

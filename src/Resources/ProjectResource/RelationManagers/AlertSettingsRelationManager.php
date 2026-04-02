@@ -33,7 +33,7 @@ class AlertSettingsRelationManager extends RelationManager
             ->components([
                 Select::make('channel')
                     ->label(voightTrans('models.alert_setting.fields.channel'))
-                    ->options(collect(AlertChannel::cases())->mapWithKeys(fn (AlertChannel $case) => [$case->value => $case->label()]))
+                    ->options(AlertChannel::options())
                     ->required(),
                 TextInput::make('severity_threshold')
                     ->label(voightTrans('models.alert_setting.fields.severity_threshold'))
@@ -44,7 +44,7 @@ class AlertSettingsRelationManager extends RelationManager
                     ->required(),
                 Select::make('frequency')
                     ->label(voightTrans('models.alert_setting.fields.frequency'))
-                    ->options(collect(AlertFrequency::cases())->mapWithKeys(fn (AlertFrequency $case) => [$case->value => $case->label()]))
+                    ->options(AlertFrequency::options())
                     ->required(),
                 TextInput::make('webhook_url')
                     ->label(voightTrans('models.alert_setting.fields.webhook_url'))

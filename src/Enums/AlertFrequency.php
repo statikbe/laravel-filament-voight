@@ -4,6 +4,7 @@ namespace Statikbe\FilamentVoight\Enums;
 
 enum AlertFrequency: string
 {
+    use Concerns\HasOptions;
     case Immediate = 'immediate';
     case Daily = 'daily';
     case Weekly = 'weekly';

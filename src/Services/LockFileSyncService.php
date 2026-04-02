@@ -23,13 +23,12 @@ class LockFileSyncService
         $project = $project ?? $this->resolveProject($projectCode);
         $environment = $this->resolveEnvironment($project, $environmentName);
 
-        $storedPaths = $this->storeLockFiles($project, $environment, $lockfiles);
-        $lockfileHash = $this->computeHash($lockfiles);
+        $result = $this->storeLockFilesAndComputeHash($project, $environment, $lockfiles);
 
         $sync = DependencySync::create([
             'environment_id' => $environment->id,
-            'lockfile_hash' => $lockfileHash,
-            'lockfile_paths' => $storedPaths,
+            'lockfile_hash' => $result['hash'],
+            'lockfile_paths' => $result['paths'],
             'status' => DependencySyncStatus::Pending,
         ]);
 
@@ -66,30 +65,28 @@ class LockFileSyncService
 
     /**
      * @param  array<string, UploadedFile>  $lockfiles
-     * @return array<string>
+     * @return array{paths: array<string>, hash: string}
      */
-    private function storeLockFiles(Project $project, Environment $environment, array $lockfiles): array
+    private function storeLockFilesAndComputeHash(Project $project, Environment $environment, array $lockfiles): array
     {
         $disk = Storage::disk(FilamentVoight::config()->getLockfilesDisk());
         $basePath = "{$project->project_code}/{$environment->name}";
         $storedPaths = [];
+        $contentParts = [];
 
         foreach ($lockfiles as $file) {
+            $content = $file->getContent();
             $path = "{$basePath}/{$file->getClientOriginalName()}";
-            $disk->put($path, $file->getContent());
+            $disk->put($path, $content);
             $storedPaths[] = $path;
+            $contentParts[$file->getClientOriginalName()] = $content;
         }
 
-        return $storedPaths;
-    }
+        ksort($contentParts);
 
-    /**
-     * @param  array<string, UploadedFile>  $lockfiles
-     */
-    private function computeHash(array $lockfiles): string
-    {
-        $contents = array_map(fn (UploadedFile $file): string => $file->getContent(), $lockfiles);
-
-        return hash('sha256', implode('', $contents));
+        return [
+            'paths' => $storedPaths,
+            'hash' => hash('sha256', implode('', $contentParts)),
+        ];
     }
 }

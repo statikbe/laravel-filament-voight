@@ -10,6 +10,7 @@ use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Statikbe\FilamentVoight\Enums\DependencySyncStatus;
 use Statikbe\FilamentVoight\Enums\PackageType;
 use Statikbe\FilamentVoight\Facades\FilamentVoight;
@@ -99,10 +100,8 @@ class ProcessLockFilesJob implements ShouldQueue
      */
     private function findCompanionFile(string $lockfilePath, string $companionFilename, Filesystem $disk): ?string
     {
-        $directory = dirname($lockfilePath);
-        $companionPath = $directory . '/' . $companionFilename;
+        $companionPath = dirname($lockfilePath) . '/' . $companionFilename;
 
-        // Check if it was uploaded alongside the lockfile
         if (in_array($companionPath, $this->sync->lockfile_paths ?? [], true)) {
             return $disk->get($companionPath);
         }
@@ -119,37 +118,72 @@ class ProcessLockFilesJob implements ShouldQueue
 
         EnvironmentPackage::where('environment_id', $environmentId)->delete();
 
-        $packageModels = [];
+        $packageModels = $this->resolvePackageModels($parsedPackages);
+        $dependedBy = $this->buildReverseDependencyMap($parsedPackages);
 
-        foreach ($parsedPackages as $parsed) {
-            $package = Package::firstOrCreate(
-                ['name' => $parsed['name'], 'type' => $parsed['type']],
-            );
-            $packageModels[$parsed['name']] = $package;
-        }
+        $rows = [];
+        $now = now();
 
         foreach ($parsedPackages as $parsed) {
             $package = $packageModels[$parsed['name']];
+            $parentName = ! $parsed['is_direct'] ? ($dependedBy[$parsed['name']] ?? null) : null;
 
-            $parentPackageId = null;
-            if (! $parsed['is_direct']) {
-                foreach ($parsedPackages as $potentialParent) {
-                    if (in_array($parsed['name'], $potentialParent['require'], true)) {
-                        $parentPackageId = $packageModels[$potentialParent['name']]->id ?? null;
-
-                        break;
-                    }
-                }
-            }
-
-            EnvironmentPackage::create([
+            $rows[] = [
+                'id' => Str::ulid()->toBase32(),
                 'environment_id' => $environmentId,
                 'package_id' => $package->id,
                 'version' => $parsed['version'],
                 'is_direct' => $parsed['is_direct'],
                 'is_dev' => $parsed['is_dev'],
-                'parent_package_id' => $parentPackageId,
-            ]);
+                'parent_package_id' => $parentName ? ($packageModels[$parentName]->id ?? null) : null,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ];
         }
+
+        foreach (array_chunk($rows, 500) as $chunk) {
+            EnvironmentPackage::insert($chunk);
+        }
+    }
+
+    /**
+     * @param  array<int, array{name: string, version: string, type: PackageType, is_direct: bool, is_dev: bool, require: array<string>}>  $parsedPackages
+     * @return array<string, Package>
+     */
+    private function resolvePackageModels(array $parsedPackages): array
+    {
+        $uniquePackages = [];
+        foreach ($parsedPackages as $parsed) {
+            $uniquePackages[$parsed['name']] ??= $parsed['type'];
+        }
+
+        $existing = Package::whereIn('name', array_keys($uniquePackages))
+            ->get()
+            ->keyBy('name');
+
+        foreach ($uniquePackages as $name => $type) {
+            if (! $existing->has($name)) {
+                $existing[$name] = Package::create(['name' => $name, 'type' => $type]);
+            }
+        }
+
+        return $existing->all();
+    }
+
+    /**
+     * @param  array<int, array{name: string, version: string, type: PackageType, is_direct: bool, is_dev: bool, require: array<string>}>  $parsedPackages
+     * @return array<string, string>
+     */
+    private function buildReverseDependencyMap(array $parsedPackages): array
+    {
+        $dependedBy = [];
+
+        foreach ($parsedPackages as $parsed) {
+            foreach ($parsed['require'] as $requiredName) {
+                $dependedBy[$requiredName] ??= $parsed['name'];
+            }
+        }
+
+        return $dependedBy;
     }
 }

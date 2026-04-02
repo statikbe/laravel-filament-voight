@@ -4,6 +4,7 @@ namespace Statikbe\FilamentVoight\Enums;
 
 enum DependencySyncStatus: string
 {
+    use Concerns\HasOptions;
     case Pending = 'pending';
     case Processing = 'processing';
     case Completed = 'completed';

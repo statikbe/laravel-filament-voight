@@ -11,7 +11,7 @@ use Statikbe\FilamentVoight\Resources\TeamResource;
 
 class FilamentVoightPlugin implements Plugin
 {
-    const string ID = 'laravel-filament-voight';
+    const string ID = 'filament-voight';
 
     public function getId(): string
     {

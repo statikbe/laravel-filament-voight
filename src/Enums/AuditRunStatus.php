@@ -4,6 +4,7 @@ namespace Statikbe\FilamentVoight\Enums;
 
 enum AuditRunStatus: string
 {
+    use Concerns\HasOptions;
     case Pending = 'pending';
     case Running = 'running';
     case Completed = 'completed';

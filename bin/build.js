@@ -46,7 +46,7 @@ const defaultOptions = {
 compile({
     ...defaultOptions,
     entryPoints: ['./resources/js/index.js'],
-    outfile: './resources/dist/laravel-filament-voight.js',
+    outfile: './resources/dist/filament-voight.js',
 }).then(() => {
-    console.log(`Build completed for laravel-filament-voight.js`)
+    console.log(`Build completed for filament-voight.js`)
 })

@@ -6,7 +6,7 @@ use Illuminate\Console\Command;
 
 class FilamentVoightCommand extends Command
 {
-    public $signature = 'laravel-filament-voight';
+    public $signature = 'filament-voight';
 
     public $description = 'Filament Voight base command';
 

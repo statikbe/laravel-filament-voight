@@ -4,6 +4,7 @@ namespace Statikbe\FilamentVoight\Enums;
 
 enum AlertChannel: string
 {
+    use Concerns\HasOptions;
     case Email = 'email';
     case Slack = 'slack';
 

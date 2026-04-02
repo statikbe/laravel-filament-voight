@@ -21,7 +21,7 @@ class FilamentVoightPanelProvider extends PanelProvider
     {
         return $panel
             ->id('voight')
-            ->path(FilamentVoight::config()->getPanelPath())
+            ->path(app(FilamentVoightConfig::class)->getPanelPath())
             ->login()
             ->brandName(voightTrans('panel.brand_name'))
             ->plugin(FilamentVoightPlugin::make())

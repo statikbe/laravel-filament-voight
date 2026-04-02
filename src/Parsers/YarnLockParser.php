@@ -15,7 +15,6 @@ class YarnLockParser
     {
         $blocks = $this->parseBlocks($content);
         [$directDeps, $directDevDeps] = $this->parsePackageJson($packageJsonContent);
-        $hasPackageJson = $packageJsonContent !== null;
 
         $packages = [];
 
@@ -26,12 +25,12 @@ class YarnLockParser
                 continue;
             }
 
-            $isDirect = $hasPackageJson
-                ? in_array($name, $directDeps) || in_array($name, $directDevDeps)
+            $isDirect = $packageJsonContent !== null
+                ? isset($directDeps[$name]) || isset($directDevDeps[$name])
                 : true;
 
-            $isDev = $hasPackageJson
-                ? in_array($name, $directDevDeps)
+            $isDev = $packageJsonContent !== null
+                ? isset($directDevDeps[$name])
                 : false;
 
             $packages[] = [
@@ -48,7 +47,7 @@ class YarnLockParser
     }
 
     /**
-     * @return array{0: array<string>, 1: array<string>}
+     * @return array{0: array<string, true>, 1: array<string, true>}
      */
     private function parsePackageJson(?string $packageJsonContent): array
     {
@@ -63,8 +62,8 @@ class YarnLockParser
         }
 
         return [
-            array_keys($packageJson['dependencies'] ?? []),
-            array_keys($packageJson['devDependencies'] ?? []),
+            array_flip(array_keys($packageJson['dependencies'] ?? [])),
+            array_flip(array_keys($packageJson['devDependencies'] ?? [])),
         ];
     }
 

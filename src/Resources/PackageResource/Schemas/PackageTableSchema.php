@@ -37,7 +37,7 @@ class PackageTableSchema
             ->filters([
                 SelectFilter::make('type')
                     ->label(voightTrans('models.package.fields.type'))
-                    ->options(collect(PackageType::cases())->mapWithKeys(fn (PackageType $case) => [$case->value => $case->label()])),
+                    ->options(PackageType::options()),
             ]);
     }
 }
