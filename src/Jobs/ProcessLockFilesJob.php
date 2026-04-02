@@ -48,6 +48,8 @@ class ProcessLockFilesJob implements ShouldQueue
             ]);
 
             $this->sync->environment->update(['scanned_at' => now()]);
+
+            RunOsvScanJob::dispatch($this->sync->environment);
         } catch (\Throwable $e) {
             $this->sync->update([
                 'status' => DependencySyncStatus::Failed,

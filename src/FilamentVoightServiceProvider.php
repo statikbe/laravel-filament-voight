@@ -6,6 +6,7 @@ use Filament\Support\Assets\Asset;
 use Filament\Support\Facades\FilamentAsset;
 use Filament\Support\Facades\FilamentIcon;
 use Illuminate\Database\Eloquent\Relations\Relation;
+use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Filesystem\Filesystem;
 use Livewire\Features\SupportTesting\Testable;
 use Spatie\LaravelPackageTools\Commands\InstallCommand;
@@ -78,6 +79,10 @@ class FilamentVoightServiceProvider extends PackageServiceProvider
         }
 
         Testable::mixin(new TestsFilamentVoight);
+
+        $this->callAfterResolving(Schedule::class, function (Schedule $schedule) {
+            $schedule->command('voight:run-osv-scan')->daily();
+        });
     }
 
     protected function getAssetPackageName(): ?string
@@ -102,6 +107,7 @@ class FilamentVoightServiceProvider extends PackageServiceProvider
             FilamentVoightCommand::class,
             Commands\SyncLockFileCommand::class,
             Commands\CreateProjectTokenCommand::class,
+            Commands\RunOsvScanCommand::class,
         ];
     }
 
