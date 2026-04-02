@@ -17,6 +17,7 @@ use Statikbe\FilamentVoight\Models\EnvironmentPackage;
 use Statikbe\FilamentVoight\Models\Package;
 use Statikbe\FilamentVoight\Parsers\ComposerLockParser;
 use Statikbe\FilamentVoight\Parsers\PackageLockParser;
+use Statikbe\FilamentVoight\Parsers\YarnLockParser;
 
 class ProcessLockFilesJob implements ShouldQueue
 {
@@ -77,6 +78,7 @@ class ProcessLockFilesJob implements ShouldQueue
             $parsed = match ($filename) {
                 'composer.lock' => (new ComposerLockParser)->parse($content),
                 'package-lock.json' => (new PackageLockParser)->parse($content),
+                'yarn.lock' => (new YarnLockParser)->parse($content),
                 default => [],
             };
 
