@@ -9,6 +9,7 @@ use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Statikbe\FilamentVoight\Enums\DependencySyncStatus;
@@ -17,6 +18,7 @@ use Statikbe\FilamentVoight\Facades\FilamentVoight;
 use Statikbe\FilamentVoight\Models\DependencySync;
 use Statikbe\FilamentVoight\Models\EnvironmentPackage;
 use Statikbe\FilamentVoight\Models\Package;
+use RuntimeException;
 use Statikbe\FilamentVoight\Parsers\ComposerLockParser;
 use Statikbe\FilamentVoight\Parsers\PackageLockParser;
 use Statikbe\FilamentVoight\Parsers\YarnLockParser;
@@ -28,16 +30,40 @@ class ProcessLockFilesJob implements ShouldQueue
     use Queueable;
     use SerializesModels;
 
+    public int $tries = 3;
+
+    public int $timeout = 120;
+
+    /** @var array<int> */
+    public array $backoff = [10, 60, 180];
+
     public function __construct(
         public DependencySync $sync,
     ) {}
 
     public function handle(): void
     {
+        if (empty($this->sync->lockfile_paths)) {
+            $this->fail(new RuntimeException("DependencySync {$this->sync->id} has no lockfile paths"));
+
+            return;
+        }
+
         $this->sync->update(['status' => DependencySyncStatus::Processing]);
+
+        Log::info('[Voight] Lock file processing started', [
+            'sync' => $this->sync->id,
+            'environment' => $this->sync->environment_id,
+            'lockfiles' => $this->sync->lockfile_paths,
+        ]);
 
         try {
             $parsedPackages = $this->parseLockFiles();
+
+            Log::info('[Voight] Parsed lock files', [
+                'sync' => $this->sync->id,
+                'package_count' => count($parsedPackages),
+            ]);
 
             DB::transaction(function () use ($parsedPackages) {
                 $this->syncPackages($parsedPackages);
@@ -51,11 +77,23 @@ class ProcessLockFilesJob implements ShouldQueue
 
             $this->sync->environment->update(['scanned_at' => now()]);
 
+            Log::info('[Voight] Lock file processing completed', [
+                'sync' => $this->sync->id,
+                'package_count' => count($parsedPackages),
+            ]);
+
             RunOsvScanJob::dispatch($this->sync->environment);
         } catch (\Throwable $e) {
+            Log::error('[Voight] Lock file processing failed', [
+                'sync' => $this->sync->id,
+                'environment' => $this->sync->environment_id,
+                'error' => $e->getMessage(),
+                'attempt' => $this->attempts(),
+            ]);
+
             $this->sync->update([
                 'status' => DependencySyncStatus::Failed,
-                'error_message' => $e->getMessage(),
+                'error_message' => mb_substr($e->getMessage(), 0, 500),
             ]);
 
             throw $e;
@@ -74,6 +112,11 @@ class ProcessLockFilesJob implements ShouldQueue
             $content = $disk->get($path);
 
             if (! $content) {
+                Log::warning('[Voight] Lockfile not found on disk, skipping', [
+                    'sync' => $this->sync->id,
+                    'path' => $path,
+                ]);
+
                 continue;
             }
 
@@ -88,6 +131,12 @@ class ProcessLockFilesJob implements ShouldQueue
                 ),
                 default => [],
             };
+
+            Log::debug('[Voight] Parsed lockfile', [
+                'sync' => $this->sync->id,
+                'file' => $filename,
+                'packages_found' => count($parsed),
+            ]);
 
             $packages = array_merge($packages, $parsed);
         }

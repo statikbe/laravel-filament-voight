@@ -9,6 +9,7 @@ use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use RuntimeException;
 use Statikbe\FilamentVoight\Enums\AuditRunStatus;
@@ -31,6 +32,13 @@ class RunOsvScanJob implements ShouldQueue
     use Queueable;
     use SerializesModels;
 
+    public int $tries = 3;
+
+    public int $timeout = 300;
+
+    /** @var array<int> */
+    public array $backoff = [30, 120, 300];
+
     public function __construct(
         public Environment $environment,
     ) {}
@@ -42,6 +50,10 @@ class RunOsvScanJob implements ShouldQueue
         $this->scannerUrl = FilamentVoight::config()->getScannerUrl();
 
         if (! $this->scannerUrl) {
+            $this->fail(new RuntimeException(
+                'OSV scanner URL is not configured. Set VOIGHT_SCANNER_URL in your environment.'
+            ));
+
             return;
         }
 
@@ -51,12 +63,21 @@ class RunOsvScanJob implements ShouldQueue
             'started_at' => now(),
         ]);
 
+        Log::info('[Voight] OSV scan started', [
+            'audit_run' => $auditRun->id,
+            'environment' => $this->environment->id,
+        ]);
+
         try {
             $lockfilePaths = $this->resolveLockfilePaths();
 
             if (empty($lockfilePaths)) {
+                $this->fail(new RuntimeException(
+                    "No completed dependency sync found for environment '{$this->environment->name}'. Run a lock file sync first."
+                ));
+
                 $auditRun->update([
-                    'status' => AuditRunStatus::Completed,
+                    'status' => AuditRunStatus::Failed,
                     'completed_at' => now(),
                 ]);
 
@@ -70,7 +91,19 @@ class RunOsvScanJob implements ShouldQueue
                 'status' => AuditRunStatus::Completed,
                 'completed_at' => now(),
             ]);
+
+            Log::info('[Voight] OSV scan completed', [
+                'audit_run' => $auditRun->id,
+                'environment' => $this->environment->id,
+            ]);
         } catch (\Throwable $e) {
+            Log::error('[Voight] OSV scan failed', [
+                'audit_run' => $auditRun->id,
+                'environment' => $this->environment->id,
+                'error' => $e->getMessage(),
+                'attempt' => $this->attempts(),
+            ]);
+
             $auditRun->update([
                 'status' => AuditRunStatus::Failed,
                 'completed_at' => now(),
@@ -107,18 +140,48 @@ class RunOsvScanJob implements ShouldQueue
         $disk = Storage::disk(FilamentVoight::config()->getLockfilesDisk());
         $project = $this->environment->project;
 
-        $request = Http::withToken(FilamentVoight::config()->getScannerToken() ?? '');
+        $request = Http::timeout(120)
+            ->connectTimeout(10)
+            ->withToken(FilamentVoight::config()->getScannerToken() ?? '');
+
+        $scannableFiles = [
+            'composer.lock',
+            'package-lock.json',
+            'yarn.lock',
+            'pnpm-lock.yaml',
+        ];
+
+        $attachedFiles = [];
 
         foreach ($lockfilePaths as $path) {
-            $content = $disk->get($path);
+            $filename = basename($path);
 
-            if (! $content) {
+            if (! in_array($filename, $scannableFiles, true)) {
                 continue;
             }
 
-            $filename = basename($path);
+            $content = $disk->get($path);
+
+            if (! $content) {
+                Log::warning('[Voight] Lockfile not found on disk, skipping', ['path' => $path]);
+
+                continue;
+            }
+
             $request = $request->attach($filename, $content, $filename);
+            $attachedFiles[] = $filename;
         }
+
+        if ($attachedFiles === []) {
+            throw new RuntimeException('No lockfile contents could be read from disk');
+        }
+
+        Log::debug('[Voight] Calling OSV scanner', [
+            'url' => $this->scannerUrl,
+            'files' => $attachedFiles,
+            'project' => $project->project_code,
+            'environment' => $this->environment->name,
+        ]);
 
         $response = $request->post($this->scannerUrl, [
             'project_code' => $project->project_code,
@@ -126,7 +189,9 @@ class RunOsvScanJob implements ShouldQueue
         ]);
 
         if (! $response->successful()) {
-            throw new RuntimeException("OSV scanner returned HTTP {$response->status()}: {$response->body()}");
+            throw new RuntimeException(
+                "OSV scanner returned HTTP {$response->status()}: " . mb_substr($response->body(), 0, 500)
+            );
         }
 
         return $response->json();
