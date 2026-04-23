@@ -2,6 +2,7 @@
 
 namespace Statikbe\FilamentVoight\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -54,5 +55,19 @@ class AuditRun extends Model
     public function auditFindings(): HasMany
     {
         return $this->hasMany(AuditFinding::class);
+    }
+
+    /**
+     * Subquery selecting, for each environment, the id of its most recent AuditRun (by started_at).
+     *
+     * Intended for use in `whereIn('audit_run_id', AuditRun::latestIdsPerEnvironment())`.
+     *
+     * @return Builder<AuditRun>
+     */
+    public static function latestIdsPerEnvironment(): Builder
+    {
+        return self::query()
+            ->select('id')
+            ->whereRaw('started_at = (select max(started_at) from voight_audit_runs a2 where a2.environment_id = voight_audit_runs.environment_id)');
     }
 }

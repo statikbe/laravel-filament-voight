@@ -85,12 +85,6 @@ class PackageInfolistSchema
     private static function latestFindingsQuery(Package $package): HasMany
     {
         return $package->findings()
-            ->whereIn('audit_run_id', AuditRun::query()
-                ->selectRaw('id')
-                ->whereRaw('started_at = (
-                    select max(started_at)
-                    from voight_audit_runs a2
-                    where a2.environment_id = voight_audit_runs.environment_id
-                )'));
+            ->whereIn('audit_run_id', AuditRun::latestIdsPerEnvironment());
     }
 }

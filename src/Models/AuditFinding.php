@@ -50,4 +50,5 @@ class AuditFinding extends Model
     {
         return $this->belongsTo(Vulnerability::class);
     }
+
 }

@@ -12,6 +12,7 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Statikbe\FilamentVoight\Enums\Severity;
+use Statikbe\FilamentVoight\Models\AuditRun;
 
 class ActiveFindingsRelationManager extends RelationManager
 {
@@ -71,12 +72,7 @@ class ActiveFindingsRelationManager extends RelationManager
                     ->falseLabel(voightTrans('models.package.view.filters.latest_only_false'))
                     ->default(true)
                     ->queries(
-                        true: fn (Builder $q) => $q->whereHas(
-                            'auditRun',
-                            fn (Builder $ar) => $ar->whereRaw(
-                                'started_at = (select max(a2.started_at) from voight_audit_runs a2 where a2.environment_id = voight_audit_runs.environment_id)'
-                            ),
-                        ),
+                        true: fn (Builder $q) => $q->whereIn('audit_run_id', AuditRun::latestIdsPerEnvironment()),
                         false: fn (Builder $q) => $q,
                         blank: fn (Builder $q) => $q,
                     ),
