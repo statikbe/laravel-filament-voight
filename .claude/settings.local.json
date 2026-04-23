@@ -21,7 +21,8 @@
       "Bash(/bin/sh -c 'cd ../voight && ddev exec php artisan boost:mcp')",
       "Bash(php:*)",
       "Bash(composer analyse:*)",
-      "Bash(grep -E '^\\\\s*\\(--|Line|[0-9]+|$\\)')"
+      "Bash(grep -E '^\\\\s*\\(--|Line|[0-9]+|$\\)')",
+      "Bash(./vendor/bin/phpstan analyse *)"
     ]
   },
   "enableAllProjectMcpServers": true,

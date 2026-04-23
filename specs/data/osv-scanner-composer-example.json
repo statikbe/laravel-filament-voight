@@ -1,0 +1,1030 @@
+{
+    "project_code": "test-project",
+    "environment": "local",
+    "summary": {
+        "vulnerable": true,
+        "total_vulnerability_count": 4,
+        "has_scan_errors": false,
+        "files_scanned": [
+            "composer.lock"
+        ]
+    },
+    "results": {
+        "composer.lock": {
+            "status": "vulnerable",
+            "vulnerability_count": 4,
+            "scan": {
+                "results": [
+                    {
+                        "source": {
+                            "path": "/var/folders/wk/vlkhtw1j75x1n17tj8rlc0zh0000gn/T/osv-r9zfII/composer.lock",
+                            "type": "lockfile"
+                        },
+                        "packages": [
+                            {
+                                "package": {
+                                    "name": "league/commonmark",
+                                    "version": "dev-main",
+                                    "ecosystem": "Packagist",
+                                    "commit": "17df023b588dbffdca30992e589ce7941014cad6"
+                                },
+                                "groups": [
+                                    {
+                                        "ids": [
+                                            "GHSA-3v43-877x-qgmq"
+                                        ],
+                                        "aliases": [
+                                            "CVE-2019-10010",
+                                            "GHSA-3v43-877x-qgmq"
+                                        ],
+                                        "max_severity": "6.1"
+                                    },
+                                    {
+                                        "ids": [
+                                            "GHSA-c2pc-g5qf-rfrf"
+                                        ],
+                                        "aliases": [
+                                            "GHSA-c2pc-g5qf-rfrf"
+                                        ],
+                                        "max_severity": "7.5"
+                                    }
+                                ],
+                                "vulnerabilities": [
+                                    {
+                                        "affected": [
+                                            {
+                                                "database_specific": {
+                                                    "source": "https://github.com/github/advisory-database/blob/main/advisories/github-reviewed/2019/09/GHSA-3v43-877x-qgmq/GHSA-3v43-877x-qgmq.json"
+                                                },
+                                                "package": {
+                                                    "ecosystem": "Packagist",
+                                                    "name": "league/commonmark",
+                                                    "purl": "pkg:composer/league/commonmark"
+                                                },
+                                                "ranges": [
+                                                    {
+                                                        "events": [
+                                                            {
+                                                                "introduced": "0"
+                                                            },
+                                                            {
+                                                                "fixed": "0.18.3"
+                                                            }
+                                                        ],
+                                                        "type": "ECOSYSTEM"
+                                                    }
+                                                ],
+                                                "versions": [
+                                                    "0.1.0",
+                                                    "0.1.1",
+                                                    "0.1.2",
+                                                    "0.10.0",
+                                                    "0.11.0",
+                                                    "0.11.1",
+                                                    "0.11.2",
+                                                    "0.11.3",
+                                                    "0.12.0",
+                                                    "0.13.0",
+                                                    "0.13.1",
+                                                    "0.13.2",
+                                                    "0.13.3",
+                                                    "0.13.4",
+                                                    "0.14.0",
+                                                    "0.15.0",
+                                                    "0.15.1",
+                                                    "0.15.2",
+                                                    "0.15.3",
+                                                    "0.15.4",
+                                                    "0.15.5",
+                                                    "0.15.6",
+                                                    "0.15.7",
+                                                    "0.16.0",
+                                                    "0.17.0",
+                                                    "0.17.1",
+                                                    "0.17.2",
+                                                    "0.17.3",
+                                                    "0.17.4",
+                                                    "0.17.5",
+                                                    "0.18.0",
+                                                    "0.18.1",
+                                                    "0.18.2",
+                                                    "0.2.0",
+                                                    "0.2.1",
+                                                    "0.3.0",
+                                                    "0.4.0",
+                                                    "0.5.0",
+                                                    "0.5.1",
+                                                    "0.6.0",
+                                                    "0.6.1",
+                                                    "0.7.0",
+                                                    "0.7.1",
+                                                    "0.7.2",
+                                                    "0.8.0",
+                                                    "0.9.0"
+                                                ]
+                                            }
+                                        ],
+                                        "aliases": [
+                                            "CVE-2019-10010"
+                                        ],
+                                        "database_specific": {
+                                            "cwe_ids": [
+                                                "CWE-79"
+                                            ],
+                                            "github_reviewed": true,
+                                            "github_reviewed_at": "2020-06-16T20:56:22Z",
+                                            "nvd_published_at": null,
+                                            "severity": "MODERATE"
+                                        },
+                                        "details": "## CVE-2019-10010\n\n### Impact\n\nIn `league/commonmark` 0.18.2 and below, malicious users can insert double-encoded HTML entities into their Markdown like this:\n\n```md\n[XSS](javascript&amp;colon;alert%28&#039;XSS&#039;%29)\n```\n\nThis library would (correctly) unescape the `&amp;` entity to `&` during the parsing step.  However, **the renderer step would fail to properly re-escape the resulting `&colon;` string**, thus producing the following malicious HTML output:\n\n```html\n<p><a href=\"javascript&colon;alert('XSS')\">XSS</a></p>\n```\n\nBrowsers would interpret `&colon;` as a `:` character and allow the JS to be executed when the link is clicked.\n\nThis vulnerability was present in the upstream library this project was forked from and therefore exists in all prior versions of `league/commonmark`.\n\n### Solution\n\nThe new [0.18.3](https://github.com/thephpleague/commonmark/releases/tag/0.18.3) release mirrors [the fix made upstream](https://github.com/commonmark/commonmark.js/commit/c89b35c5fc99bdf1d2181f7f0c9fcb8a1abc27c8) - we no longer attempt to preserve entities when rendering HTML attributes like `href`, `src`, `title`, etc.\n\nThe `$preserveEntities` parameter of `Xml::escape()` is therefore no longer used internally, so it has been deprecated and marked for removal in the next major release (0.19.0).\n\n### Credits\n\n - Mohit Fawaz for identifying the issue\n - Sebastiaan Knijnenburg and Ross Tuck for responsibly disclosing/relaying the issue\n - John MacFarlane for investigating it and implementing the upstream fix we mirrored here\n\n### References\n\n - https://nvd.nist.gov/vuln/detail/CVE-2019-10010\n - https://github.com/thephpleague/commonmark/releases/tag/0.18.3\n - https://github.com/thephpleague/commonmark/issues/353\n- https://github.com/FriendsOfPHP/security-advisories/blob/master/league/commonmark/CVE-2019-10010.yaml",
+                                        "id": "GHSA-3v43-877x-qgmq",
+                                        "modified": "2024-02-16T08:15:08.451853Z",
+                                        "published": "2019-09-17T22:47:47Z",
+                                        "references": [
+                                            {
+                                                "type": "WEB",
+                                                "url": "https://github.com/thephpleague/commonmark/security/advisories/GHSA-3v43-877x-qgmq"
+                                            },
+                                            {
+                                                "type": "ADVISORY",
+                                                "url": "https://nvd.nist.gov/vuln/detail/CVE-2019-10010"
+                                            },
+                                            {
+                                                "type": "WEB",
+                                                "url": "https://github.com/thephpleague/commonmark/issues/353"
+                                            },
+                                            {
+                                                "type": "WEB",
+                                                "url": "https://github.com/FriendsOfPHP/security-advisories/blob/master/league/commonmark/CVE-2019-10010.yaml"
+                                            },
+                                            {
+                                                "type": "ADVISORY",
+                                                "url": "https://github.com/advisories/GHSA-3v43-877x-qgmq"
+                                            },
+                                            {
+                                                "type": "WEB",
+                                                "url": "https://github.com/thephpleague/commonmark"
+                                            },
+                                            {
+                                                "type": "WEB",
+                                                "url": "https://github.com/thephpleague/commonmark/releases/tag/0.18.3"
+                                            }
+                                        ],
+                                        "schema_version": "1.7.3",
+                                        "severity": [
+                                            {
+                                                "score": "CVSS:3.0/AV:N/AC:L/PR:N/UI:R/S:C/C:L/I:L/A:N",
+                                                "type": "CVSS_V3"
+                                            }
+                                        ],
+                                        "summary": "Moderate severity vulnerability that affects league/commonmark"
+                                    },
+                                    {
+                                        "affected": [
+                                            {
+                                                "database_specific": {
+                                                    "source": "https://github.com/github/advisory-database/blob/main/advisories/github-reviewed/2024/12/GHSA-c2pc-g5qf-rfrf/GHSA-c2pc-g5qf-rfrf.json"
+                                                },
+                                                "package": {
+                                                    "ecosystem": "Packagist",
+                                                    "name": "league/commonmark",
+                                                    "purl": "pkg:composer/league/commonmark"
+                                                },
+                                                "ranges": [
+                                                    {
+                                                        "events": [
+                                                            {
+                                                                "introduced": "0"
+                                                            },
+                                                            {
+                                                                "fixed": "2.6.0"
+                                                            }
+                                                        ],
+                                                        "type": "ECOSYSTEM"
+                                                    }
+                                                ],
+                                                "versions": [
+                                                    "0.1.0",
+                                                    "0.1.1",
+                                                    "0.1.2",
+                                                    "0.10.0",
+                                                    "0.11.0",
+                                                    "0.11.1",
+                                                    "0.11.2",
+                                                    "0.11.3",
+                                                    "0.12.0",
+                                                    "0.13.0",
+                                                    "0.13.1",
+                                                    "0.13.2",
+                                                    "0.13.3",
+                                                    "0.13.4",
+                                                    "0.14.0",
+                                                    "0.15.0",
+                                                    "0.15.1",
+                                                    "0.15.2",
+                                                    "0.15.3",
+                                                    "0.15.4",
+                                                    "0.15.5",
+                                                    "0.15.6",
+                                                    "0.15.7",
+                                                    "0.16.0",
+                                                    "0.17.0",
+                                                    "0.17.1",
+                                                    "0.17.2",
+                                                    "0.17.3",
+                                                    "0.17.4",
+                                                    "0.17.5",
+                                                    "0.18.0",
+                                                    "0.18.1",
+                                                    "0.18.2",
+                                                    "0.18.3",
+                                                    "0.18.4",
+                                                    "0.18.5",
+                                                    "0.19.0",
+                                                    "0.19.1",
+                                                    "0.19.2",
+                                                    "0.19.3",
+                                                    "0.2.0",
+                                                    "0.2.1",
+                                                    "0.3.0",
+                                                    "0.4.0",
+                                                    "0.5.0",
+                                                    "0.5.1",
+                                                    "0.6.0",
+                                                    "0.6.1",
+                                                    "0.7.0",
+                                                    "0.7.1",
+                                                    "0.7.2",
+                                                    "0.8.0",
+                                                    "0.9.0",
+                                                    "1.0.0",
+                                                    "1.0.0-beta1",
+                                                    "1.0.0-beta2",
+                                                    "1.0.0-beta3",
+                                                    "1.0.0-beta4",
+                                                    "1.0.0-rc1",
+                                                    "1.1.0",
+                                                    "1.1.1",
+                                                    "1.1.2",
+                                                    "1.1.3",
+                                                    "1.2.0",
+                                                    "1.2.1",
+                                                    "1.2.2",
+                                                    "1.3.0",
+                                                    "1.3.1",
+                                                    "1.3.2",
+                                                    "1.3.3",
+                                                    "1.3.4",
+                                                    "1.4.0",
+                                                    "1.4.1",
+                                                    "1.4.2",
+                                                    "1.4.3",
+                                                    "1.5.0",
+                                                    "1.5.1",
+                                                    "1.5.2",
+                                                    "1.5.3",
+                                                    "1.5.4",
+                                                    "1.5.5",
+                                                    "1.5.6",
+                                                    "1.5.7",
+                                                    "1.5.8",
+                                                    "1.6.0",
+                                                    "1.6.1",
+                                                    "1.6.2",
+                                                    "1.6.3",
+                                                    "1.6.4",
+                                                    "1.6.5",
+                                                    "1.6.6",
+                                                    "1.6.7",
+                                                    "2.0.0",
+                                                    "2.0.0-beta1",
+                                                    "2.0.0-beta2",
+                                                    "2.0.0-beta3",
+                                                    "2.0.0-rc1",
+                                                    "2.0.0-rc2",
+                                                    "2.0.1",
+                                                    "2.0.2",
+                                                    "2.0.3",
+                                                    "2.0.4",
+                                                    "2.1.0",
+                                                    "2.1.1",
+                                                    "2.1.2",
+                                                    "2.1.3",
+                                                    "2.2.0",
+                                                    "2.2.1",
+                                                    "2.2.2",
+                                                    "2.2.3",
+                                                    "2.2.4",
+                                                    "2.2.5",
+                                                    "2.3.0",
+                                                    "2.3.1",
+                                                    "2.3.2",
+                                                    "2.3.3",
+                                                    "2.3.4",
+                                                    "2.3.5",
+                                                    "2.3.6",
+                                                    "2.3.7",
+                                                    "2.3.8",
+                                                    "2.3.9",
+                                                    "2.4.0",
+                                                    "2.4.1",
+                                                    "2.4.2",
+                                                    "2.4.3",
+                                                    "2.4.4",
+                                                    "2.5.0",
+                                                    "2.5.1",
+                                                    "2.5.2",
+                                                    "2.5.3"
+                                                ]
+                                            }
+                                        ],
+                                        "database_specific": {
+                                            "cwe_ids": [
+                                                "CWE-407"
+                                            ],
+                                            "github_reviewed": true,
+                                            "github_reviewed_at": "2024-12-09T20:42:07Z",
+                                            "nvd_published_at": null,
+                                            "severity": "HIGH"
+                                        },
+                                        "details": "### Impact\n\nSeveral polynomial time complexity issues in league/commonmark may lead to unbounded resource exhaustion and subsequent denial of service.\n\nMalicious users could trigger that inefficient code with carefully crafted Markdown inputs that are specifically designed to ensure the worst-case performance is reached.  Sending multiple such requests in parallel could tie up all available CPU resources and/or PHP-FPM processes, leading to denial of service for legitimate users.\n\n### Patches\n\nThese vulnerabilities have been patched in version 2.6.0.  All users on older versions are highly encouraged to upgrade as soon as possible.\n\n### Workarounds\n\nIf you cannot upgrade, you may be able to mitigate the issues by:\n\n- Setting very low `memory_limit` and `max_execution_time` PHP configurations to prevent runaway resource usage\n- Implementing rate-limiting, bot protection, or other approaches to reduce the risk of simultaneous bad requests hitting your site\n- Limiting the size of inputs fed into this library (specifically the max length of each line)\n- Limiting the use of this library to trusted users\n\n### References\n\nMost of these issues were discovered in other Markdown parsers. You can read more about them here:\n\n* https://github.com/commonmark/commonmark.js/issues/129\n* https://github.com/commonmark/commonmark.js/issues/157\n* https://github.com/commonmark/commonmark.js/issues/172\n* https://github.com/github/cmark-gfm/security/advisories/GHSA-r572-jvj2-3m8p\n* https://github.com/github/cmark-gfm/security/advisories/GHSA-24f7-9frr-5h2r\n* https://github.com/github/cmark-gfm/security/advisories/GHSA-29g3-96g3-jg6c\n* https://github.com/github/cmark-gfm/security/advisories/GHSA-r8vr-c48j-fcc5\n* https://github.com/github/cmark-gfm/security/advisories/GHSA-w4qg-3vf7-m9x5\n* https://github.com/github/cmark-gfm/security/advisories/GHSA-66g8-4hjf-77xh\n\nFor general information about this type of issue:\n\n* https://en.wikipedia.org/wiki/Time_complexity\n* https://cwe.mitre.org/data/definitions/407.html\n",
+                                        "id": "GHSA-c2pc-g5qf-rfrf",
+                                        "modified": "2024-12-09T20:51:59.109747Z",
+                                        "published": "2024-12-09T20:42:07Z",
+                                        "references": [
+                                            {
+                                                "type": "WEB",
+                                                "url": "https://github.com/github/cmark-gfm/security/advisories/GHSA-24f7-9frr-5h2r"
+                                            },
+                                            {
+                                                "type": "WEB",
+                                                "url": "https://github.com/github/cmark-gfm/security/advisories/GHSA-29g3-96g3-jg6c"
+                                            },
+                                            {
+                                                "type": "WEB",
+                                                "url": "https://github.com/github/cmark-gfm/security/advisories/GHSA-66g8-4hjf-77xh"
+                                            },
+                                            {
+                                                "type": "WEB",
+                                                "url": "https://github.com/github/cmark-gfm/security/advisories/GHSA-r572-jvj2-3m8p"
+                                            },
+                                            {
+                                                "type": "WEB",
+                                                "url": "https://github.com/github/cmark-gfm/security/advisories/GHSA-r8vr-c48j-fcc5"
+                                            },
+                                            {
+                                                "type": "WEB",
+                                                "url": "https://github.com/github/cmark-gfm/security/advisories/GHSA-w4qg-3vf7-m9x5"
+                                            },
+                                            {
+                                                "type": "WEB",
+                                                "url": "https://github.com/thephpleague/commonmark/security/advisories/GHSA-c2pc-g5qf-rfrf"
+                                            },
+                                            {
+                                                "type": "WEB",
+                                                "url": "https://github.com/commonmark/commonmark.js/issues/129"
+                                            },
+                                            {
+                                                "type": "WEB",
+                                                "url": "https://github.com/commonmark/commonmark.js/issues/157"
+                                            },
+                                            {
+                                                "type": "WEB",
+                                                "url": "https://github.com/commonmark/commonmark.js/issues/172"
+                                            },
+                                            {
+                                                "type": "PACKAGE",
+                                                "url": "https://github.com/thephpleague/commonmark"
+                                            }
+                                        ],
+                                        "schema_version": "1.7.3",
+                                        "severity": [
+                                            {
+                                                "score": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
+                                                "type": "CVSS_V3"
+                                            }
+                                        ],
+                                        "summary": "league/commonmark's quadratic complexity bugs may lead to a denial of service"
+                                    }
+                                ]
+                            },
+                            {
+                                "package": {
+                                    "name": "nesbot/carbon",
+                                    "version": "dev-master",
+                                    "ecosystem": "Packagist",
+                                    "commit": "4e0ab6a8b454b1df4053ba1027e0619606ce2463"
+                                },
+                                "groups": [
+                                    {
+                                        "ids": [
+                                            "GHSA-j3f9-p6hm-5w6q"
+                                        ],
+                                        "aliases": [
+                                            "CVE-2025-22145",
+                                            "GHSA-j3f9-p6hm-5w6q"
+                                        ],
+                                        "max_severity": "6.3"
+                                    }
+                                ],
+                                "vulnerabilities": [
+                                    {
+                                        "affected": [
+                                            {
+                                                "database_specific": {
+                                                    "source": "https://github.com/github/advisory-database/blob/main/advisories/github-reviewed/2025/01/GHSA-j3f9-p6hm-5w6q/GHSA-j3f9-p6hm-5w6q.json"
+                                                },
+                                                "package": {
+                                                    "ecosystem": "Packagist",
+                                                    "name": "nesbot/carbon",
+                                                    "purl": "pkg:composer/nesbot/carbon"
+                                                },
+                                                "ranges": [
+                                                    {
+                                                        "events": [
+                                                            {
+                                                                "introduced": "3.0.0"
+                                                            },
+                                                            {
+                                                                "fixed": "3.8.4"
+                                                            }
+                                                        ],
+                                                        "type": "ECOSYSTEM"
+                                                    }
+                                                ],
+                                                "versions": [
+                                                    "3.0.0",
+                                                    "3.0.1",
+                                                    "3.0.2",
+                                                    "3.1.0",
+                                                    "3.1.1",
+                                                    "3.2.0",
+                                                    "3.2.1",
+                                                    "3.2.2",
+                                                    "3.2.3",
+                                                    "3.2.4",
+                                                    "3.3.0",
+                                                    "3.3.1",
+                                                    "3.4.0",
+                                                    "3.5.0",
+                                                    "3.6.0",
+                                                    "3.7.0",
+                                                    "3.8.0",
+                                                    "3.8.1",
+                                                    "3.8.2",
+                                                    "3.8.3"
+                                                ]
+                                            },
+                                            {
+                                                "database_specific": {
+                                                    "source": "https://github.com/github/advisory-database/blob/main/advisories/github-reviewed/2025/01/GHSA-j3f9-p6hm-5w6q/GHSA-j3f9-p6hm-5w6q.json"
+                                                },
+                                                "package": {
+                                                    "ecosystem": "Packagist",
+                                                    "name": "nesbot/carbon",
+                                                    "purl": "pkg:composer/nesbot/carbon"
+                                                },
+                                                "ranges": [
+                                                    {
+                                                        "events": [
+                                                            {
+                                                                "introduced": "0"
+                                                            },
+                                                            {
+                                                                "fixed": "2.72.6"
+                                                            }
+                                                        ],
+                                                        "type": "ECOSYSTEM"
+                                                    }
+                                                ],
+                                                "versions": [
+                                                    "1.0.0",
+                                                    "1.0.1",
+                                                    "1.1.0",
+                                                    "1.10.0",
+                                                    "1.11.0",
+                                                    "1.12.0",
+                                                    "1.13.0",
+                                                    "1.14.0",
+                                                    "1.15.0",
+                                                    "1.16.0",
+                                                    "1.17.0",
+                                                    "1.18.0",
+                                                    "1.19.0",
+                                                    "1.2.0",
+                                                    "1.20.0",
+                                                    "1.21.0",
+                                                    "1.22.0",
+                                                    "1.22.1",
+                                                    "1.23.0",
+                                                    "1.24.0",
+                                                    "1.24.1",
+                                                    "1.24.2",
+                                                    "1.25.0",
+                                                    "1.25.1",
+                                                    "1.25.3",
+                                                    "1.26.0",
+                                                    "1.26.1",
+                                                    "1.26.2",
+                                                    "1.26.3",
+                                                    "1.26.4",
+                                                    "1.26.5",
+                                                    "1.26.6",
+                                                    "1.27.0",
+                                                    "1.28.0",
+                                                    "1.29.0",
+                                                    "1.29.1",
+                                                    "1.29.2",
+                                                    "1.3.0",
+                                                    "1.30.0",
+                                                    "1.31.0",
+                                                    "1.31.1",
+                                                    "1.32.0",
+                                                    "1.33.0",
+                                                    "1.34.0",
+                                                    "1.34.1",
+                                                    "1.34.2",
+                                                    "1.34.3",
+                                                    "1.34.4",
+                                                    "1.35.0",
+                                                    "1.35.1",
+                                                    "1.36.0",
+                                                    "1.36.1",
+                                                    "1.36.2",
+                                                    "1.37.0",
+                                                    "1.37.1",
+                                                    "1.38.0",
+                                                    "1.38.1",
+                                                    "1.38.2",
+                                                    "1.38.3",
+                                                    "1.38.4",
+                                                    "1.39.0",
+                                                    "1.39.1",
+                                                    "1.4.0",
+                                                    "1.5.0",
+                                                    "1.6.0",
+                                                    "1.7.0",
+                                                    "1.8.0",
+                                                    "1.9.0",
+                                                    "2.0.0",
+                                                    "2.0.0-beta.1",
+                                                    "2.0.0-beta.2",
+                                                    "2.0.0-beta.3",
+                                                    "2.0.0-beta.4",
+                                                    "2.0.0-beta.5",
+                                                    "2.0.0-beta.6",
+                                                    "2.0.1",
+                                                    "2.1.0",
+                                                    "2.1.1",
+                                                    "2.10.0",
+                                                    "2.10.1",
+                                                    "2.11.0",
+                                                    "2.12.0",
+                                                    "2.13.0",
+                                                    "2.14.0",
+                                                    "2.14.1",
+                                                    "2.14.2",
+                                                    "2.15.0",
+                                                    "2.16.0",
+                                                    "2.16.1",
+                                                    "2.16.2",
+                                                    "2.16.3",
+                                                    "2.17.0",
+                                                    "2.17.1",
+                                                    "2.18.0",
+                                                    "2.19.0",
+                                                    "2.19.1",
+                                                    "2.19.2",
+                                                    "2.2.0",
+                                                    "2.2.1",
+                                                    "2.20.0",
+                                                    "2.21.0",
+                                                    "2.21.1",
+                                                    "2.21.2",
+                                                    "2.21.3",
+                                                    "2.22.0",
+                                                    "2.22.0-beta.1",
+                                                    "2.22.0-beta.2",
+                                                    "2.22.0-beta.3",
+                                                    "2.22.1",
+                                                    "2.22.2",
+                                                    "2.22.3",
+                                                    "2.23.0",
+                                                    "2.23.0-beta.1",
+                                                    "2.23.0-beta.2",
+                                                    "2.23.0-beta.3",
+                                                    "2.23.0-beta.4",
+                                                    "2.23.1",
+                                                    "2.24.0",
+                                                    "2.24.0-beta.1",
+                                                    "2.24.0-beta.2",
+                                                    "2.24.0-beta.3",
+                                                    "2.24.0-beta.4",
+                                                    "2.25.0",
+                                                    "2.25.0-beta.1",
+                                                    "2.25.0-beta.2",
+                                                    "2.25.0-beta.3",
+                                                    "2.25.1",
+                                                    "2.25.2",
+                                                    "2.25.3",
+                                                    "2.26.0",
+                                                    "2.27.0",
+                                                    "2.28.0",
+                                                    "2.28.0-beta.1",
+                                                    "2.29.0",
+                                                    "2.29.1",
+                                                    "2.3.0",
+                                                    "2.3.1",
+                                                    "2.30.0",
+                                                    "2.31.0",
+                                                    "2.32.0",
+                                                    "2.32.1",
+                                                    "2.32.2",
+                                                    "2.33.0",
+                                                    "2.34.0",
+                                                    "2.34.1",
+                                                    "2.34.2",
+                                                    "2.35.0",
+                                                    "2.36.0",
+                                                    "2.36.1",
+                                                    "2.37.0",
+                                                    "2.38.0",
+                                                    "2.39.0",
+                                                    "2.39.1",
+                                                    "2.39.2",
+                                                    "2.4.0",
+                                                    "2.4.1",
+                                                    "2.40.0",
+                                                    "2.40.1",
+                                                    "2.41.0",
+                                                    "2.41.1",
+                                                    "2.41.2",
+                                                    "2.41.3",
+                                                    "2.41.4",
+                                                    "2.41.5",
+                                                    "2.42.0",
+                                                    "2.43.0",
+                                                    "2.44.0",
+                                                    "2.45.0",
+                                                    "2.45.1",
+                                                    "2.46.0",
+                                                    "2.47.0",
+                                                    "2.47.1",
+                                                    "2.48.0",
+                                                    "2.48.1",
+                                                    "2.49.0",
+                                                    "2.5.0",
+                                                    "2.5.1",
+                                                    "2.5.2",
+                                                    "2.5.3",
+                                                    "2.5.4",
+                                                    "2.50.0",
+                                                    "2.51.0",
+                                                    "2.51.1",
+                                                    "2.52.0",
+                                                    "2.53.0",
+                                                    "2.53.1",
+                                                    "2.54.0",
+                                                    "2.55.0",
+                                                    "2.55.1",
+                                                    "2.55.2",
+                                                    "2.56.0",
+                                                    "2.57.0",
+                                                    "2.58.0",
+                                                    "2.59.0",
+                                                    "2.59.1",
+                                                    "2.6.0",
+                                                    "2.6.1",
+                                                    "2.60.0",
+                                                    "2.61.0",
+                                                    "2.62.0",
+                                                    "2.62.1",
+                                                    "2.63.0",
+                                                    "2.64.0",
+                                                    "2.64.1",
+                                                    "2.65.0",
+                                                    "2.66.0",
+                                                    "2.67.0",
+                                                    "2.68.0",
+                                                    "2.68.1",
+                                                    "2.69.0",
+                                                    "2.7.0",
+                                                    "2.70.0",
+                                                    "2.71.0",
+                                                    "2.72.0",
+                                                    "2.72.1",
+                                                    "2.72.2",
+                                                    "2.72.3",
+                                                    "2.72.4",
+                                                    "2.72.5",
+                                                    "2.8.0",
+                                                    "2.9.0",
+                                                    "2.9.1"
+                                                ]
+                                            }
+                                        ],
+                                        "aliases": [
+                                            "CVE-2025-22145"
+                                        ],
+                                        "database_specific": {
+                                            "cwe_ids": [
+                                                "CWE-98"
+                                            ],
+                                            "github_reviewed": true,
+                                            "github_reviewed_at": "2025-01-08T21:03:28Z",
+                                            "nvd_published_at": "2025-01-08T21:15:13Z",
+                                            "severity": "MODERATE"
+                                        },
+                                        "details": "### Impact\nApplication passing unsanitized user input to `Carbon::setLocale` are at risk of arbitrary file include, if the application allows users to upload files with `.php` extension in an folder that allows `include` or `require` to read it, then they are at risk of arbitrary code ran on their servers.\n\n### Patches\n- [3.8.4](https://github.com/briannesbitt/Carbon/releases/tag/3.8.4)\n- [2.72.6](https://github.com/briannesbitt/Carbon/releases/tag/2.72.6)\n\n### Workarounds\nAny of the below actions can be taken to prevent the issue:\n- Validate input before calling `setLocale()`, for instance by forbidding or removing `/` and `\\`\n- Call `setLocale()` only with a locale from a whitelist of supported locales\n- When uploading files, rename them so they cannot have a `.php` extension (this is recommended even if you're not affected by this issue)\n- Prefer storage system that are not local to the application (remote service, or local service ran by another user so the uploaded files actually live outside of the application basedir)\n\n### References\nhttps://en.wikipedia.org/wiki/File_inclusion_vulnerability\n\n### Credits\nThanks to **Szczepan Hołyszewski** who reported the issue and to Tidelift to coordinate the resolution",
+                                        "id": "GHSA-j3f9-p6hm-5w6q",
+                                        "modified": "2025-02-25T18:48:28.814404Z",
+                                        "published": "2025-01-08T21:03:28Z",
+                                        "references": [
+                                            {
+                                                "type": "WEB",
+                                                "url": "https://github.com/CarbonPHP/carbon/security/advisories/GHSA-j3f9-p6hm-5w6q"
+                                            },
+                                            {
+                                                "type": "ADVISORY",
+                                                "url": "https://nvd.nist.gov/vuln/detail/CVE-2025-22145"
+                                            },
+                                            {
+                                                "type": "WEB",
+                                                "url": "https://github.com/briannesbitt/Carbon/commit/129700ed449b1f02d70272d2ac802357c8c30c58"
+                                            },
+                                            {
+                                                "type": "PACKAGE",
+                                                "url": "https://github.com/CarbonPHP/carbon"
+                                            },
+                                            {
+                                                "type": "WEB",
+                                                "url": "https://lists.debian.org/debian-lts-announce/2025/02/msg00032.html"
+                                            }
+                                        ],
+                                        "schema_version": "1.7.3",
+                                        "severity": [
+                                            {
+                                                "score": "CVSS:4.0/AV:N/AC:L/AT:P/PR:N/UI:N/VC:L/VI:L/VA:L/SC:N/SI:N/SA:N",
+                                                "type": "CVSS_V4"
+                                            }
+                                        ],
+                                        "summary": "Carbon has an arbitrary file include via unvalidated input passed to Carbon::setLocale"
+                                    }
+                                ]
+                            },
+                            {
+                                "package": {
+                                    "name": "psy/psysh",
+                                    "version": "dev-main",
+                                    "ecosystem": "Packagist",
+                                    "commit": "c8844fb047da6521ed513e3f427fe847b8ffda8d"
+                                },
+                                "groups": [
+                                    {
+                                        "ids": [
+                                            "GHSA-4486-gxhx-5mg7"
+                                        ],
+                                        "aliases": [
+                                            "CVE-2026-25129",
+                                            "GHSA-4486-gxhx-5mg7"
+                                        ],
+                                        "max_severity": "6.7"
+                                    }
+                                ],
+                                "vulnerabilities": [
+                                    {
+                                        "affected": [
+                                            {
+                                                "database_specific": {
+                                                    "last_known_affected_version_range": "<= 0.12.18",
+                                                    "source": "https://github.com/github/advisory-database/blob/main/advisories/github-reviewed/2026/01/GHSA-4486-gxhx-5mg7/GHSA-4486-gxhx-5mg7.json"
+                                                },
+                                                "package": {
+                                                    "ecosystem": "Packagist",
+                                                    "name": "psy/psysh",
+                                                    "purl": "pkg:composer/psy/psysh"
+                                                },
+                                                "ranges": [
+                                                    {
+                                                        "events": [
+                                                            {
+                                                                "introduced": "0.12.0"
+                                                            },
+                                                            {
+                                                                "fixed": "0.12.19"
+                                                            }
+                                                        ],
+                                                        "type": "ECOSYSTEM"
+                                                    }
+                                                ],
+                                                "versions": [
+                                                    "v0.12.0",
+                                                    "v0.12.1",
+                                                    "v0.12.10",
+                                                    "v0.12.11",
+                                                    "v0.12.12",
+                                                    "v0.12.13",
+                                                    "v0.12.14",
+                                                    "v0.12.15",
+                                                    "v0.12.16",
+                                                    "v0.12.17",
+                                                    "v0.12.18",
+                                                    "v0.12.2",
+                                                    "v0.12.3",
+                                                    "v0.12.4",
+                                                    "v0.12.5",
+                                                    "v0.12.6",
+                                                    "v0.12.7",
+                                                    "v0.12.8",
+                                                    "v0.12.9"
+                                                ]
+                                            },
+                                            {
+                                                "database_specific": {
+                                                    "last_known_affected_version_range": "<= 0.11.22",
+                                                    "source": "https://github.com/github/advisory-database/blob/main/advisories/github-reviewed/2026/01/GHSA-4486-gxhx-5mg7/GHSA-4486-gxhx-5mg7.json"
+                                                },
+                                                "package": {
+                                                    "ecosystem": "Packagist",
+                                                    "name": "psy/psysh",
+                                                    "purl": "pkg:composer/psy/psysh"
+                                                },
+                                                "ranges": [
+                                                    {
+                                                        "events": [
+                                                            {
+                                                                "introduced": "0"
+                                                            },
+                                                            {
+                                                                "fixed": "0.11.23"
+                                                            }
+                                                        ],
+                                                        "type": "ECOSYSTEM"
+                                                    }
+                                                ],
+                                                "versions": [
+                                                    "v0.1.0",
+                                                    "v0.1.1",
+                                                    "v0.1.10",
+                                                    "v0.1.11",
+                                                    "v0.1.12",
+                                                    "v0.1.2",
+                                                    "v0.1.3",
+                                                    "v0.1.4",
+                                                    "v0.1.5",
+                                                    "v0.1.6",
+                                                    "v0.1.7",
+                                                    "v0.1.8",
+                                                    "v0.1.9",
+                                                    "v0.10.0",
+                                                    "v0.10.10",
+                                                    "v0.10.11",
+                                                    "v0.10.12",
+                                                    "v0.10.2",
+                                                    "v0.10.3",
+                                                    "v0.10.4",
+                                                    "v0.10.5",
+                                                    "v0.10.6",
+                                                    "v0.10.7",
+                                                    "v0.10.8",
+                                                    "v0.10.9",
+                                                    "v0.11.0",
+                                                    "v0.11.1",
+                                                    "v0.11.10",
+                                                    "v0.11.11",
+                                                    "v0.11.12",
+                                                    "v0.11.13",
+                                                    "v0.11.14",
+                                                    "v0.11.15",
+                                                    "v0.11.16",
+                                                    "v0.11.17",
+                                                    "v0.11.18",
+                                                    "v0.11.19",
+                                                    "v0.11.2",
+                                                    "v0.11.20",
+                                                    "v0.11.21",
+                                                    "v0.11.22",
+                                                    "v0.11.3",
+                                                    "v0.11.4",
+                                                    "v0.11.5",
+                                                    "v0.11.6",
+                                                    "v0.11.7",
+                                                    "v0.11.8",
+                                                    "v0.11.9",
+                                                    "v0.2.0",
+                                                    "v0.2.1",
+                                                    "v0.3.0",
+                                                    "v0.3.1",
+                                                    "v0.3.2",
+                                                    "v0.3.3",
+                                                    "v0.3.4",
+                                                    "v0.3.5",
+                                                    "v0.4.0",
+                                                    "v0.4.1",
+                                                    "v0.4.2",
+                                                    "v0.4.3",
+                                                    "v0.4.4",
+                                                    "v0.5.0",
+                                                    "v0.5.1",
+                                                    "v0.5.2",
+                                                    "v0.6.0",
+                                                    "v0.6.1",
+                                                    "v0.7.0",
+                                                    "v0.7.1",
+                                                    "v0.7.2",
+                                                    "v0.8.0",
+                                                    "v0.8.1",
+                                                    "v0.8.10",
+                                                    "v0.8.11",
+                                                    "v0.8.12",
+                                                    "v0.8.13",
+                                                    "v0.8.14",
+                                                    "v0.8.15",
+                                                    "v0.8.16",
+                                                    "v0.8.17",
+                                                    "v0.8.18",
+                                                    "v0.8.2",
+                                                    "v0.8.3",
+                                                    "v0.8.4",
+                                                    "v0.8.5",
+                                                    "v0.8.6",
+                                                    "v0.8.7",
+                                                    "v0.8.8",
+                                                    "v0.8.9",
+                                                    "v0.9.0",
+                                                    "v0.9.1",
+                                                    "v0.9.11",
+                                                    "v0.9.12",
+                                                    "v0.9.2",
+                                                    "v0.9.3",
+                                                    "v0.9.4",
+                                                    "v0.9.5",
+                                                    "v0.9.6",
+                                                    "v0.9.7",
+                                                    "v0.9.8",
+                                                    "v0.9.9"
+                                                ]
+                                            }
+                                        ],
+                                        "aliases": [
+                                            "CVE-2026-25129"
+                                        ],
+                                        "database_specific": {
+                                            "cwe_ids": [
+                                                "CWE-427"
+                                            ],
+                                            "github_reviewed": true,
+                                            "github_reviewed_at": "2026-01-30T21:28:44Z",
+                                            "nvd_published_at": "2026-01-30T21:15:58Z",
+                                            "severity": "MODERATE"
+                                        },
+                                        "details": "### Summary\nPsySH automatically loads and executes a `.psysh.php` file from the Current Working Directory (CWD) on startup. If an attacker can write to a directory that a victim later uses as their CWD when launching PsySH, the attacker can trigger arbitrary code execution in the victim's context. When the victim runs PsySH with elevated privileges (e.g., root), this results in local privilege escalation.\n\n### Details\nPsySH supports per-directory configuration via a `.psysh.php` file located in the process CWD. This file is executed implicitly when PsySH starts, without requiring explicit opt-in and without validating that the file and directory are safe (e.g., owned by the current user and not group/world-writable).\n\nThis enables a CWD poisoning scenario: a low-privileged user can plant a malicious `.psysh.php` in any directory they can write to, then wait for a higher-privileged user to start PsySH while their shell is in that directory.\n\n### PoC\n1. As a low-privileged user, create a malicious `.psysh.php` in an attacker-writable directory (example: `/tmp`):\n\n```bash\nbob@localhost:/tmp$ echo \"<?php system('id > poc.txt'); ?>\" > .psysh.php\nbob@localhost:/tmp# ls -lah .psysh.php\n-rw-r--r-- 1 bob bob 33 Jan 28 11:17 .psysh.php\n```\n\n2. As the victim user, start PsySH with CWD set to that directory and exit:\n\n```bash\nroot@localhost:/tmp# cd /tmp\nroot@localhost:/tmp# ./psysh\nPsy Shell v0.12.18 (PHP 8.1.2-1ubuntu2.23 — cli) by Justin Hileman\nNew PHP manual is available (latest: 3.0.1). Update with `doc --update-manual`\n> exit\n\n   INFO  Goodbye.\n\n```\n\n3. Verify code execution triggered in the victim context:\n\n```bash\nbob@localhost:/tmp$ ls -lah poc.txt\n-rw-r--r-- 1 root root 39 Jan 28 11:19 poc.txt\nbob@localhost:/tmp$ cat poc.txt\nuid=0(root) gid=0(root) groups=0(root)\n````\n\n\n### Impact\n\nThis is a CWD configuration poisoning issue leading to arbitrary code execution in the victim user’s context. If a privileged user (e.g., root, a CI runner, or an ops/debug account) launches PsySH with CWD set to an attacker-writable directory containing a malicious `.psysh.php`, the attacker can execute commands with that privileged user’s permissions, resulting in local privilege escalation.\n\nDownstream consumers that embed PsySH inherit this risk. For example, Laravel Tinker (`php artisan tinker`) uses PsySH. If a privileged user runs Tinker while their shell is in an attacker-writable directory, the `.psysh.php` auto-load behavior can be abused in the same way to execute attacker-controlled code under the victim’s privileges.",
+                                        "id": "GHSA-4486-gxhx-5mg7",
+                                        "modified": "2026-02-03T03:13:39.153449Z",
+                                        "published": "2026-01-30T21:28:44Z",
+                                        "references": [
+                                            {
+                                                "type": "WEB",
+                                                "url": "https://github.com/bobthecow/psysh/security/advisories/GHSA-4486-gxhx-5mg7"
+                                            },
+                                            {
+                                                "type": "ADVISORY",
+                                                "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-25129"
+                                            },
+                                            {
+                                                "type": "PACKAGE",
+                                                "url": "https://github.com/bobthecow/psysh"
+                                            },
+                                            {
+                                                "type": "WEB",
+                                                "url": "https://github.com/bobthecow/psysh/releases/tag/v0.11.23"
+                                            },
+                                            {
+                                                "type": "WEB",
+                                                "url": "https://github.com/bobthecow/psysh/releases/tag/v0.12.19"
+                                            }
+                                        ],
+                                        "schema_version": "1.7.3",
+                                        "severity": [
+                                            {
+                                                "score": "CVSS:3.1/AV:L/AC:H/PR:L/UI:R/S:U/C:H/I:H/A:H",
+                                                "type": "CVSS_V3"
+                                            }
+                                        ],
+                                        "summary": "PsySH has Local Privilege Escalation via CWD .psysh.php auto-load"
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ],
+                "experimental_config": {
+                    "licenses": {
+                        "summary": false,
+                        "allowlist": null
+                    }
+                }
+            }
+        }
+    }
+}

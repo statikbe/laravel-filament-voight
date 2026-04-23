@@ -6,6 +6,7 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Statikbe\FilamentVoight\Enums\PackageType;
+use Statikbe\FilamentVoight\Resources\PackageResource\Actions\OpenPackageWebsiteAction;
 
 class PackageTableSchema
 {
@@ -38,6 +39,9 @@ class PackageTableSchema
                 SelectFilter::make('type')
                     ->label(voightTrans('models.package.fields.type'))
                     ->options(PackageType::options()),
+            ])
+            ->recordActions([
+                OpenPackageWebsiteAction::make(),
             ]);
     }
 }

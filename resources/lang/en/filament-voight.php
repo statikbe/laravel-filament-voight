@@ -132,6 +132,9 @@ return [
                 'latest_version_updated_at' => 'Latest Version Updated',
                 'installations' => 'Installations',
             ],
+            'actions' => [
+                'open_website' => 'Open Website',
+            ],
         ],
         'environment_package' => [
             'label' => 'Environment Package',
