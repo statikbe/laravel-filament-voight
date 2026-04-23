@@ -61,4 +61,12 @@ class Package extends Model
     {
         return $this->hasMany(AuditFinding::class);
     }
+
+    /**
+     * @return HasMany<AuditFinding, $this>
+     */
+    public function findings(): HasMany
+    {
+        return $this->hasMany(AuditFinding::class);
+    }
 }

@@ -29,3 +29,12 @@ it('allows same name with different type', function () {
 
     expect($npmPackage)->toBeInstanceOf(Package::class);
 });
+
+it('has many audit findings', function () {
+    $package = Package::factory()->create();
+    Statikbe\FilamentVoight\Models\AuditFinding::factory()->for($package)->create();
+
+    expect($package->findings)->toHaveCount(1)
+        ->and($package->findings->first())
+        ->toBeInstanceOf(Statikbe\FilamentVoight\Models\AuditFinding::class);
+});
