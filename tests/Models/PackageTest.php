@@ -38,3 +38,20 @@ it('has many audit findings', function () {
         ->and($package->findings->first())
         ->toBeInstanceOf(Statikbe\FilamentVoight\Models\AuditFinding::class);
 });
+
+it('has distinct projects through environment packages', function () {
+    $package = Package::factory()->create();
+    $project = Statikbe\FilamentVoight\Models\Project::factory()->create();
+    $env1 = Statikbe\FilamentVoight\Models\Environment::factory()->for($project)->create(['name' => 'production']);
+    $env2 = Statikbe\FilamentVoight\Models\Environment::factory()->for($project)->create(['name' => 'staging']);
+
+    Statikbe\FilamentVoight\Models\EnvironmentPackage::factory()
+        ->for($env1)->for($package)->create();
+    Statikbe\FilamentVoight\Models\EnvironmentPackage::factory()
+        ->for($env2)->for($package)->create();
+
+    // Both environment packages point to the same project — projects() must de-duplicate.
+    expect($package->projects()->count())->toBe(1)
+        ->and($package->projects->first())
+        ->toBeInstanceOf(Statikbe\FilamentVoight\Models\Project::class);
+});

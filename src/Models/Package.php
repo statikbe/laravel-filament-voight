@@ -8,6 +8,8 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
 use Statikbe\FilamentVoight\Enums\PackageType;
+use Staudenmeir\EloquentHasManyDeep\HasManyDeep;
+use Staudenmeir\EloquentHasManyDeep\HasRelationships;
 
 /**
  * @property string $id
@@ -21,6 +23,7 @@ use Statikbe\FilamentVoight\Enums\PackageType;
 class Package extends Model
 {
     use HasFactory;
+    use HasRelationships;
     use HasUlids;
 
     protected $table = 'voight_packages';
@@ -68,5 +71,26 @@ class Package extends Model
     public function findings(): HasMany
     {
         return $this->hasMany(AuditFinding::class);
+    }
+
+    /**
+     * @return HasManyDeep<Project, $this>
+     */
+    public function projects(): HasManyDeep
+    {
+        return $this->hasManyDeep(
+            Project::class,
+            [EnvironmentPackage::class, Environment::class],
+            [
+                'package_id',     // FK on voight_environment_packages (HasMany)
+                'id',             // FK on voight_environments (BelongsTo — swap)
+                'id',             // FK on voight_projects (BelongsTo — swap)
+            ],
+            [
+                'id',             // LK on voight_packages
+                'environment_id', // LK on voight_environment_packages (BelongsTo — swap)
+                'project_id',     // LK on voight_environments (BelongsTo — swap)
+            ],
+        )->distinct(['voight_projects.id']);
     }
 }
