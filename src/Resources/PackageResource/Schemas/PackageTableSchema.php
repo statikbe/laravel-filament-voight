@@ -2,6 +2,7 @@
 
 namespace Statikbe\FilamentVoight\Resources\PackageResource\Schemas;
 
+use Filament\Actions\ViewAction;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
@@ -41,6 +42,7 @@ class PackageTableSchema
                     ->options(PackageType::options()),
             ])
             ->recordActions([
+                ViewAction::make(),
                 OpenPackageWebsiteAction::make(),
             ]);
     }
