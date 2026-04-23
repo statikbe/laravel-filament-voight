@@ -1,5 +1,6 @@
 <?php
 
+use Illuminate\Foundation\Auth\User;
 use Livewire\Livewire;
 use Statikbe\FilamentVoight\Models\AuditFinding;
 use Statikbe\FilamentVoight\Models\AuditRun;
@@ -10,7 +11,7 @@ use Statikbe\FilamentVoight\Resources\PackageResource\Pages\ViewPackage;
 use Statikbe\FilamentVoight\Resources\PackageResource\RelationManagers\ActiveFindingsRelationManager;
 
 beforeEach(function () {
-    $this->actingAs(new \Illuminate\Foundation\Auth\User());
+    $this->actingAs(new User);
 });
 
 it('defaults to latest audit run per environment', function () {

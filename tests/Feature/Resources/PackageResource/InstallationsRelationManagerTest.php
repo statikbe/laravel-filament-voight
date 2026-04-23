@@ -1,5 +1,6 @@
 <?php
 
+use Illuminate\Foundation\Auth\User;
 use Livewire\Livewire;
 use Statikbe\FilamentVoight\Models\Environment;
 use Statikbe\FilamentVoight\Models\EnvironmentPackage;
@@ -9,7 +10,7 @@ use Statikbe\FilamentVoight\Resources\PackageResource\Pages\ViewPackage;
 use Statikbe\FilamentVoight\Resources\PackageResource\RelationManagers\InstallationsRelationManager;
 
 beforeEach(function () {
-    $this->actingAs(new \Illuminate\Foundation\Auth\User());
+    $this->actingAs(new User);
 });
 
 it('lists environments where the package is installed', function () {

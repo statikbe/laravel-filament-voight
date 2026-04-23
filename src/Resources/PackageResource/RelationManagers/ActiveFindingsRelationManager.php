@@ -12,7 +12,6 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Statikbe\FilamentVoight\Enums\Severity;
-use Statikbe\FilamentVoight\Models\AuditRun;
 
 class ActiveFindingsRelationManager extends RelationManager
 {

@@ -1,5 +1,7 @@
 <?php
 
+use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Foundation\Auth\User;
 use Livewire\Livewire;
 use Statikbe\FilamentVoight\Models\Environment;
 use Statikbe\FilamentVoight\Models\EnvironmentPackage;
@@ -7,7 +9,7 @@ use Statikbe\FilamentVoight\Models\Package;
 use Statikbe\FilamentVoight\Resources\PackageResource\Pages\ViewPackage;
 
 beforeEach(function () {
-    $this->actingAs(new \Illuminate\Foundation\Auth\User());
+    $this->actingAs(new User);
 });
 
 it('renders for an existing package', function () {
@@ -22,5 +24,5 @@ it('renders for an existing package', function () {
 
 it('returns 404 for a nonexistent package', function () {
     expect(fn () => Livewire::test(ViewPackage::class, ['record' => 'nonexistent-ulid']))
-        ->toThrow(\Illuminate\Database\Eloquent\ModelNotFoundException::class);
+        ->toThrow(ModelNotFoundException::class);
 });

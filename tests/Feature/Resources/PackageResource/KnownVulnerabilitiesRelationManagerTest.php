@@ -1,5 +1,6 @@
 <?php
 
+use Illuminate\Foundation\Auth\User;
 use Livewire\Livewire;
 use Statikbe\FilamentVoight\Models\Package;
 use Statikbe\FilamentVoight\Models\Vulnerability;
@@ -8,7 +9,7 @@ use Statikbe\FilamentVoight\Resources\PackageResource\Pages\ViewPackage;
 use Statikbe\FilamentVoight\Resources\PackageResource\RelationManagers\KnownVulnerabilitiesRelationManager;
 
 beforeEach(function () {
-    $this->actingAs(new \Illuminate\Foundation\Auth\User());
+    $this->actingAs(new User);
 });
 
 it('lists all vulnerable package ranges for the package', function () {
