@@ -60,14 +60,6 @@ class Package extends Model
     /**
      * @return HasMany<AuditFinding, $this>
      */
-    public function auditFindings(): HasMany
-    {
-        return $this->hasMany(AuditFinding::class);
-    }
-
-    /**
-     * @return HasMany<AuditFinding, $this>
-     */
     public function findings(): HasMany
     {
         return $this->hasMany(AuditFinding::class);
