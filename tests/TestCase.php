@@ -18,8 +18,8 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\LivewireServiceProvider;
 use Orchestra\Testbench\Concerns\WithWorkbench;
 use Orchestra\Testbench\TestCase as Orchestra;
-use Statikbe\FilamentVoight\FilamentVoightPanelProvider;
 use Statikbe\FilamentVoight\FilamentVoightServiceProvider;
+use Statikbe\FilamentVoight\Tests\Support\TestPanelProvider;
 
 class TestCase extends Orchestra
 {
@@ -50,8 +50,8 @@ class TestCase extends Orchestra
             SupportServiceProvider::class,
             TablesServiceProvider::class,
             WidgetsServiceProvider::class,
-            FilamentVoightPanelProvider::class,
             FilamentVoightServiceProvider::class,
+            TestPanelProvider::class,
         ];
 
         sort($providers);
