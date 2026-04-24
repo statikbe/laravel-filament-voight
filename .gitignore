@@ -14,5 +14,6 @@ testbench.yaml
 vendor
 curl*
 .playwright-mcp
-*.png
+view-package-*
 .claude/settings.local.json
+
