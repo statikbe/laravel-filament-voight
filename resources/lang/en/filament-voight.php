@@ -171,6 +171,12 @@ return [
                     'installed_in' => 'Installed in',
                     'active_findings' => 'Active Findings',
                 ],
+                'empty' => [
+                    'no_active_findings_heading' => 'All clear',
+                    'no_active_findings_description' => 'No vulnerabilities were found in the latest audit runs across any environment using this package.',
+                    'no_known_vulnerabilities_heading' => 'No known vulnerabilities',
+                    'no_known_vulnerabilities_description' => 'There are no recorded vulnerabilities affecting this package.',
+                ],
             ],
         ],
         'environment_package' => [

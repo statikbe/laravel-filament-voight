@@ -4,7 +4,7 @@ namespace Statikbe\FilamentVoight\Resources\PackageResource\Schemas;
 
 use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Actions;
-use Filament\Schemas\Components\Group;
+use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Statikbe\FilamentVoight\Enums\PackageType;
@@ -20,31 +20,33 @@ class PackageInfolistSchema
     {
         return $schema
             ->components([
-                Group::make([
-                    TextEntry::make('name')
-                        ->label(voightTrans('models.package.fields.name'))
-                        ->copyable()
-                        ->weight('bold'),
-                    TextEntry::make('type')
-                        ->label(voightTrans('models.package.fields.type'))
-                        ->badge()
-                        ->formatStateUsing(fn (PackageType $state): string => $state->label()),
-                    TextEntry::make('latest_version')
-                        ->label(voightTrans('models.package.fields.latest_version'))
-                        ->placeholder('—'),
-                    TextEntry::make('latest_version_updated_at')
-                        ->label(voightTrans('models.package.fields.latest_version_updated_at'))
-                        ->since()
-                        ->placeholder('—'),
-                    TextEntry::make('installed_summary')
-                        ->label(voightTrans('models.package.view.header.installed_in'))
-                        ->state(fn ($record): string => self::installedSummary($record)),
-                    TextEntry::make('active_findings')
-                        ->label(voightTrans('models.package.view.header.active_findings'))
-                        ->badge()
-                        ->state(fn ($record): string => self::activeFindingsLabel($record))
-                        ->color(fn ($record): string => self::activeFindingsColor($record)),
-                ])->columns(3),
+                Section::make()
+                    ->schema([
+                        TextEntry::make('name')
+                            ->label(voightTrans('models.package.fields.name'))
+                            ->copyable()
+                            ->weight('bold'),
+                        TextEntry::make('type')
+                            ->label(voightTrans('models.package.fields.type'))
+                            ->badge()
+                            ->formatStateUsing(fn (PackageType $state): string => $state->label()),
+                        TextEntry::make('installed_summary')
+                            ->label(voightTrans('models.package.view.header.installed_in'))
+                            ->state(fn ($record): string => self::installedSummary($record)),
+                        TextEntry::make('latest_version')
+                            ->label(voightTrans('models.package.fields.latest_version'))
+                            ->placeholder('—'),
+                        TextEntry::make('latest_version_updated_at')
+                            ->label(voightTrans('models.package.fields.latest_version_updated_at'))
+                            ->since()
+                            ->placeholder('—'),
+                        TextEntry::make('active_findings')
+                            ->label(voightTrans('models.package.view.header.active_findings'))
+                            ->badge()
+                            ->state(fn ($record): string => self::activeFindingsLabel($record))
+                            ->color(fn ($record): string => self::activeFindingsColor($record)),
+                    ])
+                    ->columns(3),
                 Actions::make([
                     OpenPackageWebsiteAction::make(),
                 ]),

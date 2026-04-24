@@ -3,6 +3,7 @@
 namespace Statikbe\FilamentVoight\Resources\PackageResource\RelationManagers;
 
 use Filament\Resources\RelationManagers\RelationManager;
+use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
@@ -12,6 +13,8 @@ use Illuminate\Database\Eloquent\Model;
 class InstallationsRelationManager extends RelationManager
 {
     protected static string $relationship = 'environmentPackages';
+
+    protected static string | \BackedEnum | null $icon = Heroicon::OutlinedServerStack;
 
     public static function getTitle(Model $ownerRecord, string $pageClass): string
     {
