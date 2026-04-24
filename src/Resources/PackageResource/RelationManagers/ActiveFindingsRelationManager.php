@@ -41,27 +41,34 @@ class ActiveFindingsRelationManager extends RelationManager
                     ->color(fn (Severity $state): string => $state->color()),
                 TextColumn::make('vulnerability.vulnerability_score')
                     ->label(voightTrans('models.package.view.columns.cvss'))
-                    ->sortable(),
+                    ->sortable()
+                    ->toggleable(),
                 TextColumn::make('vulnerability.source_id')
                     ->label(voightTrans('models.package.view.columns.source_id'))
                     ->searchable()
-                    ->copyable(),
+                    ->copyable()
+                    ->toggleable(),
                 TextColumn::make('vulnerability.summary')
                     ->label(voightTrans('models.package.view.columns.summary'))
                     ->limit(80)
                     ->tooltip(fn ($record): ?string => $record->vulnerability?->summary)
                     ->searchable(),
                 TextColumn::make('installed_version')
-                    ->label(voightTrans('models.package.view.columns.installed_version')),
+                    ->label(voightTrans('models.package.view.columns.installed_version'))
+                    ->toggleable(),
                 TextColumn::make('fixed_version')
                     ->label(voightTrans('models.package.view.columns.fixed_version'))
-                    ->placeholder('—'),
-                TextColumn::make('auditRun.environment.name')
-                    ->label(voightTrans('models.package.view.columns.environment'))
-                    ->sortable(),
+                    ->placeholder('—')
+                    ->toggleable(),
                 TextColumn::make('auditRun.environment.project.name')
                     ->label(voightTrans('models.package.view.columns.project'))
-                    ->sortable(),
+                    ->sortable()
+                    ->searchable()
+                    ->toggleable(),
+                TextColumn::make('auditRun.environment.name')
+                    ->label(voightTrans('models.package.view.columns.environment'))
+                    ->sortable()
+                    ->toggleable(),
                 TextColumn::make('auditRun.started_at')
                     ->label(voightTrans('models.package.view.columns.observed'))
                     ->dateTime()
