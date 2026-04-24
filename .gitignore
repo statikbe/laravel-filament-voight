@@ -13,3 +13,6 @@ phpstan.neon
 testbench.yaml
 vendor
 curl*
+.playwright-mcp
+*.png
+.claude/settings.local.json

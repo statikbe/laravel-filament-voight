@@ -22,7 +22,22 @@
       "Bash(php:*)",
       "Bash(composer analyse:*)",
       "Bash(grep -E '^\\\\s*\\(--|Line|[0-9]+|$\\)')",
-      "Bash(./vendor/bin/phpstan analyse *)"
+      "Bash(./vendor/bin/phpstan analyse *)",
+      "Bash(git stash *)",
+      "Bash(git branch *)",
+      "mcp__plugin_playwright_playwright__browser_navigate",
+      "mcp__plugin_playwright_playwright__browser_snapshot",
+      "mcp__plugin_playwright_playwright__browser_fill_form",
+      "mcp__plugin_playwright_playwright__browser_click",
+      "mcp__plugin_playwright_playwright__browser_take_screenshot",
+      "Bash(git checkout *)",
+      "Bash(grep -rn 'protected static.*icon\\\\|\\\\$icon =' vendor/filament/filament/src/Resources/RelationManagers/RelationManager.php)",
+      "Bash(./vendor/bin/pest)",
+      "Bash(kill bf90erkkl *)",
+      "Bash(pkill -f \"find / -name composer\")",
+      "Bash(composer test *)",
+      "Bash(composer format *)",
+      "Bash(git add *)"
     ]
   },
   "enableAllProjectMcpServers": true,

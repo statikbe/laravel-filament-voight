@@ -3,6 +3,7 @@
 namespace Statikbe\FilamentVoight\Resources\PackageResource\RelationManagers;
 
 use Filament\Resources\RelationManagers\RelationManager;
+use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
@@ -14,6 +15,8 @@ use Statikbe\FilamentVoight\Enums\VulnerabilitySource;
 class KnownVulnerabilitiesRelationManager extends RelationManager
 {
     protected static string $relationship = 'vulnerablePackageRanges';
+
+    protected static string | \BackedEnum | null $icon = Heroicon::OutlinedBookOpen;
 
     public static function getTitle(Model $ownerRecord, string $pageClass): string
     {
@@ -78,6 +81,9 @@ class KnownVulnerabilitiesRelationManager extends RelationManager
                         );
                     }),
             ])
-            ->defaultSort('vulnerability.vulnerability_score', 'desc');
+            ->defaultSort('vulnerability.vulnerability_score', 'desc')
+            ->emptyStateIcon(Heroicon::OutlinedShieldCheck)
+            ->emptyStateHeading(voightTrans('models.package.view.empty.no_known_vulnerabilities_heading'))
+            ->emptyStateDescription(voightTrans('models.package.view.empty.no_known_vulnerabilities_description'));
     }
 }

@@ -4,6 +4,7 @@ namespace Statikbe\FilamentVoight\Resources\PackageResource\RelationManagers;
 
 use Filament\Forms\Components\DatePicker;
 use Filament\Resources\RelationManagers\RelationManager;
+use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\TernaryFilter;
@@ -17,6 +18,8 @@ use Statikbe\FilamentVoight\Models\AuditRun;
 class ActiveFindingsRelationManager extends RelationManager
 {
     protected static string $relationship = 'findings';
+
+    protected static string | \BackedEnum | null $icon = Heroicon::OutlinedShieldExclamation;
 
     public static function getTitle(Model $ownerRecord, string $pageClass): string
     {
@@ -104,6 +107,9 @@ class ActiveFindingsRelationManager extends RelationManager
                 Group::make('vulnerability.source_id')
                     ->label(voightTrans('models.package.view.columns.source_id')),
             ])
-            ->defaultSort('vulnerability.vulnerability_score', 'desc');
+            ->defaultSort('vulnerability.vulnerability_score', 'desc')
+            ->emptyStateIcon(Heroicon::OutlinedShieldCheck)
+            ->emptyStateHeading(voightTrans('models.package.view.empty.no_active_findings_heading'))
+            ->emptyStateDescription(voightTrans('models.package.view.empty.no_active_findings_description'));
     }
 }
