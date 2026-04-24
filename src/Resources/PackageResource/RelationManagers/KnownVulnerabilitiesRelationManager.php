@@ -63,10 +63,7 @@ class KnownVulnerabilitiesRelationManager extends RelationManager
             ->filters([
                 SelectFilter::make('severity')
                     ->label(voightTrans('models.package.view.columns.severity'))
-                    ->options(array_combine(
-                        array_map(fn (Severity $s) => $s->value, Severity::cases()),
-                        array_map(fn (Severity $s) => $s->label(), Severity::cases()),
-                    ))
+                    ->options(Severity::options())
                     ->query(function (Builder $query, array $data): Builder {
                         if (blank($data['value'] ?? null)) {
                             return $query;

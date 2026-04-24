@@ -31,3 +31,15 @@ it('lists environments where the package is installed', function () {
         ->assertSee('production')
         ->assertSee('1.2.3');
 });
+
+it('renders an installation whose environment has never been scanned', function () {
+    $package = Package::factory()->create();
+    $env = Environment::factory()->create(['name' => 'dev', 'scanned_at' => null]);
+    $installation = EnvironmentPackage::factory()->for($env)->for($package)->create();
+
+    Livewire::test(InstallationsRelationManager::class, [
+        'ownerRecord' => $package,
+        'pageClass' => ViewPackage::class,
+    ])
+        ->assertCanSeeTableRecords([$installation]);
+});

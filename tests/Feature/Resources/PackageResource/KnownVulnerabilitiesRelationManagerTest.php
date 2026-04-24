@@ -28,3 +28,21 @@ it('lists all vulnerable package ranges for the package', function () {
         ->assertSee('<1.2.3')
         ->assertSee('1.2.3');
 });
+
+it('narrows by severity filter using CVSS buckets', function () {
+    $package = Package::factory()->create();
+
+    $criticalVuln = Vulnerability::factory()->create(['vulnerability_score' => 9.5]);
+    $lowVuln = Vulnerability::factory()->create(['vulnerability_score' => 2.0]);
+
+    $criticalRange = VulnerablePackageRange::factory()->for($package)->for($criticalVuln)->create();
+    $lowRange = VulnerablePackageRange::factory()->for($package)->for($lowVuln)->create();
+
+    Livewire::test(KnownVulnerabilitiesRelationManager::class, [
+        'ownerRecord' => $package,
+        'pageClass' => ViewPackage::class,
+    ])
+        ->filterTable('severity', 'critical')
+        ->assertCanSeeTableRecords([$criticalRange])
+        ->assertCanNotSeeTableRecords([$lowRange]);
+});
