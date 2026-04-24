@@ -38,23 +38,25 @@ class PackageInfolistSchema
                         ->placeholder('—'),
                     TextEntry::make('installed_summary')
                         ->label(voightTrans('models.package.view.header.installed_in'))
-                        ->state(fn (Package $record): string => voightTrans(
-                            'models.package.view.installed_summary',
-                            [
-                                'environments' => $record->environmentPackages()->count(),
-                                'projects' => $record->projects()->count(),
-                            ],
-                        )),
+                        ->state(fn ($record): string => self::installedSummary($record)),
                     TextEntry::make('active_findings')
                         ->label(voightTrans('models.package.view.header.active_findings'))
                         ->badge()
-                        ->state(fn (Package $record): string => self::activeFindingsLabel($record))
-                        ->color(fn (Package $record): string => self::activeFindingsColor($record)),
+                        ->state(fn ($record): string => self::activeFindingsLabel($record))
+                        ->color(fn ($record): string => self::activeFindingsColor($record)),
                 ])->columns(3),
                 Actions::make([
                     OpenPackageWebsiteAction::make(),
                 ]),
             ]);
+    }
+
+    private static function installedSummary(Package $package): string
+    {
+        return voightTrans('models.package.view.installed_summary', [
+            'environments' => $package->environmentPackages()->count(),
+            'projects' => $package->projects()->count(),
+        ]);
     }
 
     private static function activeFindingsLabel(Package $package): string
