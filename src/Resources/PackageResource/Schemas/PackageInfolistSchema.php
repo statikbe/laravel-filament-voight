@@ -3,7 +3,6 @@
 namespace Statikbe\FilamentVoight\Resources\PackageResource\Schemas;
 
 use Filament\Infolists\Components\TextEntry;
-use Filament\Schemas\Components\Actions;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -12,13 +11,13 @@ use Statikbe\FilamentVoight\Enums\Severity;
 use Statikbe\FilamentVoight\Models\AuditFinding;
 use Statikbe\FilamentVoight\Models\AuditRun;
 use Statikbe\FilamentVoight\Models\Package;
-use Statikbe\FilamentVoight\Resources\PackageResource\Actions\OpenPackageWebsiteAction;
 
 class PackageInfolistSchema
 {
     public static function configure(Schema $schema): Schema
     {
         return $schema
+            ->columns(1)
             ->components([
                 Section::make()
                     ->schema([
@@ -46,10 +45,8 @@ class PackageInfolistSchema
                             ->state(fn ($record): string => self::activeFindingsLabel($record))
                             ->color(fn ($record): string => self::activeFindingsColor($record)),
                     ])
-                    ->columns(3),
-                Actions::make([
-                    OpenPackageWebsiteAction::make(),
-                ]),
+                    ->columns(3)
+                    ->columnSpanFull(),
             ]);
     }
 
