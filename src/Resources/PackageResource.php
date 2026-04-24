@@ -7,6 +7,10 @@ use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
 use Statikbe\FilamentVoight\Models\Package;
 use Statikbe\FilamentVoight\Resources\PackageResource\Pages\ListPackages;
+use Statikbe\FilamentVoight\Resources\PackageResource\Pages\ViewPackage;
+use Statikbe\FilamentVoight\Resources\PackageResource\RelationManagers\ActiveFindingsRelationManager;
+use Statikbe\FilamentVoight\Resources\PackageResource\RelationManagers\InstallationsRelationManager;
+use Statikbe\FilamentVoight\Resources\PackageResource\RelationManagers\KnownVulnerabilitiesRelationManager;
 use Statikbe\FilamentVoight\Resources\PackageResource\Schemas\PackageTableSchema;
 
 class PackageResource extends Resource
@@ -44,10 +48,20 @@ class PackageResource extends Resource
         return false;
     }
 
+    public static function getRelations(): array
+    {
+        return [
+            InstallationsRelationManager::class,
+            ActiveFindingsRelationManager::class,
+            KnownVulnerabilitiesRelationManager::class,
+        ];
+    }
+
     public static function getPages(): array
     {
         return [
             'index' => ListPackages::route('/'),
+            'view' => ViewPackage::route('/{record}'),
         ];
     }
 }

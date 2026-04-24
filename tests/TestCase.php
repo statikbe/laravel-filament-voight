@@ -19,6 +19,7 @@ use Livewire\LivewireServiceProvider;
 use Orchestra\Testbench\Concerns\WithWorkbench;
 use Orchestra\Testbench\TestCase as Orchestra;
 use Statikbe\FilamentVoight\FilamentVoightServiceProvider;
+use Statikbe\FilamentVoight\Tests\Support\TestPanelProvider;
 
 class TestCase extends Orchestra
 {
@@ -50,6 +51,7 @@ class TestCase extends Orchestra
             TablesServiceProvider::class,
             WidgetsServiceProvider::class,
             FilamentVoightServiceProvider::class,
+            TestPanelProvider::class,
         ];
 
         sort($providers);

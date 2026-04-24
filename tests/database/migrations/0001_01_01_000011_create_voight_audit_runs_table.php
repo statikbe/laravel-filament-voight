@@ -15,6 +15,7 @@ return new class extends Migration
             $table->timestamp('started_at')->nullable();
             $table->timestamp('completed_at')->nullable();
             $table->timestamps();
+            $table->index(['environment_id', 'started_at'], 'voight_audit_runs_env_started_idx');
         });
     }
 

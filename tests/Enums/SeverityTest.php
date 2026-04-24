@@ -29,3 +29,10 @@ it('returns critical for scores 9.0 to 10.0', function () {
     expect(Severity::fromScore(9.5))->toBe(Severity::Critical);
     expect(Severity::fromScore(10.0))->toBe(Severity::Critical);
 });
+
+it('keeps scoreRange boundaries consistent with fromScore bucketing', function (Severity $case) {
+    [$min, $max] = $case->scoreRange();
+
+    expect(Severity::fromScore($min))->toBe($case)
+        ->and(Severity::fromScore($max))->toBe($case);
+})->with(Severity::cases());

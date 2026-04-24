@@ -48,4 +48,28 @@ enum Severity: string
     {
         return voightTrans('enums.severity.' . $this->value);
     }
+
+    public function color(): string
+    {
+        return match ($this) {
+            self::None => 'gray',
+            self::Low => 'success',
+            self::Medium => 'warning',
+            self::High, self::Critical => 'danger',
+        };
+    }
+
+    /**
+     * @return array{0: float, 1: float}
+     */
+    public function scoreRange(): array
+    {
+        return match ($this) {
+            self::None => [0.0, 0.0],
+            self::Low => [0.1, 3.9],
+            self::Medium => [4.0, 6.9],
+            self::High => [7.0, 8.9],
+            self::Critical => [9.0, 10.0],
+        };
+    }
 }
