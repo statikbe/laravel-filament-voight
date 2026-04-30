@@ -94,6 +94,13 @@ class ProjectFormSchema
                                     ->title(voightTrans('models.project.actions.token_generated'))
                                     ->body($token->plainTextToken)
                                     ->persistent()
+                                    ->actions([
+                                        TextInput\Actions\CopyAction::make('copy_token')
+                                            ->label(voightTrans('models.project.actions.copy_token'))
+                                            ->copyMessage($token->plainTextToken)
+                                            ->button()
+                                            ->color('primary')
+                                    ])
                                     ->success()
                                     ->send();
                             }),
