@@ -74,8 +74,8 @@ class Project extends Model
         return $this->hasMany(AlertSetting::class);
     }
 
-
-    public function getRouteKeyName() {
+    public function getRouteKeyName()
+    {
         return 'project_code';
     }
 }

@@ -2,13 +2,8 @@
 
 namespace Statikbe\FilamentVoight\Resources;
 
-use Filament\Actions\Action;
-use Filament\Infolists\Components\RepeatableEntry;
-use Filament\Infolists\Components\TextEntry;
-use Filament\Notifications\Notification;
 use Filament\Pages\Enums\SubNavigationPosition;
 use Filament\Resources\Resource;
-use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
@@ -60,9 +55,10 @@ class ProjectResource extends Resource
         return ProjectTableSchema::configure($table);
     }
 
-    public static function infolist(Schema $schema): Schema {
-        //return $schema;
-        return ProjectInfolistSchema::configure($schema);
+    public static function infolist(Schema $schema): Schema
+    {
+        // return $schema;
+        return ProjectInfoListSchema::configure($schema);
     }
 
     public static function getRelations(): array

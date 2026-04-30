@@ -64,7 +64,7 @@ class ProjectTableSchema
             ])
             ->recordActions([
                 ViewAction::make()
-                ->url(fn($record) => ProjectResource::getUrl('view', ['record' => $record])),
+                    ->url(fn ($record) => ProjectResource::getUrl('view', ['record' => $record])),
                 EditAction::make(),
             ])
             ->toolbarActions([
