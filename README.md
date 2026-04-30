@@ -128,8 +128,8 @@ The plaintext token is shown once — store it in your CI secrets.
 Copy `vendor/statikbe/laravel-filament-voight/resources/scripts/script.sh` into your project. Add environment variables (`.env` or CI secrets):
 
 ```dotenv
-API_URL=https://your-voight-app.example.com/api/voight/lock-file
-API_TOKEN=1|your-project-token
+VOIGHT_API_URL=https://your-voight-app.example.com/api/voight/lock-file
+VOIGHT_API_TOKEN=1|your-project-token
 PROJECT_CODE=my-project
 APP_ENV=production
 ```

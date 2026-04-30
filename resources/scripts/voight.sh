@@ -6,11 +6,11 @@ if [ -f ".env" ]; then
   . ./.env
 fi
 
-export API_URL API_TOKEN PROJECT_CODE APP_ENV
+export VOIGHT_API_URL VOIGHT_API_TOKEN PROJECT_CODE APP_ENV
 
 # Required env vars
-: "${API_URL:?API_URL is not set}"
-: "${API_TOKEN:?API_TOKEN is not set}"
+: "${VOIGHT_API_URL:?VOIGHT_API_URL is not set}"
+: "${VOIGHT_API_TOKEN:?VOIGHT_API_TOKEN is not set}"
 : "${PROJECT_CODE:?PROJECT_CODE is not set}"
 : "${APP_ENV:?APP_ENV is not set}"
 
@@ -45,8 +45,8 @@ echo "Sending lock files to API..."
 # Build multipart form-data with all lock files
 set -- \
   -s -w "\n%{http_code}" \
-  -X POST "$API_URL" \
-  -H "Authorization: Bearer $API_TOKEN" \
+  -X POST "$VOIGHT_API_URL" \
+  -H "Authorization: Bearer $VOIGHT_API_TOKEN" \
   -F "project_code=$PROJECT_CODE" \
   -F "environment=$APP_ENV"
 

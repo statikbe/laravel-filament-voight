@@ -26,6 +26,7 @@ class FilamentVoightServiceProvider extends PackageServiceProvider
                 $command
                     ->publishConfigFile()
                     ->publishMigrations()
+                    ->publish('scripts')
                     ->askToRunMigrations()
                     ->askToStarRepoOnGitHub('statikbe/laravel-filament-voight');
             });
@@ -71,6 +72,10 @@ class FilamentVoightServiceProvider extends PackageServiceProvider
                     $file->getRealPath() => base_path("stubs/filament-voight/{$file->getFilename()}"),
                 ], 'filament-voight-stubs');
             }
+
+            $this->publishes([
+                __DIR__ . '/../resources/scripts/voight.sh' => public_path('scripts/voight.sh'),
+            ], 'filament-voight-scripts');
         }
 
         $this->callAfterResolving(Schedule::class, function (Schedule $schedule) {
