@@ -88,7 +88,7 @@ class FilamentVoightServiceProvider extends PackageServiceProvider
      */
     protected function getAssets(): array
     {
-        return [];
+        return ['scripts/voight.sh'];
     }
 
     /**
