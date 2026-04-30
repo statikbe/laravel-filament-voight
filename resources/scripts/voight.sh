@@ -6,7 +6,7 @@ if [ -f ".env" ]; then
   . ./.env
 fi
 
-export VOIGHT_API_URL VOIGHT_API_TOKEN PROJECT_CODE APP_ENV
+export VOIGHT_API_BASE_URL VOIGHT_API_TOKEN PROJECT_CODE APP_ENV
 
 # Required env vars
 : "${VOIGHT_API_BASE_URL:?VOIGHT_API_BASE_URL is not set}"
