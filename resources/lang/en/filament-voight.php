@@ -216,6 +216,9 @@ return [
                 'published_at' => 'Published',
                 'modified_at' => 'Modified',
             ],
+            'actions' => [
+                'open_source' => 'View on source',
+            ],
         ],
         'vulnerable_package_range' => [
             'label' => 'Vulnerable Package Range',
