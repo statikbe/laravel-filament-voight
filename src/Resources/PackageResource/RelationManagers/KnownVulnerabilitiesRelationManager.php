@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Statikbe\FilamentVoight\Enums\Severity;
 use Statikbe\FilamentVoight\Enums\VulnerabilitySource;
+use Statikbe\FilamentVoight\Resources\VulnerabilityResource;
 
 class KnownVulnerabilitiesRelationManager extends RelationManager
 {
@@ -27,6 +28,9 @@ class KnownVulnerabilitiesRelationManager extends RelationManager
     {
         return $table
             ->modifyQueryUsing(fn (Builder $query) => $query->with('vulnerability'))
+            ->recordUrl(fn ($record): ?string => $record->vulnerability_id
+                ? VulnerabilityResource::getUrl('view', ['record' => $record->vulnerability_id])
+                : null)
             ->columns([
                 TextColumn::make('vulnerability.severity')
                     ->label(voightTrans('models.package.view.columns.severity'))

@@ -53,7 +53,7 @@ class PackageInfolistSchema
     private static function installedSummary(Package $package): string
     {
         return voightTrans('models.package.view.installed_summary', [
-            'environments' => $package->environmentPackages()->count(),
+            'environments' => $package->environmentPackages()->distinct()->count('environment_id'),
             'projects' => $package->projects()->count(),
         ]);
     }

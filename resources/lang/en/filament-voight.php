@@ -162,6 +162,7 @@ return [
                     'observed' => 'Observed',
                     'direct' => 'Direct',
                     'dev' => 'Dev',
+                    'parent_package' => 'Parent Package',
                     'last_scan' => 'Last Scan',
                     'published' => 'Published',
                     'modified' => 'Modified',

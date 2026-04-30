@@ -8,6 +8,7 @@ use Statikbe\FilamentVoight\Resources\CustomerResource;
 use Statikbe\FilamentVoight\Resources\PackageResource;
 use Statikbe\FilamentVoight\Resources\ProjectResource;
 use Statikbe\FilamentVoight\Resources\TeamResource;
+use Statikbe\FilamentVoight\Resources\VulnerabilityResource;
 
 class FilamentVoightPlugin implements Plugin
 {
@@ -25,6 +26,7 @@ class FilamentVoightPlugin implements Plugin
             TeamResource::class,
             ProjectResource::class,
             PackageResource::class,
+            VulnerabilityResource::class,
         ]);
     }
 
