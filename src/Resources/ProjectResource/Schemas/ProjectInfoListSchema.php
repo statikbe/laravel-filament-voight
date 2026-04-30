@@ -3,7 +3,6 @@
 namespace Statikbe\FilamentVoight\Resources\ProjectResource\Schemas;
 
 use Filament\Actions\Action;
-use Filament\Forms\Components\Toggle;
 use Filament\Infolists\Components\RepeatableEntry;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Notifications\Notification;
@@ -11,11 +10,11 @@ use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Statikbe\FilamentVoight\Models\Project;
-use Statikbe\FilamentVoight\Resources\ProjectResource;
 
-class ProjectInfoListSchema {
-
-    public static function configure(Schema $schema): Schema {
+class ProjectInfoListSchema
+{
+    public static function configure(Schema $schema): Schema
+    {
         return $schema->components([
             Grid::make()
                 ->components([
@@ -28,7 +27,7 @@ class ProjectInfoListSchema {
                             ->label(voightTrans('models.project.fields.description')),
                         TextEntry::make('repo_url')
                             ->label(voightTrans('models.project.fields.repo_url'))
-                            ->url(fn($state) => $state, shouldOpenInNewTab: true),
+                            ->url(fn ($state) => $state, shouldOpenInNewTab: true),
                     ]),
                     Section::make(voightTrans('models.project.sections.assignment'))
                         ->components([
@@ -41,7 +40,7 @@ class ProjectInfoListSchema {
                         ->components([
                             TextEntry::make('is_muted')
                                 ->badge()
-                                ->formatStateUsing(fn($state) => $state ? voightTrans('models.project.fields.is_muted') : voightTrans('models.project.fields.is_unmuted'))
+                                ->formatStateUsing(fn ($state) => $state ? voightTrans('models.project.fields.is_muted') : voightTrans('models.project.fields.is_unmuted'))
                                 ->label(voightTrans('models.project.fields.is_muted'))
                                 ->helperText(voightTrans('models.project.fields.is_muted_help')),
                         ]),
@@ -93,7 +92,7 @@ class ProjectInfoListSchema {
                                         ->send();
                                 }),
                         ]),
-                ])->columnSpanFull()
+                ])->columnSpanFull(),
         ]);
     }
 }

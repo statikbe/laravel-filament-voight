@@ -50,9 +50,10 @@ class CustomerResource extends Resource
         return CustomerTableSchema::configure($table);
     }
 
-    public static function getRelations(): array {
+    public static function getRelations(): array
+    {
         return [
-            ProjectRelationManager::class
+            ProjectRelationManager::class,
         ];
     }
 
