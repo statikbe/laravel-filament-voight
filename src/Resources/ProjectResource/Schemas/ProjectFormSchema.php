@@ -99,7 +99,7 @@ class ProjectFormSchema
                                             ->label(voightTrans('models.project.actions.copy_token'))
                                             ->copyMessage($token->plainTextToken)
                                             ->button()
-                                            ->color('primary')
+                                            ->color('primary'),
                                     ])
                                     ->success()
                                     ->send();
