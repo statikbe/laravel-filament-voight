@@ -111,7 +111,7 @@ return [
                 'token_generated' => 'Token generated — copy it now, it won\'t be shown again',
                 'revoke_tokens' => 'Revoke All',
                 'tokens_revoked' => 'All tokens revoked',
-                'copy_token' => 'Copy token'
+                'copy_token' => 'Copy token',
             ],
         ],
         'environment' => [
