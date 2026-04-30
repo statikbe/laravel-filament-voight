@@ -26,7 +26,7 @@ class FilamentVoightServiceProvider extends PackageServiceProvider
                 $command
                     ->publishConfigFile()
                     ->publishMigrations()
-                    ->publish('filament-voight-scripts')
+                    ->publish('scripts')
                     ->askToRunMigrations()
                     ->askToStarRepoOnGitHub('statikbe/laravel-filament-voight');
             });
