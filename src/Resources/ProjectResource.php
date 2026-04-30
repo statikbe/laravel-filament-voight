@@ -2,13 +2,8 @@
 
 namespace Statikbe\FilamentVoight\Resources;
 
-use Filament\Actions\Action;
-use Filament\Infolists\Components\RepeatableEntry;
-use Filament\Infolists\Components\TextEntry;
-use Filament\Notifications\Notification;
 use Filament\Pages\Enums\SubNavigationPosition;
 use Filament\Resources\Resource;
-use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
@@ -19,6 +14,7 @@ use Statikbe\FilamentVoight\Resources\ProjectResource\Pages\ListProjects;
 use Statikbe\FilamentVoight\Resources\ProjectResource\Pages\ViewProject;
 use Statikbe\FilamentVoight\Resources\ProjectResource\RelationManagers\AlertSettingsRelationManager;
 use Statikbe\FilamentVoight\Resources\ProjectResource\RelationManagers\EnvironmentsRelationManager;
+use Statikbe\FilamentVoight\Resources\ProjectResource\RelationManagers\VulnerabilitiesRelationManager;
 use Statikbe\FilamentVoight\Resources\ProjectResource\Schemas\ProjectFormSchema;
 use Statikbe\FilamentVoight\Resources\ProjectResource\Schemas\ProjectInfoListSchema;
 use Statikbe\FilamentVoight\Resources\ProjectResource\Schemas\ProjectTableSchema;
@@ -27,7 +23,7 @@ class ProjectResource extends Resource
 {
     protected static ?string $model = Project::class;
 
-    protected static string | \BackedEnum | null $navigationIcon = Heroicon::OutlinedCodeBracket;
+    protected static string|\BackedEnum|null $navigationIcon = Heroicon::OutlinedCodeBracket;
 
     protected static ?string $recordTitleAttribute = 'name';
 
@@ -60,9 +56,10 @@ class ProjectResource extends Resource
         return ProjectTableSchema::configure($table);
     }
 
-    public static function infolist(Schema $schema): Schema {
-        //return $schema;
-        return ProjectInfolistSchema::configure($schema);
+    public static function infolist(Schema $schema): Schema
+    {
+        // return $schema;
+        return ProjectInfoListSchema::configure($schema);
     }
 
     public static function getRelations(): array
@@ -70,6 +67,7 @@ class ProjectResource extends Resource
         return [
             EnvironmentsRelationManager::class,
             AlertSettingsRelationManager::class,
+            VulnerabilitiesRelationManager::class,
         ];
     }
 
