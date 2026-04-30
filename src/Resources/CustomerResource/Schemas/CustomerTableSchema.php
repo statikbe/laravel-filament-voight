@@ -4,6 +4,7 @@ namespace Statikbe\FilamentVoight\Resources\CustomerResource\Schemas;
 
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
+use Filament\Actions\ViewAction;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 
@@ -31,6 +32,7 @@ class CustomerTableSchema
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->recordActions([
+                ViewAction::make(),
                 EditAction::make(),
             ])
             ->toolbarActions([

@@ -4,11 +4,13 @@ namespace Statikbe\FilamentVoight\Resources\ProjectResource\Schemas;
 
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
+use Filament\Actions\ViewAction;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
+use Statikbe\FilamentVoight\Resources\ProjectResource;
 
 class ProjectTableSchema
 {
@@ -61,6 +63,8 @@ class ProjectTableSchema
                     ->label(voightTrans('models.project.fields.is_muted')),
             ])
             ->recordActions([
+                ViewAction::make()
+                ->url(fn($record) => ProjectResource::getUrl('view', ['record' => $record])),
                 EditAction::make(),
             ])
             ->toolbarActions([

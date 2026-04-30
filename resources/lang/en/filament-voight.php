@@ -91,6 +91,7 @@ return [
                 'customer' => 'Customer',
                 'team' => 'Team',
                 'is_muted' => 'Muted',
+                'is_unmuted' => 'Notification enabled',
                 'is_muted_help' => 'Muted projects will not send alert notifications.',
                 'active_tokens' => 'Active Tokens',
                 'active_tokens_count' => 'token(s) active',
