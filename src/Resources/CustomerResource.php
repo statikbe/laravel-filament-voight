@@ -13,6 +13,7 @@ use Statikbe\FilamentVoight\Resources\CustomerResource\Pages\ListCustomers;
 use Statikbe\FilamentVoight\Resources\CustomerResource\Pages\ViewCustomer;
 use Statikbe\FilamentVoight\Resources\CustomerResource\RelationManagers\ProjectRelationManager;
 use Statikbe\FilamentVoight\Resources\CustomerResource\Schemas\CustomerFormSchema;
+use Statikbe\FilamentVoight\Resources\CustomerResource\Schemas\CustomerInfoListSchema;
 use Statikbe\FilamentVoight\Resources\CustomerResource\Schemas\CustomerTableSchema;
 
 class CustomerResource extends Resource
@@ -48,6 +49,10 @@ class CustomerResource extends Resource
     public static function table(Table $table): Table
     {
         return CustomerTableSchema::configure($table);
+    }
+
+    public static function infolist(Schema $schema): Schema {
+        return CustomerInfoListSchema::configure($schema);
     }
 
     public static function getRelations(): array
