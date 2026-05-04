@@ -8,12 +8,12 @@ use Statikbe\FilamentVoight\Resources\TeamResource;
 
 class ViewTeam extends ViewRecord
 {
-    protected function getHeaderActions(): array {
+    protected function getHeaderActions(): array
+    {
         return [
             EditAction::make(),
         ];
     }
 
     protected static string $resource = TeamResource::class;
-
 }

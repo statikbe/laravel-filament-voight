@@ -14,11 +14,12 @@ class ViewCustomer extends ViewRecord
     protected function getHeaderActions(): array
     {
         return [
-            EditAction::make()
+            EditAction::make(),
         ];
     }
 
-    public function getTitle(): string|Htmlable {
+    public function getTitle(): string | Htmlable
+    {
         return $this->getRecordTitle();
     }
 }

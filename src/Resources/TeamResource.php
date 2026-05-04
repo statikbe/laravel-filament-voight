@@ -51,8 +51,9 @@ class TeamResource extends Resource
         return TeamTableSchema::configure($table);
     }
 
-    public static function infolist(Schema $schema): Schema {
-        return TeamInfolistSchema::configure($schema);
+    public static function infolist(Schema $schema): Schema
+    {
+        return TeamInfoListSchema::configure($schema);
     }
 
     public static function getRelations(): array
