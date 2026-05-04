@@ -3,7 +3,6 @@
 namespace Statikbe\FilamentVoight\Resources\ProjectResource\Schemas;
 
 use Filament\Actions\Action;
-use Filament\Actions\ViewAction;
 use Filament\Infolists\Components\RepeatableEntry;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Notifications\Notification;
@@ -13,6 +12,7 @@ use Filament\Schemas\Schema;
 use Filament\Support\Enums\IconPosition;
 use Filament\Support\Icons\Heroicon;
 use Statikbe\FilamentVoight\Models\Project;
+
 use Statikbe\FilamentVoight\Resources\CustomerResource;
 use Statikbe\FilamentVoight\Resources\TeamResource;
 
@@ -34,8 +34,10 @@ class ProjectInfoListSchema
                             ->label(voightTrans('models.project.fields.repo_url'))
                             ->url(fn ($state) => $state, shouldOpenInNewTab: true)
                             ->icon(Heroicon::OutlinedArrowTopRightOnSquare)
+
                             ->iconPosition(IconPosition::After)
                             ->extraAttributes(['class' => 'underline'])
+                            ->iconPosition(IconPosition::After),
                     ]),
                     Section::make(voightTrans('models.project.sections.assignment'))
                         ->components([
