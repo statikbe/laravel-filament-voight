@@ -3,13 +3,17 @@
 namespace Statikbe\FilamentVoight\Resources\ProjectResource\Schemas;
 
 use Filament\Actions\Action;
+use Filament\Actions\ViewAction;
 use Filament\Infolists\Components\RepeatableEntry;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Notifications\Notification;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
+use Filament\Support\Enums\IconPosition;
+use Filament\Support\Icons\Heroicon;
 use Statikbe\FilamentVoight\Models\Project;
+use Statikbe\FilamentVoight\Resources\CustomerResource;
 
 class ProjectInfoListSchema
 {
@@ -27,7 +31,9 @@ class ProjectInfoListSchema
                             ->label(voightTrans('models.project.fields.description')),
                         TextEntry::make('repo_url')
                             ->label(voightTrans('models.project.fields.repo_url'))
-                            ->url(fn ($state) => $state, shouldOpenInNewTab: true),
+                            ->url(fn ($state) => $state, shouldOpenInNewTab: true)
+                            ->icon(Heroicon::OutlinedArrowTopRightOnSquare)
+                            ->iconPosition(IconPosition::After)
                     ]),
                     Section::make(voightTrans('models.project.sections.assignment'))
                         ->components([

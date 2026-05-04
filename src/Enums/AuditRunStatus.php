@@ -14,4 +14,14 @@ enum AuditRunStatus: string
     {
         return voightTrans('enums.audit_run_status.' . $this->value);
     }
+
+    public function color(): string
+    {
+        return match ($this) {
+            self::Completed => 'success',
+            self::Running => 'info',
+            self::Pending => 'warning',
+            self::Failed => 'danger',
+        };
+    }
 }

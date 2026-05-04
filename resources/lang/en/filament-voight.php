@@ -254,4 +254,37 @@ return [
             ],
         ],
     ],
+
+    // Widgets
+    'widgets' => [
+        'severity_overview' => [
+            'heading' => 'Vulnerabilities by Severity',
+            'findings_this_week' => ':count findings in last 7 days',
+        ],
+        'audit_run_status' => [
+            'heading' => 'Audit Run Status',
+        ],
+        'active_findings' => [
+            'heading' => 'Active Findings',
+            'columns' => [
+                'package' => 'Package',
+                'package_type' => 'Type',
+                'observed' => 'Observed',
+            ],
+        ],
+        'most_vulnerable_projects' => [
+            'heading' => 'Most Vulnerable Projects',
+            'columns' => [
+                'critical' => 'Critical',
+                'high' => 'High',
+                'total' => 'Total Findings',
+            ],
+        ],
+        'recent_audit_runs' => [
+            'heading' => 'Recent Audit Runs',
+            'columns' => [
+                'duration' => 'Duration',
+            ],
+        ],
+    ],
 ];
