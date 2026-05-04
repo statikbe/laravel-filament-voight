@@ -51,7 +51,8 @@ class CustomerResource extends Resource
         return CustomerTableSchema::configure($table);
     }
 
-    public static function infolist(Schema $schema): Schema {
+    public static function infolist(Schema $schema): Schema
+    {
         return CustomerInfoListSchema::configure($schema);
     }
 

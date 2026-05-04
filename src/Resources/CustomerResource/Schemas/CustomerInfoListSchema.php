@@ -7,19 +7,18 @@ use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Support\Enums\TextSize;
 
-class CustomerInfoListSchema {
-
-
+class CustomerInfoListSchema
+{
     public static function configure(Schema $schema): Schema
     {
         return $schema->components([
             Section::make()->components([
                 TextEntry::make('name')
-                ->label(voightTrans('models.customer.fields.name'))
-                ->size(TextSize::Medium)
-                ->inlineLabel()
+                    ->label(voightTrans('models.customer.fields.name'))
+                    ->size(TextSize::Medium)
+                    ->inlineLabel(),
             ])
-            ->columnSpanFull()
+                ->columnSpanFull(),
         ]);
     }
 }
