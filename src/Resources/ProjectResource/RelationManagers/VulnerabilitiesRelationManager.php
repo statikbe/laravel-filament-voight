@@ -18,7 +18,7 @@ class VulnerabilitiesRelationManager extends RelationManager
 {
     protected static string $relationship = 'findings';
 
-    protected static string|\BackedEnum|null $icon = Heroicon::OutlinedShieldExclamation;
+    protected static string | \BackedEnum | null $icon = Heroicon::OutlinedShieldExclamation;
 
     public static function getTitle(Model $ownerRecord, string $pageClass): string
     {
