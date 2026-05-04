@@ -14,6 +14,7 @@ use Filament\Support\Enums\IconPosition;
 use Filament\Support\Icons\Heroicon;
 use Statikbe\FilamentVoight\Models\Project;
 use Statikbe\FilamentVoight\Resources\CustomerResource;
+use Statikbe\FilamentVoight\Resources\TeamResource;
 
 class ProjectInfoListSchema
 {
@@ -34,13 +35,18 @@ class ProjectInfoListSchema
                             ->url(fn ($state) => $state, shouldOpenInNewTab: true)
                             ->icon(Heroicon::OutlinedArrowTopRightOnSquare)
                             ->iconPosition(IconPosition::After)
+                            ->extraAttributes(['class' => 'underline'])
                     ]),
                     Section::make(voightTrans('models.project.sections.assignment'))
                         ->components([
                             TextEntry::make('customer.name')
-                                ->label(voightTrans('models.project.fields.customer')),
+                                ->label(voightTrans('models.project.fields.customer'))
+                                ->url(fn($record) => CustomerResource::getUrl('view', ['record' => $record->customer]))
+                                ->badge(),
                             TextEntry::make('team.name')
-                                ->label(voightTrans('models.project.fields.team')),
+                                ->label(voightTrans('models.project.fields.team'))
+                                ->url(fn($record) => TeamResource::getUrl('view', ['record' => $record->team]))
+                                ->badge(),
                         ]),
                     Section::make(voightTrans('models.project.sections.settings'))
                         ->components([
