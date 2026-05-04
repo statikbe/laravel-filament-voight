@@ -17,7 +17,7 @@ class EditCustomer extends EditRecord
             ViewAction::make(),
             DeleteAction::make()
                 ->requiresConfirmation()
-                ->disabled(fn($record) => $record->projects->isNotEmpty()),
+                ->disabled(fn ($record) => $record->projects->isNotEmpty()),
         ];
     }
 
