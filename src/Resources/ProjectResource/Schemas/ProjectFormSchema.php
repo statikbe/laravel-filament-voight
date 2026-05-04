@@ -54,7 +54,8 @@ class ProjectFormSchema
                         Select::make('team_id')
                             ->label(voightTrans('models.project.fields.team'))
                             ->relationship('team', 'name')
-                            ->default(Team::whereHas('users', function ($query) {
+                            ->default(
+                                Team::whereHas('users', function ($query) {
                                     return $query->where('user_id', auth()->id());
                                 })->pluck('id')->first()
                             )
