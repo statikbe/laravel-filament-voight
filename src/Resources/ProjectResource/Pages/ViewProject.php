@@ -2,6 +2,7 @@
 
 namespace Statikbe\FilamentVoight\Resources\ProjectResource\Pages;
 
+use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
 use Filament\Resources\Pages\ViewRecord;
 use Statikbe\FilamentVoight\Resources\ProjectResource;
@@ -12,6 +13,8 @@ class ViewProject extends ViewRecord
     {
         return [
             EditAction::make(),
+            DeleteAction::make()
+                ->requiresConfirmation(),
         ];
     }
 

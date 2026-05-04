@@ -2,6 +2,7 @@
 
 namespace Statikbe\FilamentVoight\Resources\CustomerResource\Pages;
 
+use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
 use Filament\Resources\Pages\ViewRecord;
 use Illuminate\Contracts\Support\Htmlable;
@@ -15,6 +16,9 @@ class ViewCustomer extends ViewRecord
     {
         return [
             EditAction::make(),
+            DeleteAction::make()
+                ->requiresConfirmation()
+                ->disabled(fn($record) => $record->projects->isNotEmpty()),
         ];
     }
 
