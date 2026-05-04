@@ -5,6 +5,7 @@ namespace Statikbe\FilamentVoight\Resources\TeamResource\Pages;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
 use Filament\Resources\Pages\ViewRecord;
+use Illuminate\Contracts\Support\Htmlable;
 use Statikbe\FilamentVoight\Resources\TeamResource;
 
 class ViewTeam extends ViewRecord
@@ -20,4 +21,8 @@ class ViewTeam extends ViewRecord
     }
 
     protected static string $resource = TeamResource::class;
+
+    public function getTitle(): string|Htmlable {
+        return $this->getRecordTitle();
+    }
 }
