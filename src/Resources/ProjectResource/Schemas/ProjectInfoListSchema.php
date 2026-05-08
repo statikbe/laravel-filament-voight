@@ -15,8 +15,10 @@ use Statikbe\FilamentVoight\Models\Project;
 use Statikbe\FilamentVoight\Resources\CustomerResource;
 use Statikbe\FilamentVoight\Resources\TeamResource;
 
-class ProjectInfoListSchema {
-    public static function configure(Schema $schema): Schema {
+class ProjectInfoListSchema
+{
+    public static function configure(Schema $schema): Schema
+    {
         return $schema->components([
             Grid::make(2)
                 ->components([
@@ -30,7 +32,7 @@ class ProjectInfoListSchema {
                                 ->label(voightTrans('models.project.fields.description')),
                             TextEntry::make('repo_url')
                                 ->label(voightTrans('models.project.fields.repo_url'))
-                                ->url(fn($state) => $state, shouldOpenInNewTab: true)
+                                ->url(fn ($state) => $state, shouldOpenInNewTab: true)
                                 ->icon(Heroicon::OutlinedArrowTopRightOnSquare)
                                 ->iconPosition(IconPosition::After)
                                 ->extraAttributes(['class' => 'underline'])
@@ -41,11 +43,11 @@ class ProjectInfoListSchema {
                         ->components([
                             TextEntry::make('customer.name')
                                 ->label(voightTrans('models.project.fields.customer'))
-                                ->url(fn($record) => CustomerResource::getUrl('view', ['record' => $record->customer]))
+                                ->url(fn ($record) => CustomerResource::getUrl('view', ['record' => $record->customer]))
                                 ->badge(),
                             TextEntry::make('team.name')
                                 ->label(voightTrans('models.project.fields.team'))
-                                ->url(fn($record) => TeamResource::getUrl('view', ['record' => $record->team]))
+                                ->url(fn ($record) => TeamResource::getUrl('view', ['record' => $record->team]))
                                 ->badge(),
                         ])
                         ->extraAttributes(['class' => 'h-full [&>.fi-section]:h-full']),
@@ -53,14 +55,14 @@ class ProjectInfoListSchema {
                         ->components([
                             TextEntry::make('is_muted')
                                 ->badge()
-                                ->formatStateUsing(fn($state) => $state ? voightTrans('models.project.fields.is_muted') : voightTrans('models.project.fields.is_unmuted'))
+                                ->formatStateUsing(fn ($state) => $state ? voightTrans('models.project.fields.is_muted') : voightTrans('models.project.fields.is_unmuted'))
                                 ->label(voightTrans('models.project.fields.is_muted'))
-                                ->helperText(voightTrans('models.project.fields.is_muted_help'))
+                                ->helperText(voightTrans('models.project.fields.is_muted_help')),
                         ])
                         ->extraAttributes(['class' => 'h-full [&>.fi-section]:h-full']),
                     Section::make(voightTrans('models.project.sections.api_token'))
                         ->description(voightTrans('models.project.sections.api_token_description'))
-                        ->visible(fn(?Project $record): bool => $record !== null)
+                        ->visible(fn (?Project $record): bool => $record !== null)
                         ->components([
                             RepeatableEntry::make('tokens')
                                 ->label('')
@@ -96,7 +98,7 @@ class ProjectInfoListSchema {
                                 ->label(voightTrans('models.project.actions.revoke_tokens'))
                                 ->color('danger')
                                 ->requiresConfirmation()
-                                ->visible(fn(Project $record): bool => $record->tokens()->count() > 0)
+                                ->visible(fn (Project $record): bool => $record->tokens()->count() > 0)
                                 ->action(function (Project $record) {
                                     $record->tokens()->delete();
 
