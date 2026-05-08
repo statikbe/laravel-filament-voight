@@ -25,7 +25,8 @@ class ViewPackage extends ViewRecord
         ];
     }
 
-    public function getTitle(): string|Htmlable {
+    public function getTitle(): string | Htmlable
+    {
         return $this->getRecordTitle();
     }
 }
