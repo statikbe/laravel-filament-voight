@@ -41,7 +41,8 @@ class ProjectFormSchema
                             ->required()
                             ->url()
                             ->maxLength(255),
-                    ]),
+                    ])
+                    ->extraAttributes(['class' => 'h-full [&>.fi-section]:h-full']),
                 Section::make(voightTrans('models.project.sections.assignment'))
                     ->components([
                         Select::make('customer_id')
@@ -62,13 +63,15 @@ class ProjectFormSchema
                             ->searchable()
                             ->preload()
                             ->required(),
-                    ]),
+                    ])
+                    ->extraAttributes(['class' => 'h-full [&>.fi-section]:h-full']),
                 Section::make(voightTrans('models.project.sections.settings'))
                     ->components([
                         Toggle::make('is_muted')
                             ->label(voightTrans('models.project.fields.is_muted'))
                             ->helperText(voightTrans('models.project.fields.is_muted_help')),
-                    ]),
+                    ])
+                    ->extraAttributes(['class' => 'h-full [&>.fi-section]:h-full']),
                 Section::make(voightTrans('models.project.sections.api_token'))
                     ->description(voightTrans('models.project.sections.api_token_description'))
                     ->visible(fn (?Project $record): bool => $record !== null)
@@ -116,7 +119,8 @@ class ProjectFormSchema
                                     ->success()
                                     ->send();
                             }),
-                    ]),
+                    ])
+                    ->extraAttributes(['class' => 'h-full [&>.fi-section]:h-full']),
             ]);
     }
 }
