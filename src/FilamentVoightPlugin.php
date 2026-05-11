@@ -28,6 +28,14 @@ class FilamentVoightPlugin implements Plugin
             PackageResource::class,
             VulnerabilityResource::class,
         ]);
+
+        $panel->widgets([
+            Widgets\SeverityOverviewWidget::class,
+            Widgets\AuditRunStatusWidget::class,
+            Widgets\ActiveFindingsWidget::class,
+            Widgets\MostVulnerableProjectsWidget::class,
+            Widgets\RecentAuditRunsWidget::class,
+        ]);
     }
 
     public function boot(Panel $panel): void

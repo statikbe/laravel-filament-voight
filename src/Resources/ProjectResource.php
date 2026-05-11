@@ -2,6 +2,7 @@
 
 namespace Statikbe\FilamentVoight\Resources;
 
+use Filament\Pages\Enums\SubNavigationPosition;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
@@ -10,9 +11,12 @@ use Statikbe\FilamentVoight\Models\Project;
 use Statikbe\FilamentVoight\Resources\ProjectResource\Pages\CreateProject;
 use Statikbe\FilamentVoight\Resources\ProjectResource\Pages\EditProject;
 use Statikbe\FilamentVoight\Resources\ProjectResource\Pages\ListProjects;
+use Statikbe\FilamentVoight\Resources\ProjectResource\Pages\ViewProject;
 use Statikbe\FilamentVoight\Resources\ProjectResource\RelationManagers\AlertSettingsRelationManager;
 use Statikbe\FilamentVoight\Resources\ProjectResource\RelationManagers\EnvironmentsRelationManager;
+use Statikbe\FilamentVoight\Resources\ProjectResource\RelationManagers\VulnerabilitiesRelationManager;
 use Statikbe\FilamentVoight\Resources\ProjectResource\Schemas\ProjectFormSchema;
+use Statikbe\FilamentVoight\Resources\ProjectResource\Schemas\ProjectInfoListSchema;
 use Statikbe\FilamentVoight\Resources\ProjectResource\Schemas\ProjectTableSchema;
 
 class ProjectResource extends Resource
@@ -24,6 +28,8 @@ class ProjectResource extends Resource
     protected static ?string $recordTitleAttribute = 'name';
 
     protected static ?int $navigationSort = 3;
+
+    protected static ?SubNavigationPosition $subNavigationPosition = SubNavigationPosition::Top;
 
     public static function getNavigationGroup(): ?string
     {
@@ -50,11 +56,18 @@ class ProjectResource extends Resource
         return ProjectTableSchema::configure($table);
     }
 
+    public static function infolist(Schema $schema): Schema
+    {
+        // return $schema;
+        return ProjectInfoListSchema::configure($schema);
+    }
+
     public static function getRelations(): array
     {
         return [
             EnvironmentsRelationManager::class,
             AlertSettingsRelationManager::class,
+            VulnerabilitiesRelationManager::class,
         ];
     }
 
@@ -63,6 +76,7 @@ class ProjectResource extends Resource
         return [
             'index' => ListProjects::route('/'),
             'create' => CreateProject::route('/create'),
+            'view' => ViewProject::route('/{record}'),
             'edit' => EditProject::route('/{record}/edit'),
         ];
     }

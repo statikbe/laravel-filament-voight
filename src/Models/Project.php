@@ -8,6 +8,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
 use Laravel\Sanctum\HasApiTokens;
+use Staudenmeir\EloquentHasManyDeep\HasManyDeep;
+use Staudenmeir\EloquentHasManyDeep\HasRelationships;
 
 /**
  * @property int $id
@@ -25,6 +27,7 @@ class Project extends Model
 {
     use HasApiTokens;
     use HasFactory;
+    use HasRelationships;
 
     const DEFAULT_API_TOKEN_NAME = 'ci-pipeline';
 
@@ -72,5 +75,23 @@ class Project extends Model
     public function alertSettings(): HasMany
     {
         return $this->hasMany(AlertSetting::class);
+    }
+
+    /**
+     * @return HasManyDeep<AuditFinding, $this>
+     */
+    public function findings(): HasManyDeep
+    {
+        return $this->hasManyDeep(
+            AuditFinding::class,
+            [Environment::class, AuditRun::class],
+            ['project_id', 'environment_id', 'audit_run_id'],
+            ['id', 'id', 'id'],
+        );
+    }
+
+    public function getRouteKeyName()
+    {
+        return 'project_code';
     }
 }
