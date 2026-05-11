@@ -3,8 +3,10 @@
 namespace Statikbe\FilamentVoight\Resources\ProjectResource\Schemas;
 
 use Filament\Actions\Action;
+use Filament\Forms\Components\TextInput\Actions\CopyAction;
 use Filament\Infolists\Components\RepeatableEntry;
 use Filament\Infolists\Components\TextEntry;
+
 use Filament\Notifications\Notification;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
@@ -91,6 +93,13 @@ class ProjectInfoListSchema
                                         ->title(voightTrans('models.project.actions.token_generated'))
                                         ->body($token->plainTextToken)
                                         ->persistent()
+                                        ->actions([
+                                            CopyAction::make('copy_token')
+                                                ->label(voightTrans('models.project.actions.copy_token'))
+                                                ->copyMessage($token->plainTextToken)
+                                                ->button()
+                                                ->color('primary'),
+                                        ])
                                         ->success()
                                         ->send();
                                 }),
