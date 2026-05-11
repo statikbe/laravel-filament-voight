@@ -91,6 +91,7 @@ return [
                 'customer' => 'Customer',
                 'team' => 'Team',
                 'is_muted' => 'Muted',
+                'is_unmuted' => 'Notification enabled',
                 'is_muted_help' => 'Muted projects will not send alert notifications.',
                 'active_tokens' => 'Active Tokens',
                 'active_tokens_count' => 'token(s) active',
@@ -254,6 +255,39 @@ return [
                 'frequency' => 'Frequency',
                 'webhook_url' => 'Webhook URL',
                 'is_enabled' => 'Enabled',
+            ],
+        ],
+    ],
+
+    // Widgets
+    'widgets' => [
+        'severity_overview' => [
+            'heading' => 'Vulnerabilities by Severity',
+            'findings_this_week' => ':count findings in last 7 days',
+        ],
+        'audit_run_status' => [
+            'heading' => 'Audit Run Status',
+        ],
+        'active_findings' => [
+            'heading' => 'Active Findings',
+            'columns' => [
+                'package' => 'Package',
+                'package_type' => 'Type',
+                'observed' => 'Observed',
+            ],
+        ],
+        'most_vulnerable_projects' => [
+            'heading' => 'Most Vulnerable Projects',
+            'columns' => [
+                'critical' => 'Critical',
+                'high' => 'High',
+                'total' => 'Total Findings',
+            ],
+        ],
+        'recent_audit_runs' => [
+            'heading' => 'Recent Audit Runs',
+            'columns' => [
+                'duration' => 'Duration',
             ],
         ],
     ],

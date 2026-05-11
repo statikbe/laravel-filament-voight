@@ -13,6 +13,7 @@ use Filament\Notifications\Notification;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Statikbe\FilamentVoight\Models\Project;
+use Statikbe\FilamentVoight\Models\Team;
 use Statikbe\FilamentVoight\Resources\CustomerResource\Schemas\CustomerFormSchema;
 
 class ProjectFormSchema
@@ -40,7 +41,8 @@ class ProjectFormSchema
                             ->required()
                             ->url()
                             ->maxLength(255),
-                    ]),
+                    ])
+                    ->extraAttributes(['class' => 'h-full [&>.fi-section]:h-full']),
                 Section::make(voightTrans('models.project.sections.assignment'))
                     ->components([
                         Select::make('customer_id')
@@ -53,16 +55,23 @@ class ProjectFormSchema
                         Select::make('team_id')
                             ->label(voightTrans('models.project.fields.team'))
                             ->relationship('team', 'name')
+                            ->default(
+                                Team::whereHas('users', function ($query) {
+                                    return $query->where('user_id', auth()->id());
+                                })->pluck('id')->first()
+                            )
                             ->searchable()
                             ->preload()
                             ->required(),
-                    ]),
+                    ])
+                    ->extraAttributes(['class' => 'h-full [&>.fi-section]:h-full']),
                 Section::make(voightTrans('models.project.sections.settings'))
                     ->components([
                         Toggle::make('is_muted')
                             ->label(voightTrans('models.project.fields.is_muted'))
                             ->helperText(voightTrans('models.project.fields.is_muted_help')),
-                    ]),
+                    ])
+                    ->extraAttributes(['class' => 'h-full [&>.fi-section]:h-full']),
                 Section::make(voightTrans('models.project.sections.api_token'))
                     ->description(voightTrans('models.project.sections.api_token_description'))
                     ->visible(fn (?Project $record): bool => $record !== null)
@@ -110,7 +119,8 @@ class ProjectFormSchema
                                     ->success()
                                     ->send();
                             }),
-                    ]),
+                    ])
+                    ->extraAttributes(['class' => 'h-full [&>.fi-section]:h-full']),
             ]);
     }
 }

@@ -3,26 +3,27 @@
 namespace Statikbe\FilamentVoight\Resources\CustomerResource\Pages;
 
 use Filament\Actions\DeleteAction;
-use Filament\Actions\ViewAction;
-use Filament\Resources\Pages\EditRecord;
+use Filament\Actions\EditAction;
+use Filament\Resources\Pages\ViewRecord;
+use Illuminate\Contracts\Support\Htmlable;
 use Statikbe\FilamentVoight\Resources\CustomerResource;
 
-class EditCustomer extends EditRecord
+class ViewCustomer extends ViewRecord
 {
     protected static string $resource = CustomerResource::class;
 
     protected function getHeaderActions(): array
     {
         return [
-            ViewAction::make(),
+            EditAction::make(),
             DeleteAction::make()
                 ->requiresConfirmation()
                 ->disabled(fn ($record) => $record->projects->isNotEmpty()),
         ];
     }
 
-    protected function getRedirectUrl(): string
+    public function getTitle(): string | Htmlable
     {
-        return $this->getResource()::getUrl('index');
+        return $this->getRecordTitle();
     }
 }

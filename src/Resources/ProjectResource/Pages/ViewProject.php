@@ -3,25 +3,26 @@
 namespace Statikbe\FilamentVoight\Resources\ProjectResource\Pages;
 
 use Filament\Actions\DeleteAction;
-use Filament\Actions\ViewAction;
-use Filament\Resources\Pages\EditRecord;
+use Filament\Actions\EditAction;
+use Filament\Resources\Pages\ViewRecord;
+use Illuminate\Contracts\Support\Htmlable;
 use Statikbe\FilamentVoight\Resources\ProjectResource;
 
-class EditProject extends EditRecord
+class ViewProject extends ViewRecord
 {
-    protected static string $resource = ProjectResource::class;
-
     protected function getHeaderActions(): array
     {
         return [
-            ViewAction::make(),
+            EditAction::make(),
             DeleteAction::make()
                 ->requiresConfirmation(),
         ];
     }
 
-    protected function getRedirectUrl(): string
+    protected static string $resource = ProjectResource::class;
+
+    public function getTitle(): string | Htmlable
     {
-        return $this->getResource()::getUrl('index');
+        return $this->getRecordTitle();
     }
 }
