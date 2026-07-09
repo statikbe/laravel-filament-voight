@@ -4,6 +4,7 @@ namespace Statikbe\FilamentVoight\Widgets;
 
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Filament\Widgets\TableWidget;
 use Illuminate\Database\Eloquent\Builder;
@@ -69,6 +70,21 @@ class ActiveFindingsWidget extends TableWidget
                 TextColumn::make('auditRun.started_at')
                     ->label(voightTrans('widgets.active_findings.columns.observed'))
                     ->dateTime(),
+            ])
+            ->filters([
+                SelectFilter::make('package_type')
+                    ->label(voightTrans('widgets.active_findings.columns.package_type'))
+                    ->options(PackageType::options())
+                    ->query(function (Builder $query, array $data): Builder {
+                        if (blank($data['value'] ?? null)) {
+                            return $query;
+                        }
+
+                        return $query->whereHas(
+                            'package',
+                            fn (Builder $q) => $q->where('type', $data['value']),
+                        );
+                    }),
             ])
             ->paginated([10])
             ->defaultPaginationPageOption(10)

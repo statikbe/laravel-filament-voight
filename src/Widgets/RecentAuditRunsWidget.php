@@ -24,6 +24,7 @@ class RecentAuditRunsWidget extends TableWidget
         return $table
             ->query(
                 AuditRun::query()
+                    ->whereIn('id', AuditRun::latestIdsPerProject())
                     ->with('environment.project')
                     ->orderByDesc('started_at'),
             )
@@ -61,7 +62,7 @@ class RecentAuditRunsWidget extends TableWidget
             return '—';
         }
 
-        $totalSeconds = max(0, $record->completed_at->diffInSeconds($record->started_at));
+        $totalSeconds = max(0, $record->started_at->diffInSeconds($record->completed_at));
         $minutes = intdiv((int) $totalSeconds, 60);
         $seconds = (int) $totalSeconds % 60;
 
