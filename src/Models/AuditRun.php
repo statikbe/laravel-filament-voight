@@ -70,4 +70,27 @@ class AuditRun extends Model
             ->select('id')
             ->whereRaw('started_at = (select max(started_at) from voight_audit_runs a2 where a2.environment_id = voight_audit_runs.environment_id)');
     }
+
+    /**
+     * Subquery selecting, for each project, the id of its single most recent AuditRun
+     * across all of the project's environments (by started_at, id as tie-breaker).
+     *
+     * Intended for use in `whereIn('id', AuditRun::latestIdsPerProject())`.
+     *
+     * @return Builder<AuditRun>
+     */
+    public static function latestIdsPerProject(): Builder
+    {
+        return self::query()
+            ->select('voight_audit_runs.id')
+            ->join('voight_environments', 'voight_audit_runs.environment_id', '=', 'voight_environments.id')
+            ->whereRaw('voight_audit_runs.id = (
+                select ar.id
+                from voight_audit_runs ar
+                join voight_environments env on ar.environment_id = env.id
+                where env.project_id = voight_environments.project_id
+                order by ar.started_at desc, ar.id desc
+                limit 1
+            )');
+    }
 }

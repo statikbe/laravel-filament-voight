@@ -99,6 +99,9 @@ return [
                 'token_name' => 'Name',
                 'token_last_used' => 'Last Used',
                 'never_used' => 'Never',
+                'relation_manager_environment' => 'Environment',
+                'relation_manager_alert' => 'Alert',
+                'relation_manager_vulnerability' => 'Vulnerability',
             ],
             'sections' => [
                 'general' => 'General',

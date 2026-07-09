@@ -65,9 +65,9 @@ class ProjectResource extends Resource
     public static function getRelations(): array
     {
         return [
-            EnvironmentsRelationManager::class,
-            AlertSettingsRelationManager::class,
-            VulnerabilitiesRelationManager::class,
+            'environment' => EnvironmentsRelationManager::class,
+            'alert' =>AlertSettingsRelationManager::class,
+            'vulnerability' =>VulnerabilitiesRelationManager::class,
         ];
     }
 

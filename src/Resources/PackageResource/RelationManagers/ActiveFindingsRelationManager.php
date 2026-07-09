@@ -7,11 +7,13 @@ use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\Filter;
+use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Grouping\Group;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Statikbe\FilamentVoight\Enums\PackageType;
 use Statikbe\FilamentVoight\Enums\Severity;
 use Statikbe\FilamentVoight\Models\AuditRun;
 
@@ -86,6 +88,19 @@ class ActiveFindingsRelationManager extends RelationManager
                         false: fn (Builder $q) => $q,
                         blank: fn (Builder $q) => $q,
                     ),
+                SelectFilter::make('package_type')
+                    ->label(voightTrans('widgets.active_findings.columns.package_type'))
+                    ->options(PackageType::options())
+                    ->query(function (Builder $query, array $data): Builder {
+                        if (blank($data['value'] ?? null)) {
+                            return $query;
+                        }
+
+                        return $query->whereHas(
+                            'package',
+                            fn (Builder $q) => $q->where('type', $data['value']),
+                        );
+                    }),
                 Filter::make('observed_at')
                     ->label(voightTrans('models.package.view.filters.observed_at'))
                     ->schema([

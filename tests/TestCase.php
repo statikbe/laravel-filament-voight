@@ -61,6 +61,8 @@ class TestCase extends Orchestra
 
     public function getEnvironmentSetUp($app): void
     {
+        $app['config']->set('app.key', 'base64:T/MupGaBB277pIfrpS71axrorxbGSlIDoTbRHzobgoE=');
+
         $app['config']->set('database.default', 'testing');
 
         $app['config']->set('filesystems.disks.voight-lockfiles', [
