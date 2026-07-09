@@ -66,8 +66,8 @@ class ProjectResource extends Resource
     {
         return [
             'environment' => EnvironmentsRelationManager::class,
-            'alert' =>AlertSettingsRelationManager::class,
-            'vulnerability' =>VulnerabilitiesRelationManager::class,
+            'alert' => AlertSettingsRelationManager::class,
+            'vulnerability' => VulnerabilitiesRelationManager::class,
         ];
     }
 
