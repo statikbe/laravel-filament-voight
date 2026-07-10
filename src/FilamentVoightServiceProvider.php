@@ -53,6 +53,7 @@ class FilamentVoightServiceProvider extends PackageServiceProvider
     public function packageBooted(): void
     {
         Relation::morphMap(FilamentVoight::config()->getMorphMap());
+        Relation::morphMap(['voight-user' => FilamentVoight::config()->getUserModel()]);
 
         FilamentAsset::register(
             $this->getAssets(),
@@ -80,6 +81,7 @@ class FilamentVoightServiceProvider extends PackageServiceProvider
 
         $this->callAfterResolving(Schedule::class, function (Schedule $schedule) {
             $schedule->command('voight:run-osv-scan')->daily();
+            $schedule->command('voight:send-alert-digests')->hourly();
         });
     }
 
@@ -105,6 +107,7 @@ class FilamentVoightServiceProvider extends PackageServiceProvider
             Commands\SyncLockFileCommand::class,
             Commands\CreateProjectTokenCommand::class,
             Commands\RunOsvScanCommand::class,
+            Commands\SendAlertDigestsCommand::class,
         ];
     }
 
@@ -153,6 +156,9 @@ class FilamentVoightServiceProvider extends PackageServiceProvider
             'create_voight_audit_runs_table',
             'create_voight_audit_findings_table',
             'create_voight_alert_settings_table',
+            'create_voight_alert_recipients_table',
+            'add_slack_channel_to_voight_alert_settings_table',
+            'add_last_sent_at_to_voight_alert_settings_table',
         ];
     }
 }

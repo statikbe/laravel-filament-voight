@@ -28,7 +28,10 @@
         "laravel/sanctum": "^4.3",
         "spatie/laravel-package-tools": "^1.15.0",
         "spatie/laravel-sluggable": "^3.8",
-        "staudenmeir/eloquent-has-many-deep": "^1.21"
+        "staudenmeir/eloquent-has-many-deep": "^1.21",
+        "symfony/postmark-mailer": "^v8.0.0",
+        "symfony/http-client": "^v8.0.0",
+        "laravel/slack-notification-channel": "^3.0.0"
     },
     "require-dev": {
         "larastan/larastan": "^3.0",

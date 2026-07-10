@@ -17,11 +17,24 @@ it('creates all voight tables', function () {
         'voight_audit_runs',
         'voight_audit_findings',
         'voight_alert_settings',
+        'voight_alert_recipients',
     ];
 
     foreach ($tables as $table) {
         expect(Schema::hasTable($table))->toBeTrue("Table {$table} should exist");
     }
+});
+
+it('has expected columns on voight_alert_recipients', function () {
+    expect(Schema::hasColumns('voight_alert_recipients', [
+        'id', 'alert_setting_id', 'recipient_type', 'recipient_id', 'created_at', 'updated_at',
+    ]))->toBeTrue();
+});
+
+it('adds slack_channel and last_sent_at columns to voight_alert_settings', function () {
+    expect(Schema::hasColumns('voight_alert_settings', [
+        'slack_channel', 'last_sent_at',
+    ]))->toBeTrue();
 });
 
 it('has expected columns on voight_projects', function () {

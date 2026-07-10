@@ -258,8 +258,35 @@ return [
                 'severity_threshold' => 'Severity Threshold',
                 'frequency' => 'Frequency',
                 'webhook_url' => 'Webhook URL',
+                'slack_channel' => 'Slack Channel',
+                'last_sent_at' => 'Last Sent',
+                'recipient_users' => 'Recipient Users',
+                'recipient_teams' => 'Recipient Teams',
+                'recipients' => 'Recipients',
                 'is_enabled' => 'Enabled',
             ],
+        ],
+    ],
+
+    // Notifications
+    'notifications' => [
+        'audit_run_summary' => [
+            'subject' => 'Voight alert: :total finding(s) for :project (:environment)',
+            'headline' => 'New vulnerability findings in :project',
+            'intro' => 'The latest scan of :project (:environment) found :total vulnerability finding(s) at or above your severity threshold.',
+        ],
+        'audit_digest' => [
+            'subject' => 'Voight digest: :total outstanding finding(s) for :project',
+            'headline' => 'Outstanding vulnerabilities in :project',
+            'intro' => ':project currently has :total outstanding vulnerability finding(s) at or above your severity threshold.',
+        ],
+        'common' => [
+            'severity' => 'Severity',
+            'count' => 'Count',
+            'top_findings' => 'Top Findings',
+            'view_project' => 'View Project',
+            'environments' => 'Environments: :environments',
+            'fixed_in' => 'fixed in :version',
         ],
     ],
 

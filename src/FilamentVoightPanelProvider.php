@@ -23,7 +23,7 @@ class FilamentVoightPanelProvider extends PanelProvider
             ->id('voight')
             ->path(app(FilamentVoightConfig::class)->getPanelPath())
             ->login()
-            ->brandName(voightTrans('panel.brand_name'))
+            ->brandName(fn (): string => voightTrans('panel.brand_name'))
             ->plugin(FilamentVoightPlugin::make())
             ->middleware([
                 EncryptCookies::class,

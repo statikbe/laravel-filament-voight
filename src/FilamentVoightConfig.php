@@ -2,6 +2,8 @@
 
 namespace Statikbe\FilamentVoight;
 
+use Illuminate\Foundation\Auth\User;
+use Statikbe\FilamentVoight\Models\AlertRecipient;
 use Statikbe\FilamentVoight\Models\AlertSetting;
 use Statikbe\FilamentVoight\Models\AuditFinding;
 use Statikbe\FilamentVoight\Models\AuditRun;
@@ -11,6 +13,7 @@ use Statikbe\FilamentVoight\Models\Environment;
 use Statikbe\FilamentVoight\Models\EnvironmentPackage;
 use Statikbe\FilamentVoight\Models\Package;
 use Statikbe\FilamentVoight\Models\Project;
+use Statikbe\FilamentVoight\Models\Team;
 use Statikbe\FilamentVoight\Models\Vulnerability;
 use Statikbe\FilamentVoight\Models\VulnerablePackageRange;
 
@@ -142,6 +145,55 @@ class FilamentVoightConfig
         return $this->packageConfig('models.alert_setting', AlertSetting::class);
     }
 
+    /**
+     * Resolve the host application's authenticatable user model.
+     *
+     * The module never references App\Models\User directly, so the class
+     * is resolved from config at runtime.
+     *
+     * @return class-string
+     */
+    public function getUserModel(): string
+    {
+        return $this->packageConfig('models.user')
+            ?? config('auth.providers.users.model')
+            ?? User::class;
+    }
+
+    // -- Notifications --
+
+    public function getSlackDefaultChannel(): ?string
+    {
+        return $this->packageConfig('notifications.slack_default_channel');
+    }
+
+    /**
+     * @return array{address: string, name: string|null}|null
+     */
+    public function getAlertMailFrom(): ?array
+    {
+        $address = $this->packageConfig('notifications.mail_from_address');
+
+        if (blank($address)) {
+            return null;
+        }
+
+        return [
+            'address' => $address,
+            'name' => $this->packageConfig('notifications.mail_from_name'),
+        ];
+    }
+
+    public function getAlertsPanelId(): string
+    {
+        return $this->packageConfig('notifications.panel_id') ?: 'voight';
+    }
+
+    public function getAlertsQueue(): ?string
+    {
+        return $this->packageConfig('notifications.queue');
+    }
+
     // -- Morph Map --
 
     /**
@@ -161,6 +213,8 @@ class FilamentVoightConfig
             'voight-audit-run' => AuditRun::class,
             'voight-audit-finding' => AuditFinding::class,
             'voight-alert-setting' => AlertSetting::class,
+            'voight-alert-recipient' => AlertRecipient::class,
+            'voight-team' => Team::class,
         ]);
     }
 

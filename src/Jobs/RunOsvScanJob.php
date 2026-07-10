@@ -92,6 +92,8 @@ class RunOsvScanJob implements ShouldQueue
                 'completed_at' => now(),
             ]);
 
+            SendAuditAlertsJob::dispatch($auditRun);
+
             Log::info('[Voight] OSV scan completed', [
                 'audit_run' => $auditRun->id,
                 'environment' => $this->environment->id,

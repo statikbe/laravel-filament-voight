@@ -1,6 +1,7 @@
 <?php
 
 use Statikbe\FilamentVoight\Http\Middleware\AuthenticateProjectToken;
+use Statikbe\FilamentVoight\Models\AlertRecipient;
 use Statikbe\FilamentVoight\Models\AlertSetting;
 use Statikbe\FilamentVoight\Models\AuditFinding;
 use Statikbe\FilamentVoight\Models\AuditRun;
@@ -10,6 +11,7 @@ use Statikbe\FilamentVoight\Models\Environment;
 use Statikbe\FilamentVoight\Models\EnvironmentPackage;
 use Statikbe\FilamentVoight\Models\Package;
 use Statikbe\FilamentVoight\Models\Project;
+use Statikbe\FilamentVoight\Models\Team;
 use Statikbe\FilamentVoight\Models\Vulnerability;
 use Statikbe\FilamentVoight\Models\VulnerablePackageRange;
 
@@ -60,6 +62,24 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Notifications
+    |--------------------------------------------------------------------------
+    |
+    | Configuration for the audit alert notifications (email + Slack). The
+    | Slack bot token itself lives in the host app's config/services.php
+    | (services.slack.notifications); only the default channel is set here.
+    |
+    */
+    'notifications' => [
+        'slack_default_channel' => env('VOIGHT_SLACK_CHANNEL'),
+        'mail_from_address' => env('VOIGHT_ALERT_MAIL_FROM'),
+        'mail_from_name' => env('VOIGHT_ALERT_MAIL_FROM_NAME'),
+        'panel_id' => 'voight',
+        'queue' => env('VOIGHT_ALERTS_QUEUE'),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Models
     |--------------------------------------------------------------------------
     |
@@ -79,6 +99,7 @@ return [
         // 'audit_run' => \Statikbe\FilamentVoight\Models\AuditRun::class,
         // 'audit_finding' => \Statikbe\FilamentVoight\Models\AuditFinding::class,
         // 'alert_setting' => \Statikbe\FilamentVoight\Models\AlertSetting::class,
+        // 'user' => \App\Models\User::class,
     ],
 
     /*
@@ -103,5 +124,7 @@ return [
         'voight-audit-run' => AuditRun::class,
         'voight-audit-finding' => AuditFinding::class,
         'voight-alert-setting' => AlertSetting::class,
+        'voight-alert-recipient' => AlertRecipient::class,
+        'voight-team' => Team::class,
     ],
 ];

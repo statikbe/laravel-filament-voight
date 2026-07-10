@@ -20,6 +20,7 @@ use Orchestra\Testbench\Concerns\WithWorkbench;
 use Orchestra\Testbench\TestCase as Orchestra;
 use Statikbe\FilamentVoight\FilamentVoightServiceProvider;
 use Statikbe\FilamentVoight\Tests\Support\TestPanelProvider;
+use Statikbe\FilamentVoight\Tests\Support\User;
 
 class TestCase extends Orchestra
 {
@@ -72,6 +73,14 @@ class TestCase extends Orchestra
 
         $app['config']->set('filament-voight.lockfiles.disk', 'voight-lockfiles');
         $app['config']->set('filament-voight.api.middleware', ['auth']);
+
+        $app['config']->set('filament-voight.models.user', User::class);
+        $app['config']->set('auth.providers.users.model', User::class);
+
+        $app['config']->set('services.slack.notifications', [
+            'bot_user_oauth_token' => 'xoxb-test-token',
+            'channel' => null,
+        ]);
     }
 
     protected function defineDatabaseMigrations(): void
