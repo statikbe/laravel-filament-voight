@@ -12,6 +12,7 @@ return new class extends Migration
             $table->ulid('id')->primary();
             $table->foreignUlid('environment_id')->constrained('voight_environments')->cascadeOnDelete();
             $table->string('status');
+            $table->string('trigger')->nullable();
             $table->timestamp('started_at')->nullable();
             $table->timestamp('completed_at')->nullable();
             $table->timestamps();
