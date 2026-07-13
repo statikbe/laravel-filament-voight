@@ -195,10 +195,16 @@ php artisan voight:run-osv-scan --project=my-project --environment=production # 
 
 ## Scheduling
 
-The package automatically schedules `voight:run-osv-scan --nightly` daily (with `withoutOverlapping`). This only runs if your application's scheduler is active — add the standard Laravel scheduler cron entry:
+The package automatically schedules `voight:run-osv-scan --nightly` (with `withoutOverlapping`). This only runs if your application's scheduler is active — add the standard Laravel scheduler cron entry:
 
 ```cron
 * * * * * php /path/to/artisan schedule:run >> /dev/null 2>&1
+```
+
+The run time is configurable via a cron expression (`scanner.nightly_cron`, default `0 0 * * *` = midnight). Set `VOIGHT_SCANNER_NIGHTLY_CRON` in your `.env`, e.g. `0 2 * * *` for 02:00, or an empty string to disable the automatic schedule:
+
+```dotenv
+VOIGHT_SCANNER_NIGHTLY_CRON="0 2 * * *"
 ```
 
 Scans also trigger automatically after every successful lockfile sync (post-sync hook). Environments can be excluded from the nightly sweep by turning off their **Nightly scan** toggle (the `scan_nightly` flag).
