@@ -32,3 +32,16 @@ it('indexes findings by composer/npm package key', function () use ($payload) {
         ->and($map)->toHaveKey('composer|symfony/http-kernel|5.4.0')
         ->and($map['npm|lodash|4.17.15'][0]['max_severity'])->toBe('8.1');
 });
+
+it('maps the highest numeric severity per vulnerability id', function () {
+    $response = ScanResponse::fromArray([
+        'findings' => [
+            ['ecosystem' => 'npm', 'name' => 'a', 'version' => '1', 'vulnerability_id' => 'V1', 'max_severity' => '5.3'],
+            ['ecosystem' => 'npm', 'name' => 'b', 'version' => '2', 'vulnerability_id' => 'V1', 'max_severity' => '8.1'],
+            ['ecosystem' => 'npm', 'name' => 'c', 'version' => '3', 'vulnerability_id' => 'V2', 'max_severity' => null],
+        ],
+        'vulnerabilities' => [],
+    ]);
+
+    expect($response->maxSeverityById())->toBe(['V1' => '8.1', 'V2' => null]);
+});

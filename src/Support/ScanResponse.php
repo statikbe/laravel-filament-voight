@@ -56,6 +56,40 @@ final class ScanResponse
         return $map;
     }
 
+    /**
+     * Highest numeric severity seen per vulnerability id across all findings.
+     * A null value means the vulnerability was reported without a group score.
+     *
+     * @return array<string, string|null>
+     */
+    public function maxSeverityById(): array
+    {
+        $map = [];
+
+        foreach ($this->findings as $finding) {
+            $id = (string) ($finding['vulnerability_id'] ?? '');
+
+            if ($id === '') {
+                continue;
+            }
+
+            $severity = $finding['max_severity'] ?? null;
+            $severity = $severity === null ? null : (string) $severity;
+
+            if (! array_key_exists($id, $map)) {
+                $map[$id] = $severity;
+
+                continue;
+            }
+
+            if ($severity !== null && (float) $severity > (float) ($map[$id] ?? 0)) {
+                $map[$id] = $severity;
+            }
+        }
+
+        return $map;
+    }
+
     public static function ecosystemToType(string $ecosystem): PackageType
     {
         return match (strtolower($ecosystem)) {
