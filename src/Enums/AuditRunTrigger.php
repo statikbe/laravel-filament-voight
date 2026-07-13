@@ -2,7 +2,11 @@
 
 namespace Statikbe\FilamentVoight\Enums;
 
-enum AuditRunTrigger: string
+use Filament\Support\Contracts\HasColor;
+use Filament\Support\Contracts\HasIcon;
+use Filament\Support\Contracts\HasLabel;
+
+enum AuditRunTrigger: string implements HasColor, HasIcon, HasLabel
 {
     use Concerns\HasOptions;
 
@@ -22,5 +26,29 @@ enum AuditRunTrigger: string
             self::Nightly => 'gray',
             self::Manual => 'warning',
         };
+    }
+
+    public function icon(): string
+    {
+        return match ($this) {
+            self::PostSync => 'heroicon-o-arrow-path',
+            self::Nightly => 'heroicon-o-moon',
+            self::Manual => 'heroicon-o-hand-raised',
+        };
+    }
+
+    public function getLabel(): string
+    {
+        return $this->label();
+    }
+
+    public function getColor(): string
+    {
+        return $this->color();
+    }
+
+    public function getIcon(): string
+    {
+        return $this->icon();
     }
 }

@@ -1,6 +1,19 @@
 <?php
 
+use Filament\Support\Contracts\HasColor;
+use Filament\Support\Contracts\HasIcon;
+use Filament\Support\Contracts\HasLabel;
 use Statikbe\FilamentVoight\Enums\AuditRunTrigger;
+
+it('implements the Filament label, color and icon contracts', function () {
+    $case = AuditRunTrigger::Nightly;
+    expect($case)->toBeInstanceOf(HasLabel::class)
+        ->toBeInstanceOf(HasColor::class)
+        ->toBeInstanceOf(HasIcon::class)
+        ->and($case->getColor())->toBe('gray')
+        ->and($case->getIcon())->toBe('heroicon-o-moon')
+        ->and($case->getLabel())->toBe($case->label());
+});
 
 it('exposes the three trigger cases with string values', function () {
     expect(AuditRunTrigger::PostSync->value)->toBe('post_sync')
