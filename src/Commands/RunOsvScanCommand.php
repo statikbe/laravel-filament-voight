@@ -3,7 +3,9 @@
 namespace Statikbe\FilamentVoight\Commands;
 
 use Illuminate\Console\Command;
+use Statikbe\FilamentVoight\Enums\AuditRunTrigger;
 use Statikbe\FilamentVoight\Facades\FilamentVoight;
+use Statikbe\FilamentVoight\Jobs\RunNightlyOsvScanJob;
 use Statikbe\FilamentVoight\Jobs\RunOsvScanJob;
 use Statikbe\FilamentVoight\Models\Environment;
 use Statikbe\FilamentVoight\Models\Project;
@@ -13,6 +15,7 @@ class RunOsvScanCommand extends Command
     use Concerns\HasVoightBanner;
 
     public $signature = 'voight:run-osv-scan
+        {--nightly : Run the deduplicated nightly sweep across all scan_nightly environments}
         {--project= : Limit to a specific project code}
         {--environment= : Limit to a specific environment name}';
 
@@ -21,6 +24,13 @@ class RunOsvScanCommand extends Command
     public function handle(): int
     {
         $this->displayBanner();
+
+        if ($this->option('nightly')) {
+            RunNightlyOsvScanJob::dispatch();
+            $this->info('Dispatched nightly deduplicated OSV scan.');
+
+            return self::SUCCESS;
+        }
 
         if (! FilamentVoight::config()->getScannerUrl()) {
             $this->error('VOIGHT_SCANNER_URL is not configured. Set it in your .env file.');
@@ -55,7 +65,7 @@ class RunOsvScanCommand extends Command
         }
 
         foreach ($environments as $environment) {
-            RunOsvScanJob::dispatch($environment);
+            RunOsvScanJob::dispatch($environment, AuditRunTrigger::Manual);
             $this->line("  Queued scan for: {$environment->project->project_code} / {$environment->name}");
         }
 

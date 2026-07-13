@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use RuntimeException;
+use Statikbe\FilamentVoight\Enums\AuditRunTrigger;
 use Statikbe\FilamentVoight\Enums\DependencySyncStatus;
 use Statikbe\FilamentVoight\Enums\PackageType;
 use Statikbe\FilamentVoight\Facades\FilamentVoight;
@@ -82,7 +83,7 @@ class ProcessLockFilesJob implements ShouldQueue
                 'package_count' => count($parsedPackages),
             ]);
 
-            RunOsvScanJob::dispatch($this->sync->environment);
+            RunOsvScanJob::dispatch($this->sync->environment, AuditRunTrigger::PostSync);
         } catch (\Throwable $e) {
             Log::error('[Voight] Lock file processing failed', [
                 'sync' => $this->sync->id,

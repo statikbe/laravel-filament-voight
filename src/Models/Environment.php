@@ -13,6 +13,7 @@ use Illuminate\Support\Carbon;
  * @property string $id
  * @property int $project_id
  * @property string $name
+ * @property bool $scan_nightly
  * @property Carbon|null $scanned_at
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
@@ -32,6 +33,7 @@ class Environment extends Model
     protected function casts(): array
     {
         return [
+            'scan_nightly' => 'boolean',
             'scanned_at' => 'datetime',
         ];
     }

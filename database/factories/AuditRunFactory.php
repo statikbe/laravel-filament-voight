@@ -4,6 +4,7 @@ namespace Statikbe\FilamentVoight\Database\Factories;
 
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Statikbe\FilamentVoight\Enums\AuditRunStatus;
+use Statikbe\FilamentVoight\Enums\AuditRunTrigger;
 use Statikbe\FilamentVoight\Models\AuditRun;
 use Statikbe\FilamentVoight\Models\Environment;
 
@@ -19,6 +20,7 @@ class AuditRunFactory extends Factory
         return [
             'environment_id' => Environment::factory(),
             'status' => AuditRunStatus::Completed,
+            'trigger' => AuditRunTrigger::Manual,
             'started_at' => now()->subMinutes(5),
             'completed_at' => now(),
         ];

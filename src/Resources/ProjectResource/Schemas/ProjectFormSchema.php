@@ -58,7 +58,7 @@ class ProjectFormSchema
                             ->default(
                                 Team::whereHas('users', function ($query) {
                                     return $query->where('user_id', auth()->id());
-                                })->pluck('id')->first()
+                                })->value('id')
                             )
                             ->searchable()
                             ->preload()
