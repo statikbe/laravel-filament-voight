@@ -25,13 +25,14 @@ class DeduplicatedPackageSetQuery
             ->join('voight_packages', 'voight_packages.id', '=', 'voight_environment_packages.package_id')
             ->whereIn('voight_environment_packages.environment_id', $environmentIds)
             ->distinct()
+            ->toBase()
             ->get([
                 'voight_packages.type as type',
                 'voight_packages.name as name',
                 'voight_environment_packages.version as version',
             ])
-            ->map(fn ($row): array => [
-                'type' => $row->type instanceof PackageType ? $row->type : PackageType::from((string) $row->type),
+            ->map(fn (object $row): array => [
+                'type' => PackageType::from((string) $row->type),
                 'name' => (string) $row->name,
                 'version' => (string) $row->version,
             ])

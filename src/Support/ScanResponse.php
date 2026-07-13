@@ -7,9 +7,12 @@ use Statikbe\FilamentVoight\Enums\PackageType;
 final class ScanResponse
 {
     /**
-     * @param  array<int, array{ecosystem: string, name: string, version: string, vulnerability_id: string, max_severity: string|null}>  $findings
+     * The findings/vulnerabilities/skipped arrays originate from the scanner's
+     * JSON response, so their inner values are treated as untrusted (mixed).
+     *
+     * @param  array<int, array<string, mixed>>  $findings
      * @param  array<string, array<string, mixed>>  $vulnerabilities
-     * @param  array<int, array{ecosystem: string, name: string, version: string, reason: string}>  $skippedPackages
+     * @param  array<int, array<string, mixed>>  $skippedPackages
      */
     public function __construct(
         public array $findings,
@@ -22,10 +25,14 @@ final class ScanResponse
      */
     public static function fromArray(array $json): self
     {
+        $findings = is_array($json['findings'] ?? null) ? array_values($json['findings']) : [];
+        $vulnerabilities = is_array($json['vulnerabilities'] ?? null) ? $json['vulnerabilities'] : [];
+        $skipped = $json['summary']['skipped_packages'] ?? null;
+
         return new self(
-            findings: array_values($json['findings'] ?? []),
-            vulnerabilities: $json['vulnerabilities'] ?? [],
-            skippedPackages: $json['summary']['skipped_packages'] ?? [],
+            findings: $findings,
+            vulnerabilities: $vulnerabilities,
+            skippedPackages: is_array($skipped) ? array_values($skipped) : [],
         );
     }
 
@@ -37,11 +44,12 @@ final class ScanResponse
         $map = [];
 
         foreach ($this->findings as $finding) {
-            $type = self::ecosystemToType($finding['ecosystem'] ?? '');
-            $key = $type->value . '|' . ($finding['name'] ?? '') . '|' . ($finding['version'] ?? '');
+            $type = self::ecosystemToType((string) ($finding['ecosystem'] ?? ''));
+            $key = $type->value . '|' . (string) ($finding['name'] ?? '') . '|' . (string) ($finding['version'] ?? '');
+            $maxSeverity = $finding['max_severity'] ?? null;
             $map[$key][] = [
-                'vulnerability_id' => $finding['vulnerability_id'] ?? '',
-                'max_severity' => $finding['max_severity'] ?? null,
+                'vulnerability_id' => (string) ($finding['vulnerability_id'] ?? ''),
+                'max_severity' => $maxSeverity === null ? null : (string) $maxSeverity,
             ];
         }
 
