@@ -4,7 +4,6 @@ use Statikbe\FilamentVoight\Enums\PackageType;
 use Statikbe\FilamentVoight\Models\Environment;
 use Statikbe\FilamentVoight\Models\EnvironmentPackage;
 use Statikbe\FilamentVoight\Models\Package;
-use Statikbe\FilamentVoight\Queries\DeduplicatedPackageSetQuery;
 
 it('collapses the same package@version across environments but keeps differing versions', function () {
     $laravel = Package::factory()->composer()->create(['name' => 'laravel/framework']);
@@ -15,8 +14,7 @@ it('collapses the same package@version across environments but keeps differing v
     EnvironmentPackage::factory()->create(['environment_id' => $envB->id, 'package_id' => $laravel->id, 'version' => 'v10.9.0']);
     EnvironmentPackage::factory()->create(['environment_id' => $envB->id, 'package_id' => $laravel->id, 'version' => 'v10.48.0']);
 
-    $set = app(DeduplicatedPackageSetQuery::class)
-        ->forEnvironments(collect([$envA, $envB]));
+    $set = EnvironmentPackage::distinctPackageSetForEnvironments(collect([$envA, $envB]));
 
     expect($set)->toHaveCount(2);
     $versions = $set->pluck('version')->sort()->values()->all();
@@ -31,13 +29,12 @@ it('excludes environments not passed in', function () {
     EnvironmentPackage::factory()->create(['environment_id' => $included->id, 'package_id' => $pkg->id, 'version' => '1.0.0']);
     EnvironmentPackage::factory()->create(['environment_id' => $excluded->id, 'package_id' => $pkg->id, 'version' => '2.0.0']);
 
-    $set = app(DeduplicatedPackageSetQuery::class)->forEnvironments(collect([$included]));
+    $set = EnvironmentPackage::distinctPackageSetForEnvironments(collect([$included]));
 
     expect($set)->toHaveCount(1)
         ->and($set->first()['version'])->toBe('1.0.0');
 });
 
 it('returns an empty collection for no environments', function () {
-    $set = app(DeduplicatedPackageSetQuery::class)->forEnvironments(collect());
-    expect($set)->toHaveCount(0);
+    expect(EnvironmentPackage::distinctPackageSetForEnvironments(collect()))->toHaveCount(0);
 });

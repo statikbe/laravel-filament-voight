@@ -7,6 +7,8 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
+use Statikbe\FilamentVoight\Enums\PackageType;
 
 /**
  * @property string $id
@@ -61,5 +63,41 @@ class EnvironmentPackage extends Model
     public function parentPackage(): BelongsTo
     {
         return $this->belongsTo(Package::class, 'parent_package_id');
+    }
+
+    /**
+     * Distinct (type, name, version) triples across the given environments.
+     *
+     * Returns raw rows (not models) via the query builder, so the result is a
+     * deduplicated package set regardless of which environments share versions.
+     *
+     * @param  Collection<int, Environment>  $environments
+     * @return Collection<int, array{type: PackageType, name: string, version: string}>
+     */
+    public static function distinctPackageSetForEnvironments(Collection $environments): Collection
+    {
+        $environmentIds = $environments->pluck('id')->all();
+
+        if ($environmentIds === []) {
+            return collect();
+        }
+
+        return static::query()
+            ->join('voight_packages', 'voight_packages.id', '=', 'voight_environment_packages.package_id')
+            ->whereIn('voight_environment_packages.environment_id', $environmentIds)
+            ->distinct()
+            ->toBase()
+            ->get([
+                'voight_packages.type as type',
+                'voight_packages.name as name',
+                'voight_environment_packages.version as version',
+            ])
+            ->map(fn (object $row): array => [
+                'type' => PackageType::from((string) $row->type),
+                'name' => (string) $row->name,
+                'version' => (string) $row->version,
+            ])
+            ->unique(fn (array $row): string => $row['type']->value . '|' . $row['name'] . '|' . $row['version'])
+            ->values();
     }
 }
