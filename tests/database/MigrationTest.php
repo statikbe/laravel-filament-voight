@@ -44,3 +44,8 @@ it('has expected columns on voight_dependency_syncs', function () {
         'package_count', 'status', 'error_message', 'synced_at',
     ]))->toBeTrue();
 });
+
+it('adds scan_nightly and trigger via the incremental migrations', function () {
+    expect(Schema::hasColumn('voight_environments', 'scan_nightly'))->toBeTrue()
+        ->and(Schema::hasColumn('voight_audit_runs', 'trigger'))->toBeTrue();
+});

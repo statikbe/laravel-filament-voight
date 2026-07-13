@@ -58,6 +58,13 @@ return [
         'packages_url' => env('VOIGHT_SCANNER_PACKAGES_URL'),
         'token' => env('VOIGHT_SCANNER_TOKEN'),
         'batch_size' => (int) env('VOIGHT_SCANNER_BATCH_SIZE', 5000),
+
+        /*
+        | Cron expression for the nightly deduplicated OSV scan. Defaults to
+        | midnight daily. Set to any valid cron expression (e.g. '0 2 * * *'
+        | for 02:00) or an empty string to disable the automatic schedule.
+        */
+        'nightly_cron' => env('VOIGHT_SCANNER_NIGHTLY_CRON', '0 0 * * *'),
     ],
 
     /*

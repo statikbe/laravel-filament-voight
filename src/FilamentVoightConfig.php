@@ -45,6 +45,11 @@ class FilamentVoightConfig
         return (int) $this->packageConfig('scanner.batch_size', 5000);
     }
 
+    public function getScannerNightlyCron(): string
+    {
+        return (string) $this->packageConfig('scanner.nightly_cron', '0 0 * * *');
+    }
+
     // -- Lockfiles --
 
     public function getLockfilesDisk(): string

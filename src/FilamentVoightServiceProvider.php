@@ -79,7 +79,13 @@ class FilamentVoightServiceProvider extends PackageServiceProvider
         }
 
         $this->callAfterResolving(Schedule::class, function (Schedule $schedule) {
-            $schedule->command('voight:run-osv-scan --nightly')->daily()->withoutOverlapping();
+            $cron = FilamentVoight::config()->getScannerNightlyCron();
+
+            if ($cron === '') {
+                return;
+            }
+
+            $schedule->command('voight:run-osv-scan --nightly')->cron($cron)->withoutOverlapping();
         });
     }
 
@@ -153,6 +159,8 @@ class FilamentVoightServiceProvider extends PackageServiceProvider
             'create_voight_audit_runs_table',
             'create_voight_audit_findings_table',
             'create_voight_alert_settings_table',
+            'add_scan_nightly_to_voight_environments_table',
+            'add_trigger_to_voight_audit_runs_table',
         ];
     }
 }

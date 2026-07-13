@@ -12,7 +12,6 @@ return new class extends Migration
             $table->ulid('id')->primary();
             $table->foreignId('project_id')->constrained('voight_projects')->cascadeOnDelete();
             $table->string('name');
-            $table->boolean('scan_nightly')->default(true);
             $table->timestamp('scanned_at')->nullable();
             $table->timestamps();
 
