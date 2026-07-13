@@ -125,6 +125,7 @@ return [
             'plural' => 'Environments',
             'fields' => [
                 'name' => 'Name',
+                'scan_nightly' => 'Nightly scan',
                 'scanned_at' => 'Last Scanned',
             ],
             'never_scanned' => 'Never scanned',

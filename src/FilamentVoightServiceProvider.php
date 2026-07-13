@@ -79,7 +79,7 @@ class FilamentVoightServiceProvider extends PackageServiceProvider
         }
 
         $this->callAfterResolving(Schedule::class, function (Schedule $schedule) {
-            $schedule->command('voight:run-osv-scan')->daily();
+            $schedule->command('voight:run-osv-scan --nightly')->daily()->withoutOverlapping();
         });
     }
 

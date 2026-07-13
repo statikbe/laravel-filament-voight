@@ -19,7 +19,8 @@ CI/CD project  →  POST /api/voight/lock-file  →  Voight app  →  ProcessLoc
 
 1. A `script.sh` (or `voight:sync-lockfile`) runs in each project on deploy/install and POSTs lockfiles to the Voight API.
 2. `ProcessLockFilesJob` parses `composer.lock` / `package-lock.json` and syncs the full dependency tree into the database.
-3. `RunOsvScanJob` dispatches immediately after every successful sync, and also on a daily cron. It sends the stored lockfiles to the OSV Scanner Lambda and persists results as `AuditRun`, `AuditFinding`, and `Vulnerability` records.
+3. `RunOsvScanJob` dispatches immediately after every successful sync, sending that environment's stored lockfiles to the OSV Scanner Lambda's `/locks` endpoint and persisting results as `AuditRun`, `AuditFinding`, and `Vulnerability` records.
+4. `RunNightlyOsvScanJob` runs on a daily cron. Instead of re-scanning every environment's lockfiles, it collects the **distinct** `(ecosystem, name, version)` set across all environments flagged `scan_nightly`, scans it in a few batched calls to the Lambda's `/packages` endpoint, and fans the results back out to per-environment `AuditRun`s. Environments containing commit-pinned (`dev-*`) dependencies fall back to the per-environment `/locks` path.
 
 ## Installation
 
@@ -186,20 +187,21 @@ Processing is async — the client gets an immediate acknowledgement and the syn
 ### `voight:run-osv-scan`
 
 ```bash
-php artisan voight:run-osv-scan                                               # all environments
+php artisan voight:run-osv-scan --nightly                                     # deduplicated nightly sweep
+php artisan voight:run-osv-scan                                               # all environments (per-environment /locks)
 php artisan voight:run-osv-scan --project=my-project                          # one project
 php artisan voight:run-osv-scan --project=my-project --environment=production # one environment
 ```
 
 ## Scheduling
 
-The package automatically schedules `voight:run-osv-scan` daily. No extra cron entry is needed beyond the standard Laravel scheduler:
+The package automatically schedules `voight:run-osv-scan --nightly` daily (with `withoutOverlapping`). This only runs if your application's scheduler is active — add the standard Laravel scheduler cron entry:
 
 ```cron
 * * * * * php /path/to/artisan schedule:run >> /dev/null 2>&1
 ```
 
-Scans also trigger automatically after every successful lockfile sync (post-sync hook).
+Scans also trigger automatically after every successful lockfile sync (post-sync hook). Environments can be excluded from the nightly sweep by turning off their **Nightly scan** toggle (the `scan_nightly` flag).
 
 ## Testing
 
