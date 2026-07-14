@@ -146,3 +146,23 @@ it('returns empty array for comment-only content', function () {
 
     expect($packages)->toBeEmpty();
 });
+
+it('parses CRLF line endings identically to LF (Windows regression)', function () {
+    $lf = <<<'YARN'
+# yarn lockfile v1
+
+"lodash@^4.17.0":
+  version "4.17.21"
+  resolved "https://registry.yarnpkg.com/lodash/-/lodash-4.17.21.tgz"
+YARN;
+
+    $crlf = str_replace("\n", "\r\n", $lf);
+
+    $parser = new YarnLockParser;
+    $packages = $parser->parse($crlf);
+
+    expect($packages)->toHaveCount(1);
+    expect($packages[0]['name'])->toBe('lodash')
+        ->and($packages[0]['version'])->toBe('4.17.21')
+        ->and($packages[0]['type'])->toBe(PackageType::Npm);
+});
