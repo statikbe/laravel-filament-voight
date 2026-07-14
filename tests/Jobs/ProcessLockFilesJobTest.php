@@ -1,9 +1,11 @@
 <?php
 
+use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Storage;
 use Statikbe\FilamentVoight\Enums\DependencySyncStatus;
 use Statikbe\FilamentVoight\Enums\PackageType;
 use Statikbe\FilamentVoight\Jobs\ProcessLockFilesJob;
+use Statikbe\FilamentVoight\Jobs\RunOsvScanJob;
 use Statikbe\FilamentVoight\Models\DependencySync;
 use Statikbe\FilamentVoight\Models\Environment;
 use Statikbe\FilamentVoight\Models\EnvironmentPackage;
@@ -11,6 +13,9 @@ use Statikbe\FilamentVoight\Models\Package;
 
 beforeEach(function () {
     Storage::fake('voight-lockfiles');
+    // This test covers lock-file processing only; stub the post-sync scan job
+    // so its dispatch isn't executed synchronously (would need a scanner URL).
+    Bus::fake([RunOsvScanJob::class]);
 });
 
 it('processes composer.lock and creates packages', function () {
