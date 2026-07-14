@@ -2,7 +2,11 @@
 
 namespace Statikbe\FilamentVoight\Enums;
 
-enum Severity: string
+use Filament\Support\Contracts\HasColor;
+use Filament\Support\Contracts\HasIcon;
+use Filament\Support\Contracts\HasLabel;
+
+enum Severity: string implements HasColor, HasIcon, HasLabel
 {
     use Concerns\HasOptions;
     case None = 'none';
@@ -57,6 +61,32 @@ enum Severity: string
             self::Medium => 'warning',
             self::High, self::Critical => 'danger',
         };
+    }
+
+    public function icon(): string
+    {
+        return match ($this) {
+            self::None => 'heroicon-o-shield-check',
+            self::Low => 'heroicon-o-information-circle',
+            self::Medium => 'heroicon-o-exclamation-triangle',
+            self::High => 'heroicon-o-exclamation-triangle',
+            self::Critical => 'heroicon-o-fire',
+        };
+    }
+
+    public function getLabel(): string
+    {
+        return $this->label();
+    }
+
+    public function getColor(): string
+    {
+        return $this->color();
+    }
+
+    public function getIcon(): string
+    {
+        return $this->icon();
     }
 
     /**
