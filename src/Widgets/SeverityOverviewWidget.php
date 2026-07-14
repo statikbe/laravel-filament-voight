@@ -7,8 +7,7 @@ use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 use Illuminate\Support\Carbon;
 use Statikbe\FilamentVoight\Enums\Severity;
-use Statikbe\FilamentVoight\Models\AuditFinding;
-use Statikbe\FilamentVoight\Models\Vulnerability;
+use Statikbe\FilamentVoight\Facades\FilamentVoight;
 
 class SeverityOverviewWidget extends StatsOverviewWidget
 {
@@ -26,15 +25,17 @@ class SeverityOverviewWidget extends StatsOverviewWidget
      */
     protected function getStats(): array
     {
+        $vulnerabilityModel = FilamentVoight::config()->getVulnerabilityModel();
+
         return collect([Severity::Critical, Severity::High, Severity::Medium, Severity::Low])
-            ->map(function (Severity $severity): Stat {
+            ->map(function (Severity $severity) use ($vulnerabilityModel): Stat {
                 [$min, $max] = $severity->scoreRange();
                 $sparkline = $this->getDailyFindingsSparkline($severity);
                 $weeklyTotal = array_sum($sparkline);
 
                 return Stat::make(
                     $severity->label(),
-                    Vulnerability::query()
+                    $vulnerabilityModel::query()
                         ->whereBetween('vulnerability_score', [$min, $max])
                         ->count(),
                 )
@@ -57,7 +58,9 @@ class SeverityOverviewWidget extends StatsOverviewWidget
 
         $start = Carbon::now()->subDays(6)->startOfDay();
 
-        $counts = AuditFinding::query()
+        $auditFindingModel = FilamentVoight::config()->getAuditFindingModel();
+
+        $counts = $auditFindingModel::query()
             ->join('voight_vulnerabilities', 'voight_audit_findings.vulnerability_id', '=', 'voight_vulnerabilities.id')
             ->join('voight_audit_runs', 'voight_audit_findings.audit_run_id', '=', 'voight_audit_runs.id')
             ->whereBetween('voight_vulnerabilities.vulnerability_score', [$min, $max])

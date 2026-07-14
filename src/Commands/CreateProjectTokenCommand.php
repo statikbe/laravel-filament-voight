@@ -3,7 +3,7 @@
 namespace Statikbe\FilamentVoight\Commands;
 
 use Illuminate\Console\Command;
-use Statikbe\FilamentVoight\Models\Project;
+use Statikbe\FilamentVoight\Facades\FilamentVoight;
 
 class CreateProjectTokenCommand extends Command
 {
@@ -21,7 +21,8 @@ class CreateProjectTokenCommand extends Command
 
         $projectCode = $this->option('project') ?? $this->ask('Project code');
 
-        $project = Project::where('project_code', $projectCode)->first();
+        $projectModel = FilamentVoight::config()->getProjectModel();
+        $project = $projectModel::where('project_code', $projectCode)->first();
 
         if (! $project) {
             $this->error("Project with code '{$projectCode}' not found.");
@@ -29,7 +30,7 @@ class CreateProjectTokenCommand extends Command
             return self::FAILURE;
         }
 
-        $tokenName = $this->option('name') ?? $this->ask('Token name', Project::DEFAULT_API_TOKEN_NAME);
+        $tokenName = $this->option('name') ?? $this->ask('Token name', $projectModel::DEFAULT_API_TOKEN_NAME);
 
         $token = $project->createToken($tokenName);
 

@@ -6,6 +6,7 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Filament\Widgets\TableWidget;
 use Statikbe\FilamentVoight\Enums\AuditRunStatus;
+use Statikbe\FilamentVoight\Facades\FilamentVoight;
 use Statikbe\FilamentVoight\Models\AuditRun;
 
 class RecentAuditRunsWidget extends TableWidget
@@ -21,10 +22,12 @@ class RecentAuditRunsWidget extends TableWidget
 
     public function table(Table $table): Table
     {
+        $auditRunModel = FilamentVoight::config()->getAuditRunModel();
+
         return $table
             ->query(
-                AuditRun::query()
-                    ->whereIn('id', AuditRun::latestIdsPerProject())
+                $auditRunModel::query()
+                    ->whereIn('id', $auditRunModel::latestIdsPerProject())
                     ->with('environment.project')
                     ->orderByDesc('started_at'),
             )
