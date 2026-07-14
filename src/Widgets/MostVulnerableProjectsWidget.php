@@ -6,8 +6,7 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Filament\Widgets\TableWidget;
 use Illuminate\Database\Eloquent\Builder;
-use Statikbe\FilamentVoight\Models\AuditRun;
-use Statikbe\FilamentVoight\Models\Project;
+use Statikbe\FilamentVoight\Facades\FilamentVoight;
 
 class MostVulnerableProjectsWidget extends TableWidget
 {
@@ -22,19 +21,22 @@ class MostVulnerableProjectsWidget extends TableWidget
 
     public function table(Table $table): Table
     {
+        $projectModel = FilamentVoight::config()->getProjectModel();
+        $auditRunModel = FilamentVoight::config()->getAuditRunModel();
+
         return $table
             ->query(
-                Project::query()
+                $projectModel::query()
                     ->withCount([
                         'findings as total_findings_count' => fn (Builder $q): Builder => $q->whereIn(
                             'voight_audit_findings.audit_run_id',
-                            AuditRun::latestIdsPerEnvironment(),
+                            $auditRunModel::latestIdsPerEnvironment(),
                         ),
                         'findings as critical_findings_count' => fn (Builder $q): Builder => $q
-                            ->whereIn('voight_audit_findings.audit_run_id', AuditRun::latestIdsPerEnvironment())
+                            ->whereIn('voight_audit_findings.audit_run_id', $auditRunModel::latestIdsPerEnvironment())
                             ->whereHas('vulnerability', fn (Builder $vq): Builder => $vq->where('vulnerability_score', '>=', 9.0)),
                         'findings as high_findings_count' => fn (Builder $q): Builder => $q
-                            ->whereIn('voight_audit_findings.audit_run_id', AuditRun::latestIdsPerEnvironment())
+                            ->whereIn('voight_audit_findings.audit_run_id', $auditRunModel::latestIdsPerEnvironment())
                             ->whereHas('vulnerability', fn (Builder $vq): Builder => $vq->whereBetween('vulnerability_score', [7.0, 8.9])),
                     ])
                     ->having('total_findings_count', '>', 0)

@@ -18,7 +18,6 @@ use Statikbe\FilamentVoight\Enums\DependencySyncStatus;
 use Statikbe\FilamentVoight\Enums\PackageType;
 use Statikbe\FilamentVoight\Facades\FilamentVoight;
 use Statikbe\FilamentVoight\Models\DependencySync;
-use Statikbe\FilamentVoight\Models\EnvironmentPackage;
 use Statikbe\FilamentVoight\Models\Package;
 use Statikbe\FilamentVoight\Parsers\ComposerLockParser;
 use Statikbe\FilamentVoight\Parsers\PackageLockParser;
@@ -165,8 +164,9 @@ class ProcessLockFilesJob implements ShouldQueue
     private function syncPackages(array $parsedPackages): void
     {
         $environmentId = $this->sync->environment_id;
+        $environmentPackageModel = FilamentVoight::config()->getEnvironmentPackageModel();
 
-        EnvironmentPackage::where('environment_id', $environmentId)->delete();
+        $environmentPackageModel::where('environment_id', $environmentId)->delete();
 
         $packageModels = $this->resolvePackageModels($parsedPackages);
         $dependedBy = $this->buildReverseDependencyMap($parsedPackages);
@@ -192,7 +192,7 @@ class ProcessLockFilesJob implements ShouldQueue
         }
 
         foreach (array_chunk($rows, 500) as $chunk) {
-            EnvironmentPackage::insert($chunk);
+            $environmentPackageModel::insert($chunk);
         }
     }
 
@@ -207,13 +207,15 @@ class ProcessLockFilesJob implements ShouldQueue
             $uniquePackages[$parsed['name']] ??= $parsed['type'];
         }
 
-        $existing = Package::whereIn('name', array_keys($uniquePackages))
+        $packageModel = FilamentVoight::config()->getPackageModel();
+
+        $existing = $packageModel::whereIn('name', array_keys($uniquePackages))
             ->get()
             ->keyBy('name');
 
         foreach ($uniquePackages as $name => $type) {
             if (! $existing->has($name)) {
-                $existing[$name] = Package::create(['name' => $name, 'type' => $type]);
+                $existing[$name] = $packageModel::create(['name' => $name, 'type' => $type]);
             }
         }
 

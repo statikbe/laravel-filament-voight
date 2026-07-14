@@ -8,8 +8,8 @@ use Filament\Schemas\Schema;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Statikbe\FilamentVoight\Enums\PackageType;
 use Statikbe\FilamentVoight\Enums\Severity;
+use Statikbe\FilamentVoight\Facades\FilamentVoight;
 use Statikbe\FilamentVoight\Models\AuditFinding;
-use Statikbe\FilamentVoight\Models\AuditRun;
 use Statikbe\FilamentVoight\Models\Package;
 
 class PackageInfolistSchema
@@ -86,6 +86,6 @@ class PackageInfolistSchema
     private static function latestFindingsQuery(Package $package): HasMany
     {
         return $package->findings()
-            ->whereIn('audit_run_id', AuditRun::latestIdsPerEnvironment());
+            ->whereIn('audit_run_id', (FilamentVoight::config()->getAuditRunModel())::latestIdsPerEnvironment());
     }
 }

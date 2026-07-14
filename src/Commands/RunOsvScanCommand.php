@@ -7,8 +7,6 @@ use Statikbe\FilamentVoight\Enums\AuditRunTrigger;
 use Statikbe\FilamentVoight\Facades\FilamentVoight;
 use Statikbe\FilamentVoight\Jobs\RunNightlyOsvScanJob;
 use Statikbe\FilamentVoight\Jobs\RunOsvScanJob;
-use Statikbe\FilamentVoight\Models\Environment;
-use Statikbe\FilamentVoight\Models\Project;
 
 class RunOsvScanCommand extends Command
 {
@@ -38,10 +36,12 @@ class RunOsvScanCommand extends Command
             return self::FAILURE;
         }
 
-        $query = Environment::query()->with('project');
+        $environmentModel = FilamentVoight::config()->getEnvironmentModel();
+        $query = $environmentModel::query()->with('project');
 
         if ($projectCode = $this->option('project')) {
-            $project = Project::where('project_code', $projectCode)->first();
+            $projectModel = FilamentVoight::config()->getProjectModel();
+            $project = $projectModel::where('project_code', $projectCode)->first();
 
             if (! $project) {
                 $this->error("Project '{$projectCode}' not found.");

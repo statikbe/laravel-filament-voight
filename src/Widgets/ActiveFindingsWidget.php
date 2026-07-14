@@ -10,8 +10,8 @@ use Filament\Widgets\TableWidget;
 use Illuminate\Database\Eloquent\Builder;
 use Statikbe\FilamentVoight\Enums\PackageType;
 use Statikbe\FilamentVoight\Enums\Severity;
+use Statikbe\FilamentVoight\Facades\FilamentVoight;
 use Statikbe\FilamentVoight\Models\AuditFinding;
-use Statikbe\FilamentVoight\Models\AuditRun;
 
 class ActiveFindingsWidget extends TableWidget
 {
@@ -26,10 +26,13 @@ class ActiveFindingsWidget extends TableWidget
 
     public function table(Table $table): Table
     {
+        $auditFindingModel = FilamentVoight::config()->getAuditFindingModel();
+        $auditRunModel = FilamentVoight::config()->getAuditRunModel();
+
         return $table
             ->query(
-                AuditFinding::query()
-                    ->whereIn('audit_run_id', AuditRun::latestIdsPerEnvironment())
+                $auditFindingModel::query()
+                    ->whereIn('audit_run_id', $auditRunModel::latestIdsPerEnvironment())
                     ->with(['vulnerability', 'package', 'auditRun.environment.project'])
                     ->join('voight_vulnerabilities', 'voight_audit_findings.vulnerability_id', '=', 'voight_vulnerabilities.id')
                     ->orderByDesc('voight_vulnerabilities.vulnerability_score')
