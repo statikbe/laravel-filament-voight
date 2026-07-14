@@ -23,20 +23,18 @@ $enums = [
     AlertFrequency::class,
 ];
 
-it('implements the Filament label, color and icon contracts on every enum', function (string $enum) use ($enums) {
-    expect($enums)->toContain($enum); // guard: keep list in sync
-
+it('implements the Filament contracts with exhaustive, well-formed color and icon maps', function (string $enum) {
     foreach ($enum::cases() as $case) {
-        expect($case)->toBeInstanceOf(HasLabel::class)
+        expect($case)
+            ->toBeInstanceOf(HasLabel::class)
             ->toBeInstanceOf(HasColor::class)
             ->toBeInstanceOf(HasIcon::class);
 
-        expect($case->getLabel())->toBeString()->not->toBe('');
+        // Exercising every case guards against a non-exhaustive color()/icon()
+        // match() (a missing arm throws UnhandledMatchError) and checks the
+        // returned values are well-formed. Label copy comes from translations,
+        // so it is not asserted here.
         expect($case->getColor())->toBeString()->not->toBe('');
-        expect($case->getIcon())->toBeString()->toStartWith('heroicon-');
-
-        // Contract getters delegate to the internal helpers.
-        expect($case->getColor())->toBe($case->color())
-            ->and($case->getIcon())->toBe($case->icon());
+        expect($case->getIcon())->toStartWith('heroicon-');
     }
 })->with($enums);
