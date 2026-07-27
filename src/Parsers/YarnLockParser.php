@@ -77,7 +77,9 @@ class YarnLockParser
      */
     private function parseBlocks(string $content): array
     {
-        $lines = explode("\n", $content);
+        // Normalise line endings so CRLF (e.g. a Windows-generated yarn.lock or a
+        // fixture checked out on Windows) parses identically to LF.
+        $lines = explode("\n", str_replace(["\r\n", "\r"], "\n", $content));
         $blocks = [];
         $current = null;
         $inDependencies = false;

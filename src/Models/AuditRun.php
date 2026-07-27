@@ -10,11 +10,13 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
 use Statikbe\FilamentVoight\Enums\AuditRunStatus;
+use Statikbe\FilamentVoight\Enums\AuditRunTrigger;
 
 /**
  * @property string $id
  * @property string $environment_id
  * @property AuditRunStatus $status
+ * @property AuditRunTrigger|null $trigger
  * @property Carbon|null $started_at
  * @property Carbon|null $completed_at
  * @property Carbon|null $created_at
@@ -36,6 +38,7 @@ class AuditRun extends Model
     {
         return [
             'status' => AuditRunStatus::class,
+            'trigger' => AuditRunTrigger::class,
             'started_at' => 'datetime',
             'completed_at' => 'datetime',
         ];

@@ -14,7 +14,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Statikbe\FilamentVoight\Enums\PackageType;
 use Statikbe\FilamentVoight\Enums\Severity;
-use Statikbe\FilamentVoight\Models\AuditRun;
+use Statikbe\FilamentVoight\Facades\FilamentVoight;
 
 class VulnerabilitiesRelationManager extends RelationManager
 {
@@ -83,7 +83,7 @@ class VulnerabilitiesRelationManager extends RelationManager
                     ->falseLabel(voightTrans('models.package.view.filters.latest_only_false'))
                     ->default(true)
                     ->queries(
-                        true: fn (Builder $q) => $q->whereIn('audit_run_id', AuditRun::latestIdsPerEnvironment()),
+                        true: fn (Builder $q) => $q->whereIn('audit_run_id', (FilamentVoight::config()->getAuditRunModel())::latestIdsPerEnvironment()),
                         false: fn (Builder $q) => $q,
                         blank: fn (Builder $q) => $q,
                     ),

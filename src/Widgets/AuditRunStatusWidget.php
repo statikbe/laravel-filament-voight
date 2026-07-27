@@ -6,7 +6,7 @@ use Filament\Support\Icons\Heroicon;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 use Statikbe\FilamentVoight\Enums\AuditRunStatus;
-use Statikbe\FilamentVoight\Models\AuditRun;
+use Statikbe\FilamentVoight\Facades\FilamentVoight;
 
 class AuditRunStatusWidget extends StatsOverviewWidget
 {
@@ -24,6 +24,8 @@ class AuditRunStatusWidget extends StatsOverviewWidget
      */
     protected function getStats(): array
     {
+        $auditRunModel = FilamentVoight::config()->getAuditRunModel();
+
         return collect([
             AuditRunStatus::Completed,
             AuditRunStatus::Running,
@@ -32,7 +34,7 @@ class AuditRunStatusWidget extends StatsOverviewWidget
         ])
             ->map(fn (AuditRunStatus $status): Stat => Stat::make(
                 $status->label(),
-                AuditRun::query()->where('status', $status->value)->count(),
+                $auditRunModel::query()->where('status', $status->value)->count(),
             )
                 ->color($status->color())
                 ->icon($this->getIconForStatus($status)))

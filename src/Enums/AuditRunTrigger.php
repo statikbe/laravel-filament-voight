@@ -6,23 +6,24 @@ use Filament\Support\Contracts\HasColor;
 use Filament\Support\Contracts\HasIcon;
 use Filament\Support\Contracts\HasLabel;
 
-enum VulnerabilitySource: string implements HasColor, HasIcon, HasLabel
+enum AuditRunTrigger: string implements HasColor, HasIcon, HasLabel
 {
     use Concerns\HasOptions;
-    case Osv = 'osv';
-    case GithubAdvisory = 'github_advisory';
+
+    case PostSync = 'post_sync';
+    case Nightly = 'nightly';
     case Manual = 'manual';
 
     public function label(): string
     {
-        return voightTrans('enums.vulnerability_source.' . $this->value);
+        return voightTrans('enums.audit_run_trigger.' . $this->value);
     }
 
     public function color(): string
     {
         return match ($this) {
-            self::Osv => 'info',
-            self::GithubAdvisory => 'gray',
+            self::PostSync => 'info',
+            self::Nightly => 'gray',
             self::Manual => 'warning',
         };
     }
@@ -30,9 +31,9 @@ enum VulnerabilitySource: string implements HasColor, HasIcon, HasLabel
     public function icon(): string
     {
         return match ($this) {
-            self::Osv => 'heroicon-o-shield-exclamation',
-            self::GithubAdvisory => 'heroicon-o-code-bracket-square',
-            self::Manual => 'heroicon-o-pencil-square',
+            self::PostSync => 'heroicon-o-arrow-path',
+            self::Nightly => 'heroicon-o-moon',
+            self::Manual => 'heroicon-o-hand-raised',
         };
     }
 

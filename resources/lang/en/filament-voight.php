@@ -37,6 +37,11 @@ return [
             'completed' => 'Completed',
             'failed' => 'Failed',
         ],
+        'audit_run_trigger' => [
+            'post_sync' => 'Post-sync',
+            'nightly' => 'Nightly',
+            'manual' => 'Manual',
+        ],
         'vulnerability_source' => [
             'osv' => 'OSV',
             'github_advisory' => 'GitHub Advisory',
@@ -123,6 +128,7 @@ return [
             'plural' => 'Environments',
             'fields' => [
                 'name' => 'Name',
+                'scan_nightly' => 'Nightly scan',
                 'scanned_at' => 'Last Scanned',
             ],
             'never_scanned' => 'Never scanned',

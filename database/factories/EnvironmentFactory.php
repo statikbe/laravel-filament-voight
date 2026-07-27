@@ -18,6 +18,7 @@ class EnvironmentFactory extends Factory
         return [
             'project_id' => Project::factory(),
             'name' => fake()->randomElement(['production', 'staging', 'development']),
+            'scan_nightly' => true,
             'scanned_at' => null,
         ];
     }
@@ -25,5 +26,10 @@ class EnvironmentFactory extends Factory
     public function scanned(): static
     {
         return $this->state(['scanned_at' => now()]);
+    }
+
+    public function notNightly(): static
+    {
+        return $this->state(['scan_nightly' => false]);
     }
 }

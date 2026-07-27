@@ -25,7 +25,8 @@ class LockFileSyncService
 
         $result = $this->storeLockFilesAndComputeHash($project, $environment, $lockfiles);
 
-        $sync = DependencySync::create([
+        $dependencySyncModel = FilamentVoight::config()->getDependencySyncModel();
+        $sync = $dependencySyncModel::create([
             'environment_id' => $environment->id,
             'lockfile_hash' => $result['hash'],
             'lockfile_paths' => $result['paths'],
@@ -39,7 +40,8 @@ class LockFileSyncService
 
     private function resolveProject(string $projectCode): Project
     {
-        $project = Project::firstOrCreate(
+        $projectModel = FilamentVoight::config()->getProjectModel();
+        $project = $projectModel::firstOrCreate(
             ['project_code' => $projectCode],
         );
 
@@ -52,7 +54,8 @@ class LockFileSyncService
 
     private function resolveEnvironment(Project $project, string $environmentName): Environment
     {
-        $environment = Environment::firstOrCreate(
+        $environmentModel = FilamentVoight::config()->getEnvironmentModel();
+        $environment = $environmentModel::firstOrCreate(
             ['project_id' => $project->id, 'name' => $environmentName],
         );
 

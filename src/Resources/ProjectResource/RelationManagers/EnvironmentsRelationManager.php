@@ -7,9 +7,11 @@ use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Toggle;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Schemas\Schema;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Columns\ToggleColumn;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Model;
 
@@ -30,6 +32,9 @@ class EnvironmentsRelationManager extends RelationManager
                     ->label(voightTrans('models.environment.fields.name'))
                     ->required()
                     ->maxLength(255),
+                Toggle::make('scan_nightly')
+                    ->label(voightTrans('models.environment.fields.scan_nightly'))
+                    ->default(true),
             ]);
     }
 
@@ -39,6 +44,9 @@ class EnvironmentsRelationManager extends RelationManager
             ->columns([
                 TextColumn::make('name')
                     ->label(voightTrans('models.environment.fields.name'))
+                    ->sortable(),
+                ToggleColumn::make('scan_nightly')
+                    ->label(voightTrans('models.environment.fields.scan_nightly'))
                     ->sortable(),
                 TextColumn::make('scanned_at')
                     ->label(voightTrans('models.environment.fields.scanned_at'))
