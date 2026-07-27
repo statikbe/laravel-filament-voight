@@ -42,6 +42,12 @@ abstract class AuditAlertNotification extends Notification
                 'intro' => voightTrans("notifications.{$this->langGroup()}.intro", $this->replacements()),
             ]);
 
+        $mailer = FilamentVoight::config()->getAlertMailer();
+
+        if ($mailer !== null) {
+            $message->mailer($mailer);
+        }
+
         $from = FilamentVoight::config()->getAlertMailFrom();
 
         if ($from !== null) {

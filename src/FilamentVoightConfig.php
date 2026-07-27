@@ -168,6 +168,16 @@ class FilamentVoightConfig
     }
 
     /**
+     * The mailer used to send alert emails. Null lets the host app's default mailer handle them.
+     */
+    public function getAlertMailer(): ?string
+    {
+        $mailer = $this->packageConfig('notifications.mailer');
+
+        return blank($mailer) ? null : $mailer;
+    }
+
+    /**
      * @return array{address: string, name: string|null}|null
      */
     public function getAlertMailFrom(): ?array

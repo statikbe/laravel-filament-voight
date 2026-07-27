@@ -72,6 +72,7 @@ return [
     */
     'notifications' => [
         'slack_default_channel' => env('VOIGHT_SLACK_CHANNEL'),
+        'mailer' => env('VOIGHT_ALERT_MAILER'),
         'mail_from_address' => env('VOIGHT_ALERT_MAIL_FROM'),
         'mail_from_name' => env('VOIGHT_ALERT_MAIL_FROM_NAME'),
         'panel_id' => 'voight',

@@ -70,6 +70,22 @@ it('applies the configured mail from address and name', function () {
     expect($mail->from)->toBe(['alerts@example.com', 'Voight Alerts']);
 });
 
+it('leaves the mailer unset so the host app default is used', function () {
+    config()->set('filament-voight.notifications.mailer', null);
+
+    $mail = (new AuditRunSummaryNotification(makeAuditSummary(), AlertChannel::Email))->toMail(new User);
+
+    expect($mail->mailer)->toBeNull();
+});
+
+it('sends through the configured mailer when one is set', function () {
+    config()->set('filament-voight.notifications.mailer', 'postmark');
+
+    $mail = (new AuditRunSummaryNotification(makeAuditSummary(), AlertChannel::Email))->toMail(new User);
+
+    expect($mail->mailer)->toBe('postmark');
+});
+
 it('renders the markdown mail body with findings and the detail button', function () {
     $mail = (new AuditRunSummaryNotification(makeAuditSummary(), AlertChannel::Email))->toMail(new User);
 

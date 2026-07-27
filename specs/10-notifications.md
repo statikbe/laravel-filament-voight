@@ -21,6 +21,7 @@ There are two delivery modes:
 | --- | --- |
 | `AlertSetting` | One alert rule. `channel` (`email`/`slack`), `severity_threshold` (0–10), `frequency` (`immediate`/`daily`/`weekly`), `slack_channel` (nullable override), `is_enabled`, `last_sent_at`, `project_id` (nullable → **global**). |
 | `AlertRecipient` | Polymorphic recipient row (`recipient_type`/`recipient_id`) linked to an `AlertSetting`. Points at a **User** or a **Team**. Email only. |
+| `AlertNotificationLog` | One row per vulnerability+package pair an `AlertSetting` has already reported. `UNIQUE(alert_setting_id, vulnerability_id, package_id)`. Drives immediate-alert deduplication. |
 
 A setting with `project_id = null` is **global** and applies to every project.
 
@@ -121,10 +122,40 @@ The job (mirroring the scan job's conventions — `tries=3`, `timeout=120`,
 1. Skips entirely if the project `is_muted`.
 2. Loads enabled `Immediate` settings matching this project **or** global
    (`project_id IS NULL`).
-3. For each: builds an `AuditSummary` from the run, skips if no findings clear the
-   threshold, sends via `AlertDispatcher`, and stamps `last_sent_at` on success.
+3. For each: collects the run's findings at or above the setting's threshold,
+   narrows them to the ones this setting has not reported before (see
+   *Deduplication*), skips if none are left, builds an `AuditSummary` from the
+   remainder, sends via `AlertDispatcher`, then records the reported findings and
+   stamps `last_sent_at`.
 
-A **global** immediate setting therefore fires once per completed scan.
+A **global** immediate setting therefore fires once per completed scan **that
+turns up something new**.
+
+#### Deduplication — `NewFindingFilter`
+
+Scans run nightly and a vulnerability stays in the results until somebody fixes
+it. Alerting on the raw scan output would re-send an identical summary every
+night, which trains recipients to ignore it. So an immediate alert reports each
+vulnerability+package pair **once per alert setting**:
+
+- `unnotified()` removes pairs already present in `voight_alert_notification_logs`
+  for that setting. The lookup is a single query; the composite pair is matched in
+  PHP, so a vulnerability seen on a *different* package is still treated as new.
+- `markNotified()` bulk-inserts the reported pairs with `insertOrIgnore`, so the
+  unique index absorbs races between concurrent scans.
+- Logging happens **only after `AlertDispatcher` confirms a send**. An alert that
+  could not be delivered (no recipients, no Slack channel) is not recorded, and
+  the finding is retried on the next scan.
+
+Consequences worth knowing:
+
+- The summary in an immediate alert contains **only the new findings**, not the
+  project's full outstanding set — that is what digests are for.
+- A finding that is fixed and later regresses is **not** re-reported, because its
+  log row survives. Re-notifying on regression would mean pruning log rows for
+  findings that dropped out of the latest run; deliberately left out for now.
+- Deleting an `AlertSetting` cascades its log rows away, so re-creating a setting
+  starts from a clean slate and re-reports current findings once.
 
 ### Digests — `voight:send-alert-digests`
 
@@ -143,6 +174,11 @@ For each enabled `Daily`/`Weekly` setting that `isDigestDue()`:
 - `last_sent_at` advances **once per setting, only if at least one message was
   actually sent**.
 
+Digests are **intentionally not deduplicated**: a digest is a standing "here is
+where the project is right now" report, so a vulnerability that stays unfixed
+should keep appearing in it. Repetition is bounded by the digest interval rather
+than by a notification log. Alert fatigue is the immediate path's problem.
+
 ### Muting
 
 `Project.is_muted` suppresses *all* alerts for that project — enforced in both the
@@ -157,12 +193,20 @@ Module config (`config/filament-voight.php` → `notifications`):
 ```php
 'notifications' => [
     'slack_default_channel' => env('VOIGHT_SLACK_CHANNEL'),
+    'mailer'                => env('VOIGHT_ALERT_MAILER'),
     'mail_from_address'     => env('VOIGHT_ALERT_MAIL_FROM'),
     'mail_from_name'        => env('VOIGHT_ALERT_MAIL_FROM_NAME'),
     'panel_id'              => 'voight',
     'queue'                 => env('VOIGHT_ALERTS_QUEUE'),
 ],
 ```
+
+**The mail driver is the host application's decision.** This package requires no
+mail transport of its own. Leave `mailer` null and alerts go out through the
+host's default mailer; set it to a mailer name from the host's `config/mail.php`
+(e.g. `postmark`) to route alerts through a dedicated transport while the rest of
+the app keeps using its own. Installing that transport
+(`symfony/postmark-mailer`, `symfony/mailgun-mailer`, …) is up to the host.
 
 The Slack **bot token** is *not* a module concern — it lives in the host app's
 `config/services.php`:
@@ -176,7 +220,7 @@ The Slack **bot token** is *not* a module concern — it lives in the host app's
 ],
 ```
 
-**Host requirements:** a working mailer (Postmark transport is available), a bot
+**Host requirements:** a working mailer (any transport the host chooses), a bot
 token + default channel for Slack, and a queue worker + scheduler running the
 package commands.
 
@@ -206,10 +250,12 @@ package commands.
 | `src/Notifications/AuditRunSummaryNotification.php` | Immediate notification |
 | `src/Notifications/AuditDigestNotification.php` | Digest notification |
 | `src/Notifications/AlertDispatcher.php` | Channel resolution + send |
+| `src/Notifications/NewFindingFilter.php` | Immediate-alert deduplication |
 | `src/Jobs/SendAuditAlertsJob.php` | Immediate trigger (from scan) |
 | `src/Commands/SendAlertDigestsCommand.php` | `voight:send-alert-digests` |
 | `src/Models/AlertSetting.php` | `isDigestDue()`, `resolveEmailRecipients()` |
 | `src/Models/AlertRecipient.php` | Polymorphic recipient |
+| `src/Models/AlertNotificationLog.php` | Record of already-reported findings |
 | `resources/views/mail/audit-summary.blade.php` | Shared markdown mail view |
 | `src/Resources/ProjectResource/RelationManagers/AlertSettingsRelationManager.php` | Admin UI |
 

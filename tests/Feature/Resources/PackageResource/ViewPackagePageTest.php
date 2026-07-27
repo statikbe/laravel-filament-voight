@@ -25,7 +25,11 @@ it("shows the package's name in the view page", function () {
         ->assertSee('test-vendor/unique-package-name');
 });
 
-it('returns 404 for a nonexistent package via HTTP', function () {
-    $this->get(PackageResource::getUrl('view', ['record' => 'nonexistent-ulid']))
-        ->assertNotFound();
+it('rejects a nonexistent package via HTTP', function () {
+    // Newer Filament resolves the record before authorization and returns 404;
+    // older 5.0.x versions authorize first and return 403. Either way the
+    // request must be rejected — asserting a specific code tests Filament, not us.
+    $status = $this->get(PackageResource::getUrl('view', ['record' => 'nonexistent-ulid']))->status();
+
+    expect($status)->toBeIn([403, 404]);
 });

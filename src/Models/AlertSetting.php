@@ -68,6 +68,14 @@ class AlertSetting extends Model
     }
 
     /**
+     * @return HasMany<AlertNotificationLog, $this>
+     */
+    public function notificationLogs(): HasMany
+    {
+        return $this->hasMany(AlertNotificationLog::class);
+    }
+
+    /**
      * A digest is due when it has never been sent, or when the frequency
      * interval has fully elapsed since the last send.
      */

@@ -51,6 +51,18 @@ it('returns null mail from when the address is empty', function () {
     expect(FilamentVoight::config()->getAlertMailFrom())->toBeNull();
 });
 
+it('returns the configured alert mailer', function () {
+    config()->set('filament-voight.notifications.mailer', 'postmark');
+
+    expect(FilamentVoight::config()->getAlertMailer())->toBe('postmark');
+});
+
+it('returns a null alert mailer so the host app default is used', function () {
+    config()->set('filament-voight.notifications.mailer', null);
+
+    expect(FilamentVoight::config()->getAlertMailer())->toBeNull();
+});
+
 it('returns the alerts panel id with a default of voight', function () {
     config()->set('filament-voight.notifications.panel_id', null);
 

@@ -16,6 +16,7 @@ use Statikbe\FilamentVoight\Models\AuditRun;
 use Statikbe\FilamentVoight\Notifications\AlertDispatcher;
 use Statikbe\FilamentVoight\Notifications\AuditRunSummaryNotification;
 use Statikbe\FilamentVoight\Notifications\AuditSummary;
+use Statikbe\FilamentVoight\Notifications\NewFindingFilter;
 
 class SendAuditAlertsJob implements ShouldQueue
 {
@@ -39,7 +40,7 @@ class SendAuditAlertsJob implements ShouldQueue
         }
     }
 
-    public function handle(AlertDispatcher $dispatcher): void
+    public function handle(AlertDispatcher $dispatcher, NewFindingFilter $newFindingFilter): void
     {
         $project = $this->auditRun->environment->project;
 
@@ -61,16 +62,26 @@ class SendAuditAlertsJob implements ShouldQueue
             ->get();
 
         foreach ($settings as $setting) {
-            $summary = AuditSummary::fromAuditRun($this->auditRun, (float) $setting->severity_threshold);
+            $findings = AuditSummary::findingsForRun($this->auditRun, (float) $setting->severity_threshold);
+            $newFindings = $newFindingFilter->unnotified($setting, $findings);
 
-            if (! $summary->hasFindings()) {
+            if ($newFindings->isEmpty()) {
+                Log::info('[Voight] Audit alert skipped: no findings this setting has not already reported', [
+                    'alert_setting' => $setting->id,
+                    'audit_run' => $this->auditRun->id,
+                    'findings' => $findings->count(),
+                ]);
+
                 continue;
             }
+
+            $summary = AuditSummary::fromRunFindings($this->auditRun, $newFindings);
 
             if (! $dispatcher->send($setting, new AuditRunSummaryNotification($summary, $setting->channel))) {
                 continue;
             }
 
+            $newFindingFilter->markNotified($setting, $newFindings);
             $setting->update(['last_sent_at' => now()]);
 
             Log::info('[Voight] Audit alert sent', [

@@ -159,6 +159,7 @@ class FilamentVoightServiceProvider extends PackageServiceProvider
             'create_voight_alert_recipients_table',
             'add_slack_channel_to_voight_alert_settings_table',
             'add_last_sent_at_to_voight_alert_settings_table',
+            'create_voight_alert_notification_logs_table',
         ];
     }
 }

@@ -29,8 +29,6 @@
         "spatie/laravel-package-tools": "^1.15.0",
         "spatie/laravel-sluggable": "^3.8",
         "staudenmeir/eloquent-has-many-deep": "^1.21",
-        "symfony/postmark-mailer": "^v8.0.0",
-        "symfony/http-client": "^v8.0.0",
         "laravel/slack-notification-channel": "^3.0.0"
     },
     "require-dev": {
@@ -64,7 +62,7 @@
         "analyse": "phpstan analyse --memory-limit 1G",
         "format": "pint",
         "refactor": "rector",
-        "test": "pest",
+        "test": "pest --no-coverage",
         "test:lint": "pint --test",
         "test:refactor": "rector --dry-run"
     },

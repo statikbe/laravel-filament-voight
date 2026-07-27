@@ -32,11 +32,30 @@ final readonly class AuditSummary
 
     public static function fromAuditRun(AuditRun $auditRun, float $severityThreshold): self
     {
-        $findings = $auditRun->auditFindings()
+        return self::fromRunFindings($auditRun, self::findingsForRun($auditRun, $severityThreshold));
+    }
+
+    /**
+     * The run's findings at or above the threshold, ready to be narrowed down
+     * before a summary is built from them.
+     *
+     * @return Collection<int, AuditFinding>
+     */
+    public static function findingsForRun(AuditRun $auditRun, float $severityThreshold): Collection
+    {
+        return $auditRun->auditFindings()
             ->whereHas('vulnerability', fn (Builder $query): Builder => $query->where('vulnerability_score', '>=', $severityThreshold))
             ->with(['vulnerability', 'package'])
             ->get();
+    }
 
+    /**
+     * Summarise an explicit subset of a run's findings.
+     *
+     * @param  Collection<int, AuditFinding>  $findings
+     */
+    public static function fromRunFindings(AuditRun $auditRun, Collection $findings): self
+    {
         return self::build(
             $auditRun->environment->project,
             [$auditRun->environment->name],
