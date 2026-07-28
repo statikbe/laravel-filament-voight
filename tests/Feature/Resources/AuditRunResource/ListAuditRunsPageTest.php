@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Foundation\Auth\User;
+use Illuminate\Support\Facades\DB;
 use Livewire\Livewire;
 use Statikbe\FilamentVoight\Enums\Severity;
 use Statikbe\FilamentVoight\Models\AuditFinding;
@@ -52,4 +53,29 @@ it('leaves max severity empty for a run with no findings', function () {
     Livewire::test(ListAuditRuns::class)
         ->assertSuccessful()
         ->assertTableColumnStateSet('max_severity', null, $run);
+});
+
+/**
+ * Findings count and worst severity are aggregated in the list query rather than
+ * per row. A page of runs currently costs 5 queries; the ceiling here leaves a
+ * little headroom while still failing loudly if someone adds a column that
+ * queries per record.
+ *
+ * Note this asserts an absolute budget, not a 2-vs-6 row comparison: the count
+ * is already constant across row counts, so a comparison could never fail and
+ * would guard nothing.
+ */
+it('renders the run list within a small fixed query budget', function () {
+    foreach (range(1, 6) as $ignored) {
+        AuditFinding::factory()->for(AuditRun::factory()->create(), 'auditRun')->create();
+    }
+
+    $queries = 0;
+    DB::listen(function () use (&$queries): void {
+        $queries++;
+    });
+
+    Livewire::test(ListAuditRuns::class)->assertSuccessful();
+
+    expect($queries)->toBeLessThanOrEqual(8);
 });
