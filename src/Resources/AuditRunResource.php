@@ -8,6 +8,7 @@ use Filament\Tables\Table;
 use Statikbe\FilamentVoight\Models\AuditRun;
 use Statikbe\FilamentVoight\Resources\AuditRunResource\Pages\ListAuditRuns;
 use Statikbe\FilamentVoight\Resources\AuditRunResource\Pages\ViewAuditRun;
+use Statikbe\FilamentVoight\Resources\AuditRunResource\RelationManagers\FindingsRelationManager;
 use Statikbe\FilamentVoight\Resources\AuditRunResource\Schemas\AuditRunTableSchema;
 
 class AuditRunResource extends Resource
@@ -43,7 +44,9 @@ class AuditRunResource extends Resource
 
     public static function getRelations(): array
     {
-        return [];
+        return [
+            'finding' => FindingsRelationManager::class,
+        ];
     }
 
     public static function getPages(): array

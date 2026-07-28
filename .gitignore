@@ -16,4 +16,5 @@ curl*
 .playwright-mcp
 view-package-*
 .claude/settings.local.json
+.claude/scripts
 
