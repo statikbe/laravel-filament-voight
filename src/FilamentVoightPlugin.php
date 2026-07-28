@@ -4,6 +4,7 @@ namespace Statikbe\FilamentVoight;
 
 use Filament\Contracts\Plugin;
 use Filament\Panel;
+use Statikbe\FilamentVoight\Resources\AuditRunResource;
 use Statikbe\FilamentVoight\Resources\CustomerResource;
 use Statikbe\FilamentVoight\Resources\PackageResource;
 use Statikbe\FilamentVoight\Resources\ProjectResource;
@@ -27,6 +28,7 @@ class FilamentVoightPlugin implements Plugin
             ProjectResource::class,
             PackageResource::class,
             VulnerabilityResource::class,
+            AuditRunResource::class,
         ]);
 
         $panel->widgets([
