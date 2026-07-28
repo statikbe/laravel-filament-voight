@@ -13,6 +13,7 @@ use Statikbe\FilamentVoight\Resources\ProjectResource\Pages\EditProject;
 use Statikbe\FilamentVoight\Resources\ProjectResource\Pages\ListProjects;
 use Statikbe\FilamentVoight\Resources\ProjectResource\Pages\ViewProject;
 use Statikbe\FilamentVoight\Resources\ProjectResource\RelationManagers\AlertSettingsRelationManager;
+use Statikbe\FilamentVoight\Resources\ProjectResource\RelationManagers\AuditRunsRelationManager;
 use Statikbe\FilamentVoight\Resources\ProjectResource\RelationManagers\EnvironmentsRelationManager;
 use Statikbe\FilamentVoight\Resources\ProjectResource\RelationManagers\VulnerabilitiesRelationManager;
 use Statikbe\FilamentVoight\Resources\ProjectResource\Schemas\ProjectFormSchema;
@@ -68,6 +69,7 @@ class ProjectResource extends Resource
             'environment' => EnvironmentsRelationManager::class,
             'alert' => AlertSettingsRelationManager::class,
             'vulnerability' => VulnerabilitiesRelationManager::class,
+            'auditRun' => AuditRunsRelationManager::class,
         ];
     }
 
