@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Support\Carbon;
 use Statikbe\FilamentVoight\Enums\AuditRunStatus;
 use Statikbe\FilamentVoight\Enums\AuditRunTrigger;
@@ -58,6 +59,26 @@ class AuditRun extends Model
     public function auditFindings(): HasMany
     {
         return $this->hasMany(AuditFinding::class);
+    }
+
+    /**
+     * Every vulnerability found by this run, reached through its findings.
+     *
+     * Yields one row per finding, so the same vulnerability can appear twice.
+     * Intended for aggregation (worst severity), not for listing.
+     *
+     * @return HasManyThrough<Vulnerability, AuditFinding, $this>
+     */
+    public function vulnerabilities(): HasManyThrough
+    {
+        return $this->hasManyThrough(
+            Vulnerability::class,
+            AuditFinding::class,
+            'audit_run_id',
+            'id',
+            'id',
+            'vulnerability_id',
+        );
     }
 
     /**

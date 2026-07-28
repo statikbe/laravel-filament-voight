@@ -1,6 +1,7 @@
 <?php
 
 use Statikbe\FilamentVoight\Models\AlertSetting;
+use Statikbe\FilamentVoight\Models\AuditRun;
 use Statikbe\FilamentVoight\Models\Customer;
 use Statikbe\FilamentVoight\Models\Environment;
 use Statikbe\FilamentVoight\Models\Project;
@@ -44,4 +45,15 @@ it('casts is_muted to boolean', function () {
     $project = Project::factory()->muted()->create();
 
     expect($project->is_muted)->toBeTrue()->toBeBool();
+});
+
+it('has many audit runs through its environments', function () {
+    $project = Project::factory()->create();
+    $environment = Environment::factory()->for($project)->create();
+    $run = AuditRun::factory()->for($environment)->create();
+
+    // Another project's run must not leak in.
+    AuditRun::factory()->create();
+
+    expect($project->auditRuns()->pluck('voight_audit_runs.id')->all())->toBe([$run->id]);
 });

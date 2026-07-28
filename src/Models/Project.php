@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Support\Carbon;
 use Laravel\Sanctum\HasApiTokens;
 use Staudenmeir\EloquentHasManyDeep\HasManyDeep;
@@ -75,6 +76,14 @@ class Project extends Model
     public function alertSettings(): HasMany
     {
         return $this->hasMany(AlertSetting::class);
+    }
+
+    /**
+     * @return HasManyThrough<AuditRun, Environment, $this>
+     */
+    public function auditRuns(): HasManyThrough
+    {
+        return $this->hasManyThrough(AuditRun::class, Environment::class);
     }
 
     /**
