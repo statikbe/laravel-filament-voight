@@ -19,7 +19,7 @@
 @endforeach
 
 <x-mail::button :url="$summary->detailUrl">
-{{ voightTrans('notifications.common.view_project') }}
+{{ $summary->detailLabel }}
 </x-mail::button>
 
 {{ voightTrans('notifications.common.environments', ['environments' => $summary->environmentList()]) }}

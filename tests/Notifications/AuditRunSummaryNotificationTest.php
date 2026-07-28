@@ -24,7 +24,8 @@ function makeAuditSummary(): AuditSummary
                 'fixed_version' => '1.0.1',
             ],
         ],
-        detailUrl: 'https://voight.test/voight/projects/PRJ-0001',
+        detailUrl: 'https://voight.test/voight/audit-runs/01ARZ3NDEKTSV4RRFFQ69G5FAV',
+        detailLabel: 'View Audit Run',
         generatedAt: now(),
     );
 }
@@ -93,7 +94,8 @@ it('renders the markdown mail body with findings and the detail button', functio
 
     expect($html)->toContain('vendor/package')
         ->and($html)->toContain('Critical')
-        ->and($html)->toContain('https://voight.test/voight/projects/PRJ-0001')
+        ->and($html)->toContain('https://voight.test/voight/audit-runs/01ARZ3NDEKTSV4RRFFQ69G5FAV')
+        ->and($html)->toContain('View Audit Run')
         ->and($html)->toContain('production');
 });
 
@@ -111,5 +113,6 @@ it('builds a slack block kit message with header, severity section and detail bu
         ->and($section['text']['type'])->toBe('mrkdwn')
         ->and($section['text']['text'])->toContain('Critical')
         ->and($section['text']['text'])->toContain('2')
-        ->and($actions['elements'][0]['url'])->toBe('https://voight.test/voight/projects/PRJ-0001');
+        ->and($actions['elements'][0]['url'])->toBe('https://voight.test/voight/audit-runs/01ARZ3NDEKTSV4RRFFQ69G5FAV')
+        ->and($actions['elements'][0]['text']['text'])->toBe('View Audit Run');
 });

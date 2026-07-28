@@ -15,6 +15,7 @@ function makeDigestSummary(): AuditSummary
         totalFindings: 4,
         topFindings: [],
         detailUrl: 'https://voight.test/voight/projects/PRJ-0001',
+        detailLabel: 'View Project',
         generatedAt: now(),
     );
 }

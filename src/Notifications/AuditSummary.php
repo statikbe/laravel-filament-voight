@@ -10,6 +10,7 @@ use Statikbe\FilamentVoight\Facades\FilamentVoight;
 use Statikbe\FilamentVoight\Models\AuditFinding;
 use Statikbe\FilamentVoight\Models\AuditRun;
 use Statikbe\FilamentVoight\Models\Project;
+use Statikbe\FilamentVoight\Resources\AuditRunResource;
 use Statikbe\FilamentVoight\Resources\ProjectResource;
 
 final readonly class AuditSummary
@@ -27,6 +28,7 @@ final readonly class AuditSummary
         public int $totalFindings,
         public array $topFindings,
         public string $detailUrl,
+        public string $detailLabel,
         public Carbon $generatedAt,
     ) {}
 
@@ -60,6 +62,13 @@ final readonly class AuditSummary
             $auditRun->environment->project,
             [$auditRun->environment->name],
             $findings,
+            AuditRunResource::getUrl(
+                'view',
+                ['record' => $auditRun],
+                isAbsolute: true,
+                panel: FilamentVoight::config()->getAlertsPanelId(),
+            ),
+            voightTrans('notifications.common.view_audit_run'),
         );
     }
 
@@ -77,7 +86,20 @@ final readonly class AuditSummary
             ->values()
             ->all();
 
-        return self::build($project, $environmentNames, $findings);
+        // A digest summarises the latest run of every environment, so there is no
+        // single run it could honestly link to.
+        return self::build(
+            $project,
+            $environmentNames,
+            $findings,
+            ProjectResource::getUrl(
+                'view',
+                ['record' => $project],
+                isAbsolute: true,
+                panel: FilamentVoight::config()->getAlertsPanelId(),
+            ),
+            voightTrans('notifications.common.view_project'),
+        );
     }
 
     public function hasFindings(): bool
@@ -93,9 +115,15 @@ final readonly class AuditSummary
     /**
      * @param  array<string>  $environmentNames
      * @param  Collection<int, AuditFinding>  $findings
+     * @param  string  $detailUrl  Where this particular summary came from — a run for immediate alerts, the project for digests.
      */
-    private static function build(Project $project, array $environmentNames, Collection $findings): self
-    {
+    private static function build(
+        Project $project,
+        array $environmentNames,
+        Collection $findings,
+        string $detailUrl,
+        string $detailLabel,
+    ): self {
         $severityCounts = [];
 
         foreach ([Severity::Critical, Severity::High, Severity::Medium, Severity::Low, Severity::None] as $severity) {
@@ -129,12 +157,8 @@ final readonly class AuditSummary
             severityCounts: $severityCounts,
             totalFindings: $findings->count(),
             topFindings: $topFindings,
-            detailUrl: ProjectResource::getUrl(
-                'view',
-                ['record' => $project],
-                isAbsolute: true,
-                panel: FilamentVoight::config()->getAlertsPanelId(),
-            ),
+            detailUrl: $detailUrl,
+            detailLabel: $detailLabel,
             generatedAt: now(),
         );
     }

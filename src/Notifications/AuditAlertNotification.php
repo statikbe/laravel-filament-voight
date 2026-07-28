@@ -71,7 +71,7 @@ abstract class AuditAlertNotification extends Notification
                 ]));
             })
             ->actionsBlock(function (ActionsBlock $block): void {
-                $block->button(voightTrans('notifications.common.view_project'))
+                $block->button($this->summary->detailLabel)
                     ->url($this->summary->detailUrl)
                     ->primary();
             });

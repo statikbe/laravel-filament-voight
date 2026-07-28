@@ -61,11 +61,16 @@ Severity is always bucketed through the `Vulnerability::severity` accessor
 (`Severity::fromScore()`) — the single source of truth. Scores are `decimal:1`
 strings, so they are cast to `float` before comparison/sorting.
 
-The detail link is built with
-`ProjectResource::getUrl('view', ['record' => $project], isAbsolute: true, panel: getAlertsPanelId())`.
+The detail link is built with `getUrl('view', [...], isAbsolute: true, panel: getAlertsPanelId())`.
 `isAbsolute` is required because the URL is generated from a queue/console
-context with no incoming request. There is no AuditRun detail page, so all
-links point at the Project view.
+context with no incoming request.
+
+Immediate alerts link to the `AuditRunResource` view page for the run that
+produced them. Digests link to the project: they summarise the latest run of
+every environment, so there is no single run they could honestly point at. The
+label travels with the URL on `AuditSummary` (`detailUrl` + `detailLabel`), so
+the mail view and the Slack block render it without branching on notification
+type. See `specs/11-audit-runs.md`.
 
 ### Notifications
 

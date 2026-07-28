@@ -82,15 +82,13 @@ it('only counts findings from the latest run per environment for outstanding sum
         ->and($summary->environmentNames)->toContain('production', 'staging');
 });
 
-it('builds an absolute detail url containing the project code', function () {
+it('builds absolute detail urls, since they are generated off-request', function () {
     $project = Project::factory()->create();
     $environment = Environment::factory()->for($project)->create();
     $run = AuditRun::factory()->for($environment)->create();
 
-    $summary = AuditSummary::fromAuditRun($run, 0.0);
-
-    expect($summary->detailUrl)->toStartWith('http')
-        ->and($summary->detailUrl)->toContain($project->project_code);
+    expect(AuditSummary::fromAuditRun($run, 0.0)->detailUrl)->toStartWith('http')
+        ->and(AuditSummary::fromProjectOutstanding($project, 0.0)->detailUrl)->toStartWith('http');
 });
 
 it('reports no findings when nothing matches the threshold', function () {
@@ -103,4 +101,20 @@ it('reports no findings when nothing matches the threshold', function () {
         ->and($summary->totalFindings)->toBe(0)
         ->and($summary->severityCounts)->toBe([])
         ->and($summary->topFindings)->toBe([]);
+});
+
+it('links an immediate summary to the audit run that produced it', function () {
+    $run = AuditRun::factory()->create();
+    $summary = AuditSummary::fromAuditRun($run, 0.0);
+
+    expect($summary->detailUrl)->toContain($run->getRouteKey())
+        ->and($summary->detailLabel)->toBe(voightTrans('notifications.common.view_audit_run'));
+});
+
+it('links a digest to the project because it spans several runs', function () {
+    $project = Project::factory()->create();
+    $summary = AuditSummary::fromProjectOutstanding($project, 0.0);
+
+    expect($summary->detailUrl)->toContain($project->getRouteKey())
+        ->and($summary->detailLabel)->toBe(voightTrans('notifications.common.view_project'));
 });
