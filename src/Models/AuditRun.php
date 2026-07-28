@@ -3,6 +3,7 @@
 namespace Statikbe\FilamentVoight\Models;
 
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -20,6 +21,7 @@ use Statikbe\FilamentVoight\Enums\AuditRunTrigger;
  * @property AuditRunTrigger|null $trigger
  * @property Carbon|null $started_at
  * @property Carbon|null $completed_at
+ * @property-read string|null $formatted_duration
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
@@ -59,6 +61,29 @@ class AuditRun extends Model
     public function auditFindings(): HasMany
     {
         return $this->hasMany(AuditFinding::class);
+    }
+
+    /**
+     * Human-readable run duration, or null when the run has not both started and finished.
+     */
+    protected function formattedDuration(): Attribute
+    {
+        return Attribute::get(fn (): ?string => $this->buildFormattedDuration());
+    }
+
+    private function buildFormattedDuration(): ?string
+    {
+        if ($this->started_at === null || $this->completed_at === null) {
+            return null;
+        }
+
+        $totalSeconds = (int) max(0, $this->started_at->diffInSeconds($this->completed_at));
+        $minutes = intdiv($totalSeconds, 60);
+        $seconds = $totalSeconds % 60;
+
+        return $minutes > 0
+            ? sprintf('%dm %ds', $minutes, $seconds)
+            : sprintf('%ds', $seconds);
     }
 
     /**

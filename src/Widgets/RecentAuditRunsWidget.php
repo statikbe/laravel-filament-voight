@@ -7,7 +7,6 @@ use Filament\Tables\Table;
 use Filament\Widgets\TableWidget;
 use Statikbe\FilamentVoight\Enums\AuditRunStatus;
 use Statikbe\FilamentVoight\Facades\FilamentVoight;
-use Statikbe\FilamentVoight\Models\AuditRun;
 
 class RecentAuditRunsWidget extends TableWidget
 {
@@ -50,29 +49,11 @@ class RecentAuditRunsWidget extends TableWidget
                     ->label(voightTrans('models.audit_run.fields.completed_at'))
                     ->dateTime()
                     ->placeholder('—'),
-                TextColumn::make('duration')
-                    ->label(voightTrans('widgets.recent_audit_runs.columns.duration'))
-                    ->state(fn (AuditRun $record): string => $this->formatDuration($record))
+                TextColumn::make('formatted_duration')
+                    ->label(voightTrans('models.audit_run.fields.duration'))
                     ->placeholder('—'),
             ])
             ->paginated([10])
             ->defaultPaginationPageOption(10);
-    }
-
-    protected function formatDuration(AuditRun $record): string
-    {
-        if ($record->started_at === null || $record->completed_at === null) {
-            return '—';
-        }
-
-        $totalSeconds = max(0, $record->started_at->diffInSeconds($record->completed_at));
-        $minutes = intdiv((int) $totalSeconds, 60);
-        $seconds = (int) $totalSeconds % 60;
-
-        if ($minutes > 0) {
-            return "{$minutes}m {$seconds}s";
-        }
-
-        return "{$seconds}s";
     }
 }
