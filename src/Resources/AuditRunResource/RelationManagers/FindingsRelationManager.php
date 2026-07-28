@@ -2,12 +2,15 @@
 
 namespace Statikbe\FilamentVoight\Resources\AuditRunResource\RelationManagers;
 
+use Filament\Actions\ViewAction;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Statikbe\FilamentVoight\Models\AuditFinding;
+use Statikbe\FilamentVoight\Resources\VulnerabilityResource;
 
 class FindingsRelationManager extends RelationManager
 {
@@ -37,6 +40,9 @@ class FindingsRelationManager extends RelationManager
                 TextColumn::make('package.name')
                     ->label(voightTrans('models.package.label'))
                     ->searchable(),
+                TextColumn::make('package.type')
+                    ->label(voightTrans('widgets.active_findings.columns.package_type'))
+                    ->badge(),
                 TextColumn::make('vulnerability.summary')
                     ->label(voightTrans('models.package.view.columns.summary'))
                     ->limit(60),
@@ -45,6 +51,15 @@ class FindingsRelationManager extends RelationManager
                 TextColumn::make('fixed_version')
                     ->label(voightTrans('models.package.view.columns.fixed_version'))
                     ->placeholder('—'),
+            ])
+            ->recordActions([
+                // Rows are AuditFinding records, so $relatedResource cannot be used
+                // here — the model would not match VulnerabilityResource.
+                ViewAction::make()
+                    ->url(fn (AuditFinding $record): string => VulnerabilityResource::getUrl(
+                        'view',
+                        ['record' => $record->vulnerability_id],
+                    )),
             ])
             ->defaultSort('id');
     }

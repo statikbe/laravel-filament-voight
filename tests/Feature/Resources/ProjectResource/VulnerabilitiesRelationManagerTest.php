@@ -11,6 +11,7 @@ use Statikbe\FilamentVoight\Models\Project;
 use Statikbe\FilamentVoight\Models\Vulnerability;
 use Statikbe\FilamentVoight\Resources\ProjectResource\Pages\ViewProject;
 use Statikbe\FilamentVoight\Resources\ProjectResource\RelationManagers\VulnerabilitiesRelationManager;
+use Statikbe\FilamentVoight\Resources\VulnerabilityResource;
 
 beforeEach(function () {
     $this->actingAs(new User);
@@ -58,4 +59,21 @@ it('shows all package types when package_type filter is blank', function () {
         'pageClass' => ViewProject::class,
     ])
         ->assertCanSeeTableRecords([$composerFinding, $npmFinding]);
+});
+
+it('links each finding to its vulnerability page', function () {
+    $project = Project::factory()->create();
+    $environment = Environment::factory()->for($project)->create(['name' => 'production']);
+    $run = AuditRun::factory()->for($environment)->create();
+    $finding = AuditFinding::factory()->for($run, 'auditRun')->create();
+
+    Livewire::test(VulnerabilitiesRelationManager::class, [
+        'ownerRecord' => $project,
+        'pageClass' => ViewProject::class,
+    ])
+        ->assertTableActionHasUrl(
+            'view',
+            VulnerabilityResource::getUrl('view', ['record' => $finding->vulnerability_id]),
+            $finding,
+        );
 });
