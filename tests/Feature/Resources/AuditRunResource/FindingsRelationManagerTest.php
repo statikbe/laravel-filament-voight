@@ -6,6 +6,7 @@ use Statikbe\FilamentVoight\Enums\PackageType;
 use Statikbe\FilamentVoight\Models\AuditFinding;
 use Statikbe\FilamentVoight\Models\AuditRun;
 use Statikbe\FilamentVoight\Models\Package;
+use Statikbe\FilamentVoight\Models\Vulnerability;
 use Statikbe\FilamentVoight\Resources\AuditRunResource\Pages\ViewAuditRun;
 use Statikbe\FilamentVoight\Resources\AuditRunResource\RelationManagers\FindingsRelationManager;
 use Statikbe\FilamentVoight\Resources\VulnerabilityResource;
@@ -58,4 +59,27 @@ it('shows the package type so php and npm findings are distinguishable', functio
     ])
         ->assertSuccessful()
         ->assertTableColumnStateSet('package.type', PackageType::Composer, $finding);
+});
+
+it('sorts findings worst-first by severity', function () {
+    $run = AuditRun::factory()->create();
+
+    // Created low-to-high so insertion order is the opposite of the expected order:
+    // sorting by id would produce exactly the reverse of this assertion.
+    $low = AuditFinding::factory()->for($run, 'auditRun')->create([
+        'vulnerability_id' => Vulnerability::factory()->create(['vulnerability_score' => 2.0])->id,
+    ]);
+    $medium = AuditFinding::factory()->for($run, 'auditRun')->create([
+        'vulnerability_id' => Vulnerability::factory()->create(['vulnerability_score' => 5.5])->id,
+    ]);
+    $critical = AuditFinding::factory()->for($run, 'auditRun')->create([
+        'vulnerability_id' => Vulnerability::factory()->create(['vulnerability_score' => 9.8])->id,
+    ]);
+
+    Livewire::test(FindingsRelationManager::class, [
+        'ownerRecord' => $run,
+        'pageClass' => ViewAuditRun::class,
+    ])
+        ->assertSuccessful()
+        ->assertCanSeeTableRecords([$critical, $medium, $low], inOrder: true);
 });

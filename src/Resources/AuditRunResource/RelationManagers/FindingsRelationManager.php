@@ -61,6 +61,9 @@ class FindingsRelationManager extends RelationManager
                         ['record' => $record->vulnerability_id],
                     )),
             ])
-            ->defaultSort('id');
+            // Severity is an accessor derived from vulnerability_score, not a column,
+            // so it cannot be sorted in SQL. Sorting by the score gives the same
+            // worst-first order and matches the project's vulnerabilities table.
+            ->defaultSort('vulnerability.vulnerability_score', 'desc');
     }
 }

@@ -16,7 +16,8 @@ class AuditRunInfolistSchema
     {
         return $schema->components([
             Section::make()
-                ->columns(3)
+                ->columnSpanFull()
+                ->columns(4)
                 ->schema([
                     TextEntry::make('environment.project.name')
                         ->label(voightTrans('models.audit_run.fields.project'))
