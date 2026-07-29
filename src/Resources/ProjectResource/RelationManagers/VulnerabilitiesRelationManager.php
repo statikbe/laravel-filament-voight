@@ -2,7 +2,6 @@
 
 namespace Statikbe\FilamentVoight\Resources\ProjectResource\RelationManagers;
 
-use Filament\Actions\ViewAction;
 use Filament\Forms\Components\DatePicker;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Support\Icons\Heroicon;
@@ -16,8 +15,7 @@ use Illuminate\Database\Eloquent\Model;
 use Statikbe\FilamentVoight\Enums\PackageType;
 use Statikbe\FilamentVoight\Enums\Severity;
 use Statikbe\FilamentVoight\Facades\FilamentVoight;
-use Statikbe\FilamentVoight\Models\AuditFinding;
-use Statikbe\FilamentVoight\Resources\VulnerabilityResource;
+use Statikbe\FilamentVoight\Resources\VulnerabilityResource\Actions\ViewFindingVulnerabilityAction;
 
 class VulnerabilitiesRelationManager extends RelationManager
 {
@@ -128,13 +126,7 @@ class VulnerabilitiesRelationManager extends RelationManager
                     }),
             ])
             ->recordActions([
-                // Rows are AuditFinding records, so $relatedResource cannot be used
-                // here — the model would not match VulnerabilityResource.
-                ViewAction::make()
-                    ->url(fn (AuditFinding $record): string => VulnerabilityResource::getUrl(
-                        'view',
-                        ['record' => $record->vulnerability_id],
-                    )),
+                ViewFindingVulnerabilityAction::make(),
             ])
             ->defaultSort('vulnerability.vulnerability_score', 'desc')
             ->emptyStateIcon(Heroicon::OutlinedShieldCheck)

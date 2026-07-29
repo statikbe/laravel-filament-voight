@@ -7,10 +7,7 @@ use Statikbe\FilamentVoight\Resources\AuditRunResource;
 use Statikbe\FilamentVoight\Resources\AuditRunResource\Pages\ViewAuditRun;
 
 beforeEach(function () {
-    $user = new User;
-    $user->name = 'Test User';
-    $user->email = 'test@example.com';
-    $this->actingAs($user);
+    $this->actingAs(new User);
 });
 
 it('shows an audit run', function () {

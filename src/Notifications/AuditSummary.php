@@ -2,7 +2,9 @@
 
 namespace Statikbe\FilamentVoight\Notifications;
 
+use Filament\Resources\Resource as FilamentResource;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Statikbe\FilamentVoight\Enums\Severity;
@@ -62,12 +64,7 @@ final readonly class AuditSummary
             $auditRun->environment->project,
             [$auditRun->environment->name],
             $findings,
-            AuditRunResource::getUrl(
-                'view',
-                ['record' => $auditRun],
-                isAbsolute: true,
-                panel: FilamentVoight::config()->getAlertsPanelId(),
-            ),
+            self::alertsPanelUrl(AuditRunResource::class, $auditRun),
             voightTrans('notifications.common.view_audit_run'),
         );
     }
@@ -92,12 +89,7 @@ final readonly class AuditSummary
             $project,
             $environmentNames,
             $findings,
-            ProjectResource::getUrl(
-                'view',
-                ['record' => $project],
-                isAbsolute: true,
-                panel: FilamentVoight::config()->getAlertsPanelId(),
-            ),
+            self::alertsPanelUrl(ProjectResource::class, $project),
             voightTrans('notifications.common.view_project'),
         );
     }
@@ -113,9 +105,25 @@ final readonly class AuditSummary
     }
 
     /**
+     * Absolute link into the panel that sends the alerts, since notifications are rendered off-request.
+     *
+     * @param  class-string<FilamentResource>  $resource
+     */
+    private static function alertsPanelUrl(string $resource, Model $record): string
+    {
+        return $resource::getUrl(
+            'view',
+            ['record' => $record],
+            isAbsolute: true,
+            panel: FilamentVoight::config()->getAlertsPanelId(),
+        );
+    }
+
+    /**
      * @param  array<string>  $environmentNames
      * @param  Collection<int, AuditFinding>  $findings
      * @param  string  $detailUrl  Where this particular summary came from — a run for immediate alerts, the project for digests.
+     * @param  string  $detailLabel  Call to action matching $detailUrl.
      */
     private static function build(
         Project $project,

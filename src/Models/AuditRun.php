@@ -69,22 +69,21 @@ class AuditRun extends Model
      */
     protected function formattedDuration(): Attribute
     {
-        return Attribute::get(fn (): ?string => $this->buildFormattedDuration());
-    }
+        return Attribute::get(function (): ?string {
+            if ($this->started_at === null || $this->completed_at === null) {
+                return null;
+            }
 
-    private function buildFormattedDuration(): ?string
-    {
-        if ($this->started_at === null || $this->completed_at === null) {
-            return null;
-        }
+            $totalSeconds = (int) max(0, $this->started_at->diffInSeconds($this->completed_at));
+            $minutes = intdiv($totalSeconds, 60);
+            $seconds = $totalSeconds % 60;
 
-        $totalSeconds = (int) max(0, $this->started_at->diffInSeconds($this->completed_at));
-        $minutes = intdiv($totalSeconds, 60);
-        $seconds = $totalSeconds % 60;
+            if ($minutes > 0) {
+                return sprintf('%dm %ds', $minutes, $seconds);
+            }
 
-        return $minutes > 0
-            ? sprintf('%dm %ds', $minutes, $seconds)
-            : sprintf('%ds', $seconds);
+            return sprintf('%ds', $seconds);
+        });
     }
 
     /**

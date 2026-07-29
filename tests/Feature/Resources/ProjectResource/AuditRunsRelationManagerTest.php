@@ -10,10 +10,7 @@ use Statikbe\FilamentVoight\Resources\ProjectResource\Pages\ViewProject;
 use Statikbe\FilamentVoight\Resources\ProjectResource\RelationManagers\AuditRunsRelationManager;
 
 beforeEach(function () {
-    $user = new User;
-    $user->name = 'Test User';
-    $user->email = 'test@example.com';
-    $this->actingAs($user);
+    $this->actingAs(new User);
 });
 
 it('lists runs from every environment of the project', function () {

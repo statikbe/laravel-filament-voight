@@ -10,10 +10,7 @@ use Statikbe\FilamentVoight\Models\Vulnerability;
 use Statikbe\FilamentVoight\Resources\AuditRunResource\Pages\ListAuditRuns;
 
 beforeEach(function () {
-    $user = new User;
-    $user->name = 'Test User';
-    $user->email = 'test@example.com';
-    $this->actingAs($user);
+    $this->actingAs(new User);
 });
 
 it('lists audit runs', function () {

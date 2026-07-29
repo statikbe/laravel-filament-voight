@@ -2,15 +2,13 @@
 
 namespace Statikbe\FilamentVoight\Resources\AuditRunResource\RelationManagers;
 
-use Filament\Actions\ViewAction;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
-use Statikbe\FilamentVoight\Models\AuditFinding;
-use Statikbe\FilamentVoight\Resources\VulnerabilityResource;
+use Statikbe\FilamentVoight\Resources\VulnerabilityResource\Actions\ViewFindingVulnerabilityAction;
 
 class FindingsRelationManager extends RelationManager
 {
@@ -53,13 +51,7 @@ class FindingsRelationManager extends RelationManager
                     ->placeholder('—'),
             ])
             ->recordActions([
-                // Rows are AuditFinding records, so $relatedResource cannot be used
-                // here — the model would not match VulnerabilityResource.
-                ViewAction::make()
-                    ->url(fn (AuditFinding $record): string => VulnerabilityResource::getUrl(
-                        'view',
-                        ['record' => $record->vulnerability_id],
-                    )),
+                ViewFindingVulnerabilityAction::make(),
             ])
             // Severity is an accessor derived from vulnerability_score, not a column,
             // so it cannot be sorted in SQL. Sorting by the score gives the same

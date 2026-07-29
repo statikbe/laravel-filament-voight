@@ -19,28 +19,10 @@ class AuditRunInfolistSchema
                 ->columnSpanFull()
                 ->columns(4)
                 ->schema([
-                    TextEntry::make('environment.project.name')
-                        ->label(voightTrans('models.audit_run.fields.project'))
-                        ->url(fn (AuditRun $record): string => ProjectResource::getUrl(
-                            'view',
-                            ['record' => $record->environment->project],
-                        ))
-                        ->color('primary')
-                        ->icon(Heroicon::OutlinedArrowRight)
-                        ->iconPosition(IconPosition::After)
-                        ->extraAttributes(['class' => 'underline']),
+                    self::projectLink('environment.project.name', voightTrans('models.audit_run.fields.project')),
                     // Environments have no resource of their own, so this links to the
                     // project page that lists them rather than to the environment itself.
-                    TextEntry::make('environment.name')
-                        ->label(voightTrans('models.audit_run.fields.environment'))
-                        ->url(fn (AuditRun $record): string => ProjectResource::getUrl(
-                            'view',
-                            ['record' => $record->environment->project],
-                        ))
-                        ->color('primary')
-                        ->icon(Heroicon::OutlinedArrowRight)
-                        ->iconPosition(IconPosition::After)
-                        ->extraAttributes(['class' => 'underline']),
+                    self::projectLink('environment.name', voightTrans('models.audit_run.fields.environment')),
                     TextEntry::make('trigger')
                         ->label(voightTrans('models.audit_run.fields.trigger'))
                         ->badge(),
@@ -59,5 +41,22 @@ class AuditRunInfolistSchema
                         ->placeholder('—'),
                 ]),
         ]);
+    }
+
+    /**
+     * An entry rendered as a link to the run's project page.
+     */
+    private static function projectLink(string $name, string $label): TextEntry
+    {
+        return TextEntry::make($name)
+            ->label($label)
+            ->url(fn (AuditRun $record): string => ProjectResource::getUrl(
+                'view',
+                ['record' => $record->environment->project],
+            ))
+            ->color('primary')
+            ->icon(Heroicon::OutlinedArrowRight)
+            ->iconPosition(IconPosition::After)
+            ->extraAttributes(['class' => 'underline']);
     }
 }

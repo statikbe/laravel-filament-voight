@@ -12,10 +12,7 @@ use Statikbe\FilamentVoight\Resources\AuditRunResource\RelationManagers\Findings
 use Statikbe\FilamentVoight\Resources\VulnerabilityResource;
 
 beforeEach(function () {
-    $user = new User;
-    $user->name = 'Test User';
-    $user->email = 'test@example.com';
-    $this->actingAs($user);
+    $this->actingAs(new User);
 });
 
 it('lists only the findings belonging to this run', function () {
