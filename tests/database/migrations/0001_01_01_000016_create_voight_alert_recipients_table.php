@@ -15,8 +15,16 @@ return new class extends Migration
             $table->string('recipient_id');
             $table->timestamps();
 
-            $table->index(['recipient_type', 'recipient_id']);
-            $table->unique(['alert_setting_id', 'recipient_type', 'recipient_id']);
+            // Named explicitly: the generated names would exceed MySQL's 64-character
+            // identifier limit. SQLite does not enforce it, so this only fails on deploy.
+            $table->index(
+                ['recipient_type', 'recipient_id'],
+                'voight_alert_recipients_recipient_index'
+            );
+            $table->unique(
+                ['alert_setting_id', 'recipient_type', 'recipient_id'],
+                'voight_alert_recipients_unique'
+            );
         });
     }
 
