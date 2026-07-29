@@ -2,11 +2,14 @@
 
 namespace Statikbe\FilamentVoight\Widgets;
 
+use Filament\Actions\ViewAction;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Filament\Widgets\TableWidget;
 use Statikbe\FilamentVoight\Enums\AuditRunStatus;
 use Statikbe\FilamentVoight\Facades\FilamentVoight;
+use Statikbe\FilamentVoight\Models\AuditRun;
+use Statikbe\FilamentVoight\Resources\AuditRunResource;
 
 class RecentAuditRunsWidget extends TableWidget
 {
@@ -52,6 +55,15 @@ class RecentAuditRunsWidget extends TableWidget
                 TextColumn::make('formatted_duration')
                     ->label(voightTrans('models.audit_run.fields.duration'))
                     ->placeholder('—'),
+            ])
+            ->recordActions([
+                // A widget is neither a resource page nor a relation manager, so
+                // Filament cannot resolve the view URL on its own.
+                ViewAction::make()
+                    ->url(fn (AuditRun $record): string => AuditRunResource::getUrl(
+                        'view',
+                        ['record' => $record],
+                    )),
             ])
             ->paginated([10])
             ->defaultPaginationPageOption(10);

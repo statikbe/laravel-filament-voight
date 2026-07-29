@@ -5,6 +5,7 @@ use Livewire\Livewire;
 use Statikbe\FilamentVoight\Models\AuditRun;
 use Statikbe\FilamentVoight\Models\Environment;
 use Statikbe\FilamentVoight\Models\Project;
+use Statikbe\FilamentVoight\Resources\AuditRunResource;
 use Statikbe\FilamentVoight\Widgets\RecentAuditRunsWidget;
 
 beforeEach(function () {
@@ -47,4 +48,14 @@ it('shows exactly one most-recent row per project ordered most-recent-first', fu
     Livewire::test(RecentAuditRunsWidget::class)
         ->assertCanSeeTableRecords([$recentLatest, $middleLatest, $oldestLatest], inOrder: true)
         ->assertCanNotSeeTableRecords([$recentOld, $middleOld, $oldestOld]);
+});
+
+it('links each row to the audit run page', function () {
+    $project = Project::factory()->create();
+    $run = AuditRun::factory()
+        ->for(Environment::factory()->for($project)->create(['name' => 'production']))
+        ->create();
+
+    Livewire::test(RecentAuditRunsWidget::class)
+        ->assertTableActionHasUrl('view', AuditRunResource::getUrl('view', ['record' => $run]), $run);
 });
