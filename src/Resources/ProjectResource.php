@@ -7,6 +7,8 @@ use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use Statikbe\FilamentVoight\Models\Project;
 use Statikbe\FilamentVoight\Resources\ProjectResource\Pages\CreateProject;
 use Statikbe\FilamentVoight\Resources\ProjectResource\Pages\EditProject;
@@ -45,6 +47,30 @@ class ProjectResource extends Resource
     public static function getPluralModelLabel(): string
     {
         return voightTrans('models.project.plural');
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    public static function getGloballySearchableAttributes(): array
+    {
+        return ['name', 'project_code', 'customer.name', 'team.name'];
+    }
+
+    public static function getGlobalSearchEloquentQuery(): Builder
+    {
+        return parent::getGlobalSearchEloquentQuery()->with(['customer', 'team']);
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public static function getGlobalSearchResultDetails(Model $record): array
+    {
+        return [
+            voightTrans('models.project.fields.customer') => $record->customer?->name ?? '-',
+            voightTrans('models.project.fields.team') => $record->team?->name ?? '-',
+        ];
     }
 
     public static function form(Schema $schema): Schema

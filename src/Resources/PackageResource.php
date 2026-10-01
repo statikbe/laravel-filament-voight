@@ -5,6 +5,7 @@ namespace Statikbe\FilamentVoight\Resources;
 use Filament\Resources\Resource;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Model;
 use Statikbe\FilamentVoight\Models\Package;
 use Statikbe\FilamentVoight\Resources\PackageResource\Pages\ListPackages;
 use Statikbe\FilamentVoight\Resources\PackageResource\Pages\ViewPackage;
@@ -36,6 +37,25 @@ class PackageResource extends Resource
     public static function getPluralModelLabel(): string
     {
         return voightTrans('models.package.plural');
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    public static function getGloballySearchableAttributes(): array
+    {
+        return ['name'];
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public static function getGlobalSearchResultDetails(Model $record): array
+    {
+        return [
+            voightTrans('models.package.fields.type') => $record->type->label(),
+            voightTrans('models.package.fields.latest_version') => $record->latest_version ?? '-',
+        ];
     }
 
     public static function table(Table $table): Table

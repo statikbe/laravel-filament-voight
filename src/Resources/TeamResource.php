@@ -41,6 +41,14 @@ class TeamResource extends Resource
         return voightTrans('models.team.plural');
     }
 
+    /**
+     * @return array<int, string>
+     */
+    public static function getGloballySearchableAttributes(): array
+    {
+        return ['name'];
+    }
+
     public static function form(Schema $schema): Schema
     {
         return TeamFormSchema::configure($schema);

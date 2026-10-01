@@ -6,6 +6,7 @@ use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Model;
 use Statikbe\FilamentVoight\Models\Customer;
 use Statikbe\FilamentVoight\Resources\CustomerResource\Pages\CreateCustomer;
 use Statikbe\FilamentVoight\Resources\CustomerResource\Pages\EditCustomer;
@@ -39,6 +40,24 @@ class CustomerResource extends Resource
     public static function getPluralModelLabel(): string
     {
         return voightTrans('models.customer.plural');
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    public static function getGloballySearchableAttributes(): array
+    {
+        return ['name', 'slug'];
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public static function getGlobalSearchResultDetails(Model $record): array
+    {
+        return [
+            voightTrans('models.customer.fields.slug') => $record->slug,
+        ];
     }
 
     public static function form(Schema $schema): Schema
