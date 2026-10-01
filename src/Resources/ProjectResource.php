@@ -67,10 +67,10 @@ class ProjectResource extends Resource
      */
     public static function getGlobalSearchResultDetails(Model $record): array
     {
-        return [
-            voightTrans('models.project.fields.customer') => $record->customer?->name ?? '-',
-            voightTrans('models.project.fields.team') => $record->team?->name ?? '-',
-        ];
+        return array_filter([
+            voightTrans('models.project.fields.customer') => $record->customer?->name,
+            voightTrans('models.project.fields.team') => $record->team?->name,
+        ], fn (mixed $value): bool => $value !== null);
     }
 
     public static function form(Schema $schema): Schema

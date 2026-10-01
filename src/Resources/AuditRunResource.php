@@ -59,10 +59,10 @@ class AuditRunResource extends Resource
      */
     public static function getGlobalSearchResultDetails(Model $record): array
     {
-        return [
+        return array_filter([
             voightTrans('models.audit_run.fields.status') => $record->status->label(),
-            voightTrans('models.audit_run.fields.started_at') => $record->started_at?->toDayDateTimeString() ?? '-',
-        ];
+            voightTrans('models.audit_run.fields.started_at') => $record->started_at?->toDayDateTimeString(),
+        ], fn (mixed $value): bool => $value !== null);
     }
 
     public static function table(Table $table): Table

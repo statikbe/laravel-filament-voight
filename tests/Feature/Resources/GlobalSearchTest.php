@@ -3,10 +3,12 @@
 use Statikbe\FilamentVoight\Models\AuditRun;
 use Statikbe\FilamentVoight\Models\Customer;
 use Statikbe\FilamentVoight\Models\Environment;
+use Statikbe\FilamentVoight\Models\EnvironmentPackage;
 use Statikbe\FilamentVoight\Models\Package;
 use Statikbe\FilamentVoight\Models\Project;
 use Statikbe\FilamentVoight\Models\Team;
 use Statikbe\FilamentVoight\Models\Vulnerability;
+use Statikbe\FilamentVoight\Models\VulnerablePackageRange;
 use Statikbe\FilamentVoight\Resources\AuditRunResource;
 use Statikbe\FilamentVoight\Resources\CustomerResource;
 use Statikbe\FilamentVoight\Resources\PackageResource;
@@ -62,10 +64,10 @@ it('shows customer and team on project results', function () {
     ]);
 });
 
-it('falls back to a dash for a project without customer or team', function () {
+it('drops customer and team rows for a project without them', function () {
     $project = Project::factory()->create(['customer_id' => null, 'team_id' => null]);
 
-    expect(ProjectResource::getGlobalSearchResultDetails($project))->each->toBe('-');
+    expect(ProjectResource::getGlobalSearchResultDetails($project))->toBe([]);
 });
 
 it('eager loads relations for project results', function () {
@@ -74,16 +76,54 @@ it('eager loads relations for project results', function () {
     expect(ProjectResource::getGlobalSearchEloquentQuery()->first()->relationLoaded('customer'))->toBeTrue();
 });
 
-it('shows type and latest version on package results', function () {
-    $package = Package::factory()->create(['latest_version' => '1.2.3']);
+it('shows latest version on package results only when known', function () {
+    $with = Package::factory()->create(['latest_version' => '1.2.3']);
+    $without = Package::factory()->create(['latest_version' => null]);
 
-    expect(PackageResource::getGlobalSearchResultDetails($package))
-        ->toHaveKey(voightTrans('models.package.fields.latest_version'), '1.2.3');
+    expect(PackageResource::getGlobalSearchResultDetails($with))
+        ->toHaveKey(voightTrans('models.package.fields.latest_version'), '1.2.3')
+        ->and(PackageResource::getGlobalSearchResultDetails($without))
+        ->not->toHaveKey(voightTrans('models.package.fields.latest_version'))
+        ->toHaveKey(voightTrans('models.package.fields.type'));
 });
 
-it('shows severity and source on vulnerability results', function () {
-    $vulnerability = Vulnerability::factory()->create(['vulnerability_score' => 9.8]);
+it('counts distinct projects using a package', function () {
+    $package = Package::factory()->create();
+    $project = Project::factory()->create();
+    foreach (Environment::factory()->count(2)->for($project)->sequence(['name' => 'production'], ['name' => 'staging'])->create() as $environment) {
+        EnvironmentPackage::factory()->create(['environment_id' => $environment->id, 'package_id' => $package->id]);
+    }
+    $other = Environment::factory()->create();
+    EnvironmentPackage::factory()->create(['environment_id' => $other->id, 'package_id' => $package->id]);
+    $unused = Package::factory()->create();
 
-    expect(VulnerabilityResource::getGlobalSearchResultDetails($vulnerability))
-        ->toHaveKey(voightTrans('models.vulnerability.fields.severity'), 'Critical');
+    $details = fn (Package $p): array => PackageResource::getGlobalSearchResultDetails(
+        PackageResource::getGlobalSearchEloquentQuery()->findOrFail($p->id)
+    );
+
+    expect($details($package))->toHaveKey(voightTrans('models.project.plural'), 2)
+        ->and($details($unused))->toHaveKey(voightTrans('models.project.plural'), 0);
+});
+
+it('shows id with summary, severity with score and affected packages on vulnerability results', function () {
+    $vulnerability = Vulnerability::factory()->create([
+        'source_id' => 'GHSA-aaaa-bbbb-cccc',
+        'summary' => 'Remote code execution in parser',
+        'vulnerability_score' => 7.5,
+    ]);
+    foreach (['a/one', 'b/two', 'c/three', 'd/four', 'e/five'] as $name) {
+        VulnerablePackageRange::factory()->create([
+            'vulnerability_id' => $vulnerability->id,
+            'package_id' => Package::factory()->create(['name' => $name])->id,
+        ]);
+    }
+
+    $record = VulnerabilityResource::getGlobalSearchEloquentQuery()->findOrFail($vulnerability->id);
+    $details = VulnerabilityResource::getGlobalSearchResultDetails($record);
+
+    expect(VulnerabilityResource::getGlobalSearchResultTitle($record))
+        ->toContain('GHSA-aaaa-bbbb-cccc')->toContain('Remote code execution in parser')
+        ->and($details)->not->toHaveKey(voightTrans('models.vulnerability.fields.source'))
+        ->toHaveKey(voightTrans('models.vulnerability.fields.severity'), 'High (7.5)')
+        ->and($details[voightTrans('models.package.plural')])->toEndWith(' +2');
 });
