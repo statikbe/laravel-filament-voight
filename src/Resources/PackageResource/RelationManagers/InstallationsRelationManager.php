@@ -24,7 +24,7 @@ class InstallationsRelationManager extends RelationManager
     public function table(Table $table): Table
     {
         return $table
-            ->modifyQueryUsing(fn (Builder $query) => $query->with(['environment.project', 'parentPackage']))
+            ->modifyQueryUsing(fn (Builder $query) => $query->with(['environment.project', 'parents.package']))
             ->columns([
                 TextColumn::make('environment.project.name')
                     ->label(voightTrans('models.package.view.columns.project'))
@@ -39,11 +39,12 @@ class InstallationsRelationManager extends RelationManager
                 IconColumn::make('is_direct')
                     ->label(voightTrans('models.package.view.columns.direct'))
                     ->boolean(),
-                TextColumn::make('parentPackage.name')
-                    ->label(voightTrans('models.package.view.columns.parent_package'))
-                    ->placeholder('—')
-                    ->searchable()
-                    ->sortable(),
+                TextColumn::make('parents.package.name')
+                    ->label(voightTrans('models.package.view.columns.required_by'))
+                    ->listWithLineBreaks()
+                    ->limitList(3)
+                    ->expandableLimitedList()
+                    ->placeholder('—'),
                 IconColumn::make('is_dev')
                     ->label(voightTrans('models.package.view.columns.dev'))
                     ->boolean()

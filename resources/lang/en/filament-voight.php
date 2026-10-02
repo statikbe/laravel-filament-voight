@@ -64,6 +64,11 @@ return [
                 'message' => ':file was not found in storage and was skipped.',
             ],
         ],
+        'dependency_kind' => [
+            'dependency' => 'Dependency',
+            'optional' => 'Optional',
+            'peer' => 'Peer',
+        ],
         'environment_issue_type' => [
             'sync_failed' => 'Sync failed',
             'scan_failed' => 'Scan failed',
@@ -203,7 +208,7 @@ return [
                     'observed' => 'Observed',
                     'direct' => 'Direct',
                     'dev' => 'Dev',
-                    'parent_package' => 'Parent Package',
+                    'required_by' => 'Required by',
                     'last_scan' => 'Last Scan',
                     'published' => 'Published',
                     'modified' => 'Modified',
@@ -228,7 +233,6 @@ return [
                 'version' => 'Version',
                 'is_direct' => 'Direct Dependency',
                 'is_dev' => 'Dev Dependency',
-                'parent_package' => 'Parent Package',
             ],
         ],
         'dependency_sync' => [

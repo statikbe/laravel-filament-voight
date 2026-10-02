@@ -173,6 +173,8 @@ class FilamentVoightServiceProvider extends PackageServiceProvider
             'create_voight_alert_notification_logs_table',
             'add_warnings_to_voight_dependency_syncs_table',
             'add_error_message_to_voight_audit_runs_table',
+            'create_voight_environment_package_dependencies_table',
+            'drop_parent_package_id_from_voight_environment_packages_table',
         ];
     }
 }

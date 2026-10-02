@@ -2,6 +2,7 @@
 
 use Illuminate\Foundation\Auth\User;
 use Livewire\Livewire;
+use Statikbe\FilamentVoight\Enums\DependencyKind;
 use Statikbe\FilamentVoight\Models\Environment;
 use Statikbe\FilamentVoight\Models\EnvironmentPackage;
 use Statikbe\FilamentVoight\Models\Package;
@@ -42,4 +43,26 @@ it('renders an installation whose environment has never been scanned', function 
         'pageClass' => ViewPackage::class,
     ])
         ->assertCanSeeTableRecords([$installation]);
+});
+
+it('shows which installed packages require the installation', function () {
+    $lodash = Package::factory()->npm()->create(['name' => 'lodash']);
+    $environment = Environment::factory()->create();
+    $installation = EnvironmentPackage::factory()->for($environment)->for($lodash)->transitive()->create();
+
+    foreach (['express', 'webpack-dev-server'] as $parentName) {
+        EnvironmentPackage::factory()
+            ->for($environment)
+            ->for(Package::factory()->npm()->create(['name' => $parentName]))
+            ->create()
+            ->children()
+            ->attach($installation, ['constraint' => '^4.17.0', 'kind' => DependencyKind::Dependency]);
+    }
+
+    Livewire::test(InstallationsRelationManager::class, [
+        'ownerRecord' => $lodash,
+        'pageClass' => ViewPackage::class,
+    ])
+        ->assertSee('express')
+        ->assertSee('webpack-dev-server');
 });

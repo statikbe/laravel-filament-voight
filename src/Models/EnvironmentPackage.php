@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Statikbe\FilamentVoight\Enums\PackageType;
@@ -17,7 +18,7 @@ use Statikbe\FilamentVoight\Enums\PackageType;
  * @property string $version
  * @property bool $is_direct
  * @property bool $is_dev
- * @property string|null $parent_package_id
+ * @property-read EnvironmentPackageDependency|null $pivot Set when loaded through children() or parents()
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
@@ -58,11 +59,27 @@ class EnvironmentPackage extends Model
     }
 
     /**
-     * @return BelongsTo<Package, $this>
+     * The installed packages this one depends on.
+     *
+     * @return BelongsToMany<EnvironmentPackage, $this, EnvironmentPackageDependency>
      */
-    public function parentPackage(): BelongsTo
+    public function children(): BelongsToMany
     {
-        return $this->belongsTo(Package::class, 'parent_package_id');
+        return $this->belongsToMany(EnvironmentPackage::class, 'voight_environment_package_dependencies', 'parent_id', 'child_id')
+            ->using(EnvironmentPackageDependency::class)
+            ->withPivot('constraint', 'kind');
+    }
+
+    /**
+     * The installed packages that depend on this one.
+     *
+     * @return BelongsToMany<EnvironmentPackage, $this, EnvironmentPackageDependency>
+     */
+    public function parents(): BelongsToMany
+    {
+        return $this->belongsToMany(EnvironmentPackage::class, 'voight_environment_package_dependencies', 'child_id', 'parent_id')
+            ->using(EnvironmentPackageDependency::class)
+            ->withPivot('constraint', 'kind');
     }
 
     /**

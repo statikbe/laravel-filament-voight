@@ -68,3 +68,8 @@ it('adds warnings to voight_dependency_syncs and error_message to voight_audit_r
     expect(Schema::hasColumn('voight_dependency_syncs', 'warnings'))->toBeTrue()
         ->and(Schema::hasColumn('voight_audit_runs', 'error_message'))->toBeTrue();
 });
+
+it('stores dependency edges between installed packages and drops parent_package_id', function () {
+    expect(Schema::hasColumns('voight_environment_package_dependencies', ['parent_id', 'child_id', 'constraint', 'kind']))->toBeTrue()
+        ->and(Schema::hasColumn('voight_environment_packages', 'parent_package_id'))->toBeFalse();
+});

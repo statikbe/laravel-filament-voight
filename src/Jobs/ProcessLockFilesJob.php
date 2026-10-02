@@ -233,14 +233,12 @@ class ProcessLockFilesJob implements ShouldQueue
         $environmentPackageModel::where('environment_id', $environmentId)->delete();
 
         $packageModels = $this->resolvePackageModels($parsedPackages);
-        $dependedBy = $this->buildReverseDependencyMap($parsedPackages);
 
         $rows = [];
         $now = now();
 
         foreach ($parsedPackages as $parsed) {
             $package = $packageModels[$parsed['name']];
-            $parentName = ! $parsed['is_direct'] ? ($dependedBy[$parsed['name']] ?? null) : null;
 
             $rows[] = [
                 'id' => Str::ulid()->toBase32(),
@@ -249,7 +247,6 @@ class ProcessLockFilesJob implements ShouldQueue
                 'version' => $parsed['version'],
                 'is_direct' => $parsed['is_direct'],
                 'is_dev' => $parsed['is_dev'],
-                'parent_package_id' => $parentName ? ($packageModels[$parentName]->id ?? null) : null,
                 'created_at' => $now,
                 'updated_at' => $now,
             ];
@@ -284,22 +281,5 @@ class ProcessLockFilesJob implements ShouldQueue
         }
 
         return $existing->all();
-    }
-
-    /**
-     * @param  array<int, array{name: string, version: string, type: PackageType, is_direct: bool, is_dev: bool, require: array<string>}>  $parsedPackages
-     * @return array<string, string>
-     */
-    private function buildReverseDependencyMap(array $parsedPackages): array
-    {
-        $dependedBy = [];
-
-        foreach ($parsedPackages as $parsed) {
-            foreach ($parsed['require'] as $requiredName) {
-                $dependedBy[$requiredName] ??= $parsed['name'];
-            }
-        }
-
-        return $dependedBy;
     }
 }
