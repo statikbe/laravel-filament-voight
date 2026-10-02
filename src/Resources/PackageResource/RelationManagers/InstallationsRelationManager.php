@@ -9,6 +9,7 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Statikbe\FilamentVoight\Resources\PackageResource\Actions\WhyInstalledAction;
 
 class InstallationsRelationManager extends RelationManager
 {
@@ -54,6 +55,9 @@ class InstallationsRelationManager extends RelationManager
                     ->dateTime()
                     ->sortable()
                     ->placeholder(voightTrans('models.environment.never_scanned')),
+            ])
+            ->recordActions([
+                WhyInstalledAction::make(),
             ])
             ->defaultSort('environment.scanned_at', 'desc');
     }

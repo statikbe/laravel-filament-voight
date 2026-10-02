@@ -181,6 +181,13 @@ return [
             'actions' => [
                 'open_website' => 'Open Website',
             ],
+            'why_installed' => [
+                'label' => 'Why installed?',
+                'close' => 'Close',
+                'installed_copy' => 'Installed copy :number',
+                'truncated' => 'More paths exist than are shown.',
+                'no_longer_installed' => 'This version is no longer installed in the environment\'s latest sync.',
+            ],
             'view' => [
                 'installations_title' => 'Installations',
                 'active_findings_title' => 'Active Findings',

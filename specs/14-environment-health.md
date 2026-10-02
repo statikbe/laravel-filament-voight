@@ -1,7 +1,7 @@
 # Environment Health
 
 **Date:** 2026-10-02
-**Status:** approved design, not yet implemented
+**Status:** implemented
 **Related:** `12-dependency-graph.md` (first producer of sync warnings)
 
 Show on the project page when an environment's data cannot be trusted: a sync

@@ -1,7 +1,7 @@
 # Dependency Graph
 
 **Date:** 2026-09-30 (revised 2026-10-01)
-**Status:** approved design, not yet implemented
+**Status:** implemented
 **Prerequisite for:** `13-mcp-server.md` (upgrade analysis needs dependency paths)
 **Related:** `14-environment-health.md` (sync warnings for unsupported input)
 
