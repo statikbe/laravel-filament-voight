@@ -76,7 +76,7 @@ class DependencyGraphService
         [$completedPaths] = $this->walkUp($node, $nodes, PHP_INT_MAX, $maxDepth);
 
         return collect($completedPaths)
-            ->map(fn (array $path): string => $path['ids'][array_key_last($path['ids'])])
+            ->map(fn (array $path): string => self::headId($path))
             ->unique()
             ->map(fn (string $id): EnvironmentPackage => $nodes[$id])
             ->values();
@@ -110,7 +110,7 @@ class DependencyGraphService
 
             $path = $queue->dequeue();
             $expanded++;
-            $headId = $path['ids'][array_key_last($path['ids'])];
+            $headId = self::headId($path);
             $parents = $parentEdges[$headId] ?? [];
 
             if ($nodes[$headId]->is_direct || $parents === []) {
@@ -166,5 +166,15 @@ class DependencyGraphService
         }
 
         return $parentEdges;
+    }
+
+    /**
+     * The node a partial path currently ends at.
+     *
+     * @param  PartialPath  $path
+     */
+    private static function headId(array $path): string
+    {
+        return $path['ids'][array_key_last($path['ids'])];
     }
 }

@@ -257,7 +257,7 @@ class ProcessLockFilesJob implements ShouldQueue
                 $nodeRows[] = [
                     'id' => $id,
                     'environment_id' => $environmentId,
-                    'package_id' => $packageModels[$parsed['type']->value . '|' . $parsed['name']]->id,
+                    'package_id' => $packageModels[self::packageKey($parsed)]->id,
                     'version' => $parsed['version'],
                     'is_direct' => $parsed['is_direct'],
                     'is_dev' => $parsed['is_dev'],
@@ -316,7 +316,7 @@ class ProcessLockFilesJob implements ShouldQueue
         $uniquePackages = [];
 
         foreach ($parsedPackages as $parsed) {
-            $uniquePackages[$parsed['type']->value . '|' . $parsed['name']] = $parsed;
+            $uniquePackages[self::packageKey($parsed)] = $parsed;
         }
 
         $packageModel = FilamentVoight::config()->getPackageModel();
@@ -332,5 +332,14 @@ class ProcessLockFilesJob implements ShouldQueue
         }
 
         return $packages->all();
+    }
+
+    /**
+     * @param  ParsedPackage  $parsed
+     * @return string "type|name", matching the keys of resolvePackageModels()
+     */
+    private static function packageKey(array $parsed): string
+    {
+        return $parsed['type']->value . '|' . $parsed['name'];
     }
 }

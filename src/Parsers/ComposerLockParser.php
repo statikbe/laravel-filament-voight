@@ -86,10 +86,6 @@ class ComposerLockParser implements LockfileParser
         foreach ($entries as $entry) {
             $key = strtolower($entry['name']);
             $this->realPackages[$key] = $key;
-        }
-
-        foreach ($entries as $entry) {
-            $key = strtolower($entry['name']);
 
             foreach ([...array_keys($entry['replace'] ?? []), ...array_keys($entry['provide'] ?? [])] as $virtualName) {
                 $this->virtualPackages[strtolower($virtualName)][] = $key;

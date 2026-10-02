@@ -53,8 +53,14 @@ trait DerivesFlagsFromGraph
         foreach ($packages as $package) {
             $dependencyKeys[$package['key']] = array_column($package['dependencies'], 'key');
 
-            if ($package['is_direct']) {
-                $package['is_dev'] ? $devRoots[] = $package['key'] : $productionRoots[] = $package['key'];
+            if (! $package['is_direct']) {
+                continue;
+            }
+
+            if ($package['is_dev']) {
+                $devRoots[] = $package['key'];
+            } else {
+                $productionRoots[] = $package['key'];
             }
         }
 

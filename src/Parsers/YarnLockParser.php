@@ -13,6 +13,9 @@ use Statikbe\FilamentVoight\Parsers\Concerns\DerivesFlagsFromGraph;
  *
  * @phpstan-import-type ParsedPackage from LockfileParser
  * @phpstan-import-type ParsedDependency from LockfileParser
+ *
+ * @phpstan-type YarnRequirement array{name: string, range: string, kind: DependencyKind}
+ * @phpstan-type YarnBlock array{descriptors: array<int, string>, version: ?string, dependencies: array<int, YarnRequirement>}
  */
 class YarnLockParser implements LockfileParser
 {
@@ -64,7 +67,7 @@ class YarnLockParser implements LockfileParser
     }
 
     /**
-     * @param  array<int, array{descriptors: array<int, string>, version: ?string, dependencies: array<int, array{name: string, range: string, kind: DependencyKind}>}>  $blocks
+     * @param  array<int, YarnBlock>  $blocks
      * @return array<string, string> descriptor => key of the block it belongs to
      */
     private function descriptorKeys(array $blocks): array
@@ -81,7 +84,7 @@ class YarnLockParser implements LockfileParser
     }
 
     /**
-     * @param  array<int, array{name: string, range: string, kind: DependencyKind}>  $requirements
+     * @param  array<int, YarnRequirement>  $requirements
      * @param  array<string, string>  $descriptorKeys
      * @return array<int, ParsedDependency>
      */
@@ -129,12 +132,13 @@ class YarnLockParser implements LockfileParser
     }
 
     /**
-     * @return array<int, array{descriptors: array<int, string>, version: ?string, dependencies: array<int, array{name: string, range: string, kind: DependencyKind}>}>
+     * A block starts at an unindented line ending with ':'. Line endings are
+     * normalised first so a CRLF lockfile parses identically to LF.
+     *
+     * @return array<int, YarnBlock>
      */
     private function parseBlocks(string $content): array
     {
-        // Normalise line endings so CRLF (e.g. a Windows-generated yarn.lock or a
-        // fixture checked out on Windows) parses identically to LF.
         $lines = explode("\n", str_replace(["\r\n", "\r"], "\n", $content));
         $blocks = [];
         $current = null;
@@ -145,7 +149,6 @@ class YarnLockParser implements LockfileParser
                 continue;
             }
 
-            // New block: unindented line ending with ':'
             if (! str_starts_with($line, ' ') && str_ends_with(rtrim($line), ':')) {
                 if ($current !== null) {
                     $blocks[] = $current;
