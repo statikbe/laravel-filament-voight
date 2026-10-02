@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\Storage;
 use Statikbe\FilamentVoight\Enums\AuditRunStatus;
 use Statikbe\FilamentVoight\Enums\AuditRunTrigger;
 use Statikbe\FilamentVoight\Enums\DependencySyncStatus;
+use Statikbe\FilamentVoight\Jobs\ProcessLockFilesJob;
 use Statikbe\FilamentVoight\Jobs\RunOsvScanJob;
 use Statikbe\FilamentVoight\Jobs\SendAuditAlertsJob;
 use Statikbe\FilamentVoight\Models\AuditFinding;
@@ -125,4 +126,32 @@ it('stores why the scan failed on the failed run', function () {
     expect(fn () => RunOsvScanJob::dispatchSync($environment))->toThrow(RuntimeException::class);
 
     expect(AuditRun::sole()->error_message)->toContain('500');
+});
+
+it('records a finding for a vulnerable npm version installed only in a nested node_modules', function () {
+    Http::fake(['scanner.test/locks' => Http::response([
+        'summary' => ['skipped_packages' => []],
+        'findings' => [
+            ['ecosystem' => 'npm', 'name' => 'ms', 'version' => '2.0.0', 'vulnerability_id' => 'GHSA-w9mr', 'max_severity' => '5.3'],
+        ],
+        'vulnerabilities' => ['GHSA-w9mr' => [
+            'id' => 'GHSA-w9mr', 'summary' => 'ms ReDoS', 'database_specific' => ['severity' => 'MODERATE'],
+            'affected' => [['package' => ['name' => 'ms'], 'ranges' => [['events' => [['introduced' => '0'], ['fixed' => '2.0.0-fixed']]]]]],
+        ]],
+    ], 200)]);
+
+    $environment = Environment::factory()->create();
+    Storage::disk('voight-lockfiles')->put('p/production/package-lock.json', lockfileFixture('npm/package-lock.json'));
+    $sync = DependencySync::factory()->for($environment)->create([
+        'lockfile_paths' => ['p/production/package-lock.json'],
+        'status' => DependencySyncStatus::Pending,
+    ]);
+
+    // The sync chains the post-sync scan, which runs synchronously here.
+    ProcessLockFilesJob::dispatchSync($sync);
+
+    $finding = AuditFinding::sole();
+    expect($finding->package->name)->toBe('ms')
+        ->and($finding->installed_version)->toBe('2.0.0')
+        ->and($finding->auditRun->environment_id)->toBe($environment->id);
 });

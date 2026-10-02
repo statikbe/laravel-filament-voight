@@ -117,6 +117,7 @@ class FilamentVoightServiceProvider extends PackageServiceProvider
             Commands\CreateProjectTokenCommand::class,
             Commands\RunOsvScanCommand::class,
             Commands\SendAlertDigestsCommand::class,
+            Commands\ReprocessLockfilesCommand::class,
         ];
     }
 

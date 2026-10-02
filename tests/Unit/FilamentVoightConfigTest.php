@@ -82,3 +82,17 @@ it('returns the configured alerts queue', function () {
 
     expect(FilamentVoight::config()->getAlertsQueue())->toBeNull();
 });
+
+it('allows uploading the composer.json and package.json manifests by default', function () {
+    $lockfilesConfig = config('filament-voight.lockfiles');
+    unset($lockfilesConfig['allowed_names']);
+    config()->set('filament-voight.lockfiles', $lockfilesConfig);
+
+    expect(FilamentVoight::config()->getAllowedLockfileNames())->toContain('composer.json', 'package.json');
+});
+
+it('allows composer.json in the published config', function () {
+    $publishedConfig = require dirname(__DIR__, 2) . '/config/filament-voight.php';
+
+    expect($publishedConfig['lockfiles']['allowed_names'])->toContain('composer.json');
+});

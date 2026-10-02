@@ -17,6 +17,7 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Statikbe\FilamentVoight\Enums\EnvironmentIssueType;
 use Statikbe\FilamentVoight\Models\Environment;
 use Statikbe\FilamentVoight\Services\EnvironmentHealthService;
@@ -73,7 +74,7 @@ class EnvironmentsRelationManager extends RelationManager
                     ->placeholder(voightTrans('models.environment.never_scanned')),
                 TextColumn::make('environment_packages_count')
                     ->label(voightTrans('models.package.plural'))
-                    ->counts('environmentPackages')
+                    ->counts(['environmentPackages' => fn (Builder $query) => $query->select(DB::raw('count(distinct package_id)'))])
                     ->sortable(),
             ])
             ->headerActions([

@@ -256,6 +256,7 @@ class FilamentVoightConfig
             'yarn.lock',
             'pnpm-lock.yaml',
             'package.json',
+            'composer.json',
         ]);
     }
 

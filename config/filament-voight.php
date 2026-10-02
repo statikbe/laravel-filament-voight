@@ -39,6 +39,7 @@ return [
             'yarn.lock',
             'pnpm-lock.yaml',
             'package.json',
+            'composer.json',
         ],
     ],
 
