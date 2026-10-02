@@ -15,16 +15,20 @@ use Illuminate\Support\Str;
 use RuntimeException;
 use Statikbe\FilamentVoight\Enums\AuditRunTrigger;
 use Statikbe\FilamentVoight\Enums\DependencySyncStatus;
-use Statikbe\FilamentVoight\Enums\PackageType;
 use Statikbe\FilamentVoight\Enums\SyncWarning;
 use Statikbe\FilamentVoight\Facades\FilamentVoight;
 use Statikbe\FilamentVoight\Models\DependencySync;
+use Statikbe\FilamentVoight\Models\EnvironmentPackageDependency;
 use Statikbe\FilamentVoight\Models\Package;
 use Statikbe\FilamentVoight\Parsers\ComposerLockParser;
+use Statikbe\FilamentVoight\Parsers\LockfileParser;
 use Statikbe\FilamentVoight\Parsers\PackageLockParser;
 use Statikbe\FilamentVoight\Parsers\UnsupportedLockfileException;
 use Statikbe\FilamentVoight\Parsers\YarnLockParser;
 
+/**
+ * @phpstan-import-type ParsedPackage from LockfileParser
+ */
 class ProcessLockFilesJob implements ShouldQueue
 {
     use Dispatchable;
@@ -77,20 +81,21 @@ class ProcessLockFilesJob implements ShouldQueue
         $this->warnings = [];
 
         try {
-            $parsedPackages = $this->parseLockFiles();
+            $parsedLockfiles = $this->parseLockFiles();
+            $packageCount = array_sum(array_map(count(...), $parsedLockfiles));
 
             Log::info('[Voight] Parsed lock files', [
                 'sync' => $this->sync->id,
-                'package_count' => count($parsedPackages),
+                'package_count' => $packageCount,
             ]);
 
-            DB::transaction(function () use ($parsedPackages) {
-                $this->syncPackages($parsedPackages);
+            DB::transaction(function () use ($parsedLockfiles) {
+                $this->syncPackages($parsedLockfiles);
             });
 
             $this->sync->update([
                 'status' => DependencySyncStatus::Completed,
-                'package_count' => count($parsedPackages),
+                'package_count' => $packageCount,
                 'warnings' => $this->warnings ?: null,
                 'synced_at' => now(),
             ]);
@@ -99,7 +104,7 @@ class ProcessLockFilesJob implements ShouldQueue
 
             Log::info('[Voight] Lock file processing completed', [
                 'sync' => $this->sync->id,
-                'package_count' => count($parsedPackages),
+                'package_count' => $packageCount,
             ]);
 
             RunOsvScanJob::dispatch($this->sync->environment, AuditRunTrigger::PostSync);
@@ -121,12 +126,14 @@ class ProcessLockFilesJob implements ShouldQueue
     }
 
     /**
-     * @return array<int, array{name: string, version: string, type: PackageType, is_direct: bool, is_dev: bool, require: array<string>}>
+     * Parse keys are only unique within one lockfile, so results stay grouped per lockfile path.
+     *
+     * @return array<string, array<int, ParsedPackage>> lockfile path => parsed packages
      */
     private function parseLockFiles(): array
     {
         $disk = Storage::disk(FilamentVoight::config()->getLockfilesDisk());
-        $packages = [];
+        $parsedLockfiles = [];
 
         foreach ($this->sync->lockfile_paths ?? [] as $path) {
             $filename = basename($path);
@@ -149,7 +156,10 @@ class ProcessLockFilesJob implements ShouldQueue
 
             try {
                 $parsed = match ($filename) {
-                    'composer.lock' => (new ComposerLockParser)->parse($content),
+                    'composer.lock' => (new ComposerLockParser)->parse(
+                        $content,
+                        $this->findCompanionFile($path, 'composer.json', $disk),
+                    ),
                     'package-lock.json' => (new PackageLockParser)->parse($content),
                     'yarn.lock' => $this->parseYarnLock($path, $content, $disk),
                     default => null,
@@ -172,14 +182,14 @@ class ProcessLockFilesJob implements ShouldQueue
                 'packages_found' => count($parsed),
             ]);
 
-            $packages = array_merge($packages, $parsed);
+            $parsedLockfiles[$path] = $parsed;
         }
 
-        return $packages;
+        return $parsedLockfiles;
     }
 
     /**
-     * @return array<int, array{name: string, version: string, type: PackageType, is_direct: bool, is_dev: bool, require: array<string>}>
+     * @return array<int, ParsedPackage>
      */
     private function parseYarnLock(string $path, string $content, Filesystem $disk): array
     {
@@ -223,63 +233,104 @@ class ProcessLockFilesJob implements ShouldQueue
     }
 
     /**
-     * @param  array<int, array{name: string, version: string, type: PackageType, is_direct: bool, is_dev: bool, require: array<string>}>  $parsedPackages
+     * Replace the environment's installed packages and edges with the parsed graph.
+     *
+     * @param  array<string, array<int, ParsedPackage>>  $parsedLockfiles  lockfile path => parsed packages
      */
-    private function syncPackages(array $parsedPackages): void
+    private function syncPackages(array $parsedLockfiles): void
     {
         $environmentId = $this->sync->environment_id;
         $environmentPackageModel = FilamentVoight::config()->getEnvironmentPackageModel();
 
         $environmentPackageModel::where('environment_id', $environmentId)->delete();
 
-        $packageModels = $this->resolvePackageModels($parsedPackages);
-
-        $rows = [];
+        $packageModels = $this->resolvePackageModels(array_merge(...array_values($parsedLockfiles)));
+        $nodeIds = [];
+        $nodeRows = [];
         $now = now();
 
-        foreach ($parsedPackages as $parsed) {
-            $package = $packageModels[$parsed['name']];
+        foreach ($parsedLockfiles as $path => $parsedPackages) {
+            foreach ($parsedPackages as $parsed) {
+                $id = Str::ulid()->toBase32();
+                $nodeIds[$path][$parsed['key']] = $id;
 
-            $rows[] = [
-                'id' => Str::ulid()->toBase32(),
-                'environment_id' => $environmentId,
-                'package_id' => $package->id,
-                'version' => $parsed['version'],
-                'is_direct' => $parsed['is_direct'],
-                'is_dev' => $parsed['is_dev'],
-                'created_at' => $now,
-                'updated_at' => $now,
-            ];
+                $nodeRows[] = [
+                    'id' => $id,
+                    'environment_id' => $environmentId,
+                    'package_id' => $packageModels[$parsed['type']->value . '|' . $parsed['name']]->id,
+                    'version' => $parsed['version'],
+                    'is_direct' => $parsed['is_direct'],
+                    'is_dev' => $parsed['is_dev'],
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ];
+            }
         }
 
-        foreach (array_chunk($rows, 500) as $chunk) {
+        foreach (array_chunk($nodeRows, 500) as $chunk) {
             $environmentPackageModel::insert($chunk);
+        }
+
+        foreach (array_chunk($this->edgeRows($parsedLockfiles, $nodeIds), 500) as $chunk) {
+            EnvironmentPackageDependency::query()->insert($chunk);
         }
     }
 
     /**
-     * @param  array<int, array{name: string, version: string, type: PackageType, is_direct: bool, is_dev: bool, require: array<string>}>  $parsedPackages
-     * @return array<string, Package>
+     * @param  array<string, array<int, ParsedPackage>>  $parsedLockfiles
+     * @param  array<string, array<string, string>>  $nodeIds  lockfile path => parse key => node id
+     * @return array<int, array{parent_id: string, child_id: string, constraint: string|null, kind: string}>
+     */
+    private function edgeRows(array $parsedLockfiles, array $nodeIds): array
+    {
+        $edgeRows = [];
+
+        foreach ($parsedLockfiles as $path => $parsedPackages) {
+            foreach ($parsedPackages as $parsed) {
+                $parentId = $nodeIds[$path][$parsed['key']];
+
+                foreach ($parsed['dependencies'] as $dependency) {
+                    $childId = $nodeIds[$path][$dependency['key']] ?? null;
+
+                    if ($childId !== null) {
+                        $edgeRows[$parentId . '|' . $childId] ??= [
+                            'parent_id' => $parentId,
+                            'child_id' => $childId,
+                            'constraint' => $dependency['constraint'],
+                            'kind' => $dependency['kind']->value,
+                        ];
+                    }
+                }
+            }
+        }
+
+        return array_values($edgeRows);
+    }
+
+    /**
+     * @param  array<int, ParsedPackage>  $parsedPackages
+     * @return array<string, Package> "type|name" => package
      */
     private function resolvePackageModels(array $parsedPackages): array
     {
         $uniquePackages = [];
+
         foreach ($parsedPackages as $parsed) {
-            $uniquePackages[$parsed['name']] ??= $parsed['type'];
+            $uniquePackages[$parsed['type']->value . '|' . $parsed['name']] = $parsed;
         }
 
         $packageModel = FilamentVoight::config()->getPackageModel();
 
-        $existing = $packageModel::whereIn('name', array_keys($uniquePackages))
+        $packages = $packageModel::whereIn('name', array_column($uniquePackages, 'name'))
             ->get()
-            ->keyBy('name');
+            ->keyBy(fn (Package $package): string => $package->type->value . '|' . $package->name);
 
-        foreach ($uniquePackages as $name => $type) {
-            if (! $existing->has($name)) {
-                $existing[$name] = $packageModel::create(['name' => $name, 'type' => $type]);
+        foreach ($uniquePackages as $typeAndName => $parsed) {
+            if (! $packages->has($typeAndName)) {
+                $packages[$typeAndName] = $packageModel::create(['name' => $parsed['name'], 'type' => $parsed['type']]);
             }
         }
 
-        return $existing->all();
+        return $packages->all();
     }
 }

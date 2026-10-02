@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Storage;
+use Statikbe\FilamentVoight\Enums\DependencyKind;
 use Statikbe\FilamentVoight\Enums\DependencySyncStatus;
 use Statikbe\FilamentVoight\Enums\PackageType;
 use Statikbe\FilamentVoight\Enums\SyncWarning;
@@ -10,6 +11,7 @@ use Statikbe\FilamentVoight\Jobs\RunOsvScanJob;
 use Statikbe\FilamentVoight\Models\DependencySync;
 use Statikbe\FilamentVoight\Models\Environment;
 use Statikbe\FilamentVoight\Models\EnvironmentPackage;
+use Statikbe\FilamentVoight\Models\EnvironmentPackageDependency;
 use Statikbe\FilamentVoight\Models\Package;
 
 beforeEach(function () {
@@ -271,4 +273,87 @@ it('stores no warnings on a sync that fails', function () {
     $sync = DependencySync::sole();
     expect($sync->status)->toBe(DependencySyncStatus::Failed)
         ->and($sync->warnings)->toBeNull();
+});
+
+/**
+ * The installed package of the sync's environment with the given name and version.
+ */
+function installed(DependencySync $sync, string $name, string $version): EnvironmentPackage
+{
+    return EnvironmentPackage::query()
+        ->where('environment_id', $sync->environment_id)
+        ->where('version', $version)
+        ->whereRelation('package', 'name', $name)
+        ->sole();
+}
+
+it('stores every installed npm node and the edges between them', function () {
+    $sync = syncLockfiles(['p/production/package-lock.json' => lockfileFixture('npm/package-lock.json')]);
+
+    expect($sync->package_count)->toBe(19)
+        ->and(EnvironmentPackage::where('environment_id', $sync->environment_id)->count())->toBe(19);
+
+    $express = installed($sync, 'express', '4.18.2');
+    $send = installed($sync, 'send', '0.18.0');
+
+    expect($express->children()->pluck('voight_environment_packages.id')->all())->toContain($send->id)
+        ->and($express->children()->whereKey($send->id)->sole()->pivot->constraint)->toBe('0.18.0')
+        ->and($express->children()->whereKey($send->id)->sole()->pivot->kind)->toBe(DependencyKind::Dependency)
+        ->and(EnvironmentPackage::where('environment_id', $sync->environment_id)->whereRelation('package', 'name', 'debug')->pluck('version')->sort()->values()->all())
+        ->toBe(['2.6.9', '2.6.9', '4.3.4']);
+});
+
+it('marks composer packages direct from the uploaded composer.json', function () {
+    $sync = syncLockfiles([
+        'p/production/composer.lock' => lockfileFixture('composer/composer.lock'),
+        'p/production/composer.json' => lockfileFixture('composer/composer.json'),
+    ]);
+
+    expect(installed($sync, 'laravel/framework', '12.69.3')->is_direct)->toBeTrue()
+        ->and(installed($sync, 'psr/log', '3.0.2')->is_direct)->toBeFalse()
+        ->and(installed($sync, 'spatie/laravel-package-tools', '1.93.3')->children()->sole()->package->name)->toBe('laravel/framework');
+});
+
+it('never links packages of two lockfiles synced together', function () {
+    $sync = syncLockfiles([
+        'p/production/composer.lock' => lockfileFixture('composer/composer.lock'),
+        'p/production/package-lock.json' => lockfileFixture('npm/package-lock.json'),
+    ]);
+
+    $crossEcosystemEdges = EnvironmentPackageDependency::query()
+        ->join('voight_environment_packages as parents', 'parents.id', '=', 'voight_environment_package_dependencies.parent_id')
+        ->join('voight_environment_packages as children', 'children.id', '=', 'voight_environment_package_dependencies.child_id')
+        ->join('voight_packages as parent_packages', 'parent_packages.id', '=', 'parents.package_id')
+        ->join('voight_packages as child_packages', 'child_packages.id', '=', 'children.package_id')
+        ->whereColumn('parent_packages.type', '!=', 'child_packages.type')
+        ->count();
+
+    expect($sync->package_count)->toBe(27)
+        ->and(EnvironmentPackageDependency::count())->toBeGreaterThan(0)
+        ->and($crossEcosystemEdges)->toBe(0);
+});
+
+it('replaces the previous nodes and edges on re-sync', function () {
+    $first = syncLockfiles(['p/production/package-lock.json' => lockfileFixture('npm/package-lock.json')]);
+    $edgeCount = EnvironmentPackageDependency::count();
+
+    $second = DependencySync::factory()->for($first->environment)->create([
+        'lockfile_paths' => ['p/production/package-lock.json'],
+        'status' => DependencySyncStatus::Pending,
+    ]);
+    ProcessLockFilesJob::dispatchSync($second);
+
+    expect(EnvironmentPackage::where('environment_id', $first->environment_id)->count())->toBe(19)
+        ->and(EnvironmentPackageDependency::count())->toBe($edgeCount);
+});
+
+it('keeps a composer and an npm package with the same name apart', function () {
+    $composerMs = Package::factory()->composer()->create(['name' => 'ms']);
+
+    $sync = syncLockfiles(['p/production/package-lock.json' => lockfileFixture('npm/package-lock.json')]);
+
+    $npmMs = installed($sync, 'ms', '2.1.2')->package;
+
+    expect($npmMs->type)->toBe(PackageType::Npm)
+        ->and($npmMs->is($composerMs))->toBeFalse();
 });

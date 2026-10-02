@@ -65,6 +65,8 @@ class TestCase extends Orchestra
         $app['config']->set('app.key', 'base64:T/MupGaBB277pIfrpS71axrorxbGSlIDoTbRHzobgoE=');
 
         $app['config']->set('database.default', 'testing');
+        // Match production databases: cascading deletes (e.g. dependency edges) must actually run.
+        $app['config']->set('database.connections.testing.foreign_key_constraints', true);
 
         $app['config']->set('filesystems.disks.voight-lockfiles', [
             'driver' => 'local',

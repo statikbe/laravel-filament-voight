@@ -1,121 +1,68 @@
 <?php
 
+use Statikbe\FilamentVoight\Enums\DependencyKind;
 use Statikbe\FilamentVoight\Enums\PackageType;
 use Statikbe\FilamentVoight\Enums\SyncWarning;
 use Statikbe\FilamentVoight\Parsers\UnsupportedLockfileException;
 use Statikbe\FilamentVoight\Parsers\YarnLockParser;
 
-it('parses packages from yarn.lock', function () {
-    $content = <<<'YARN'
-# yarn lockfile v1
+function parseYarnFixture(bool $withManifest = true): array
+{
+    return byKey((new YarnLockParser)->parse(
+        lockfileFixture('yarn/yarn.lock'),
+        $withManifest ? lockfileFixture('yarn/package.json') : null,
+    ));
+}
 
-lodash@^4.17.0:
-  version "4.17.21"
-  resolved "https://registry.yarnpkg.com/lodash/-/lodash-4.17.21.tgz"
-  integrity sha512-abc123
-  dependencies:
-    lodash.merge "^4.6.2"
+it('parses every block as a node keyed by its first descriptor', function () {
+    $packages = parseYarnFixture();
 
-lodash.merge@^4.6.2:
-  version "4.6.2"
-  resolved "https://registry.yarnpkg.com/lodash.merge/-/lodash.merge-4.6.2.tgz"
-  integrity sha512-def456
-
-vitest@^1.0.0:
-  version "1.0.0"
-  resolved "https://registry.yarnpkg.com/vitest/-/vitest-1.0.0.tgz"
-  integrity sha512-ghi789
-YARN;
-
-    $parser = new YarnLockParser;
-    $packages = $parser->parse($content);
-
-    expect($packages)->toHaveCount(3);
-
-    $lodash = collect($packages)->firstWhere('name', 'lodash');
-    expect($lodash['version'])->toBe('4.17.21')
-        ->and($lodash['type'])->toBe(PackageType::Npm)
-        ->and($lodash['require'])->toContain('lodash.merge');
-
-    $lodashMerge = collect($packages)->firstWhere('name', 'lodash.merge');
-    expect($lodashMerge['version'])->toBe('4.6.2')
-        ->and($lodashMerge['require'])->toBeEmpty();
-
-    $vitest = collect($packages)->firstWhere('name', 'vitest');
-    expect($vitest['version'])->toBe('1.0.0');
+    expect(array_keys($packages))->toEqualCanonicalizing([
+        '@vue/runtime-core@3.4.0', '@vue/shared@3.4.0', 'debug@2.6.9', 'debug@^4.3.4', 'esbuild@^0.19.3',
+        'express@^4.18.2', 'fsevents@~2.3.3', 'ms@2.0.0', 'ms@2.1.2', 'send@0.18.0', 'vite@^5.0.0', 'vue@^3.4.0',
+    ])
+        ->and($packages['@vue/shared@3.4.0']['name'])->toBe('@vue/shared')
+        ->and($packages['debug@^4.3.4']['name'])->toBe('debug')
+        ->and($packages['debug@^4.3.4']['version'])->toBe('4.3.4')
+        ->and($packages['vue@^3.4.0']['type'])->toBe(PackageType::Npm);
 });
 
-it('determines is_dev and is_direct from package.json', function () {
-    $yarnLock = <<<'YARN'
-# yarn lockfile v1
+it('resolves dependencies through every descriptor of a block, keeping the range', function () {
+    $send = parseYarnFixture()['send@0.18.0'];
 
-lodash@^4.17.0:
-  version "4.17.21"
-  resolved "https://registry.yarnpkg.com/lodash/-/lodash-4.17.21.tgz"
-  dependencies:
-    lodash.merge "^4.6.2"
-
-lodash.merge@^4.6.2:
-  version "4.6.2"
-  resolved "https://registry.yarnpkg.com/lodash.merge/-/lodash.merge-4.6.2.tgz"
-
-vitest@^1.0.0:
-  version "1.0.0"
-  resolved "https://registry.yarnpkg.com/vitest/-/vitest-1.0.0.tgz"
-YARN;
-
-    $packageJson = json_encode([
-        'dependencies' => [
-            'lodash' => '^4.17.0',
-        ],
-        'devDependencies' => [
-            'vitest' => '^1.0.0',
-        ],
+    expect($send['dependencies'])->toBe([
+        ['key' => 'debug@2.6.9', 'constraint' => '2.6.9', 'kind' => DependencyKind::Dependency],
+        ['key' => 'ms@2.1.2', 'constraint' => '^2.1.1', 'kind' => DependencyKind::Dependency],
     ]);
-
-    $parser = new YarnLockParser;
-    $packages = $parser->parse($yarnLock, $packageJson);
-
-    $lodash = collect($packages)->firstWhere('name', 'lodash');
-    expect($lodash['is_direct'])->toBeTrue()
-        ->and($lodash['is_dev'])->toBeFalse();
-
-    $lodashMerge = collect($packages)->firstWhere('name', 'lodash.merge');
-    expect($lodashMerge['is_direct'])->toBeFalse()
-        ->and($lodashMerge['is_dev'])->toBeFalse();
-
-    $vitest = collect($packages)->firstWhere('name', 'vitest');
-    expect($vitest['is_direct'])->toBeTrue()
-        ->and($vitest['is_dev'])->toBeTrue();
 });
 
-it('parses scoped packages', function () {
-    $content = <<<'YARN'
-# yarn lockfile v1
+it('resolves scoped dependencies and marks optional dependencies', function () {
+    $packages = parseYarnFixture();
 
-"@babel/core@^7.0.0":
-  version "7.24.0"
-  resolved "https://registry.yarnpkg.com/@babel/core/-/core-7.24.0.tgz"
-  dependencies:
-    "@babel/helper-module-transforms" "^7.23.0"
+    expect(dependencyKeys($packages['vue@^3.4.0']))->toBe(['@vue/runtime-core@3.4.0', '@vue/shared@3.4.0'])
+        ->and(collect($packages['vite@^5.0.0']['dependencies'])->firstWhere('key', 'fsevents@~2.3.3')['kind'])
+        ->toBe(DependencyKind::Optional);
+});
 
-"@babel/helper-module-transforms@^7.23.0":
-  version "7.23.3"
-  resolved "https://registry.yarnpkg.com/@babel/helper-module-transforms/-/helper-module-transforms-7.23.3.tgz"
-YARN;
+it('marks the blocks package.json declares as direct', function () {
+    $direct = collect(parseYarnFixture())->where('is_direct', true)->keys()->sort()->values()->all();
 
-    $parser = new YarnLockParser;
-    $packages = $parser->parse($content);
+    expect($direct)->toBe(['express@^4.18.2', 'vite@^5.0.0', 'vue@^3.4.0']);
+});
 
-    expect($packages)->toHaveCount(2);
+it('marks dev roots and what only they reach as dev', function () {
+    $dev = collect(parseYarnFixture())->where('is_dev', true)->keys()->sort()->values()->all();
 
-    $core = collect($packages)->firstWhere('name', '@babel/core');
-    expect($core['version'])->toBe('7.24.0')
-        ->and($core['type'])->toBe(PackageType::Npm)
-        ->and($core['require'])->toContain('@babel/helper-module-transforms');
+    // ms@2.1.2 is also reached by send (production) through ms@^2.1.1, so it is not dev.
+    expect($dev)->toBe(['debug@^4.3.4', 'esbuild@^0.19.3', 'fsevents@~2.3.3', 'vite@^5.0.0']);
+});
 
-    $helper = collect($packages)->firstWhere('name', '@babel/helper-module-transforms');
-    expect($helper['version'])->toBe('7.23.3');
+it('falls back to unrequired blocks as direct production packages without package.json', function () {
+    $packages = collect(parseYarnFixture(withManifest: false));
+
+    expect($packages->where('is_direct', true)->keys()->sort()->values()->all())
+        ->toBe(['express@^4.18.2', 'vite@^5.0.0', 'vue@^3.4.0'])
+        ->and($packages->where('is_dev', true))->toBeEmpty();
 });
 
 it('handles multiple version ranges for same package', function () {
