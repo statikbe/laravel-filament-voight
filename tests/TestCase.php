@@ -86,5 +86,7 @@ class TestCase extends Orchestra
     protected function defineDatabaseMigrations(): void
     {
         $this->loadMigrationsFrom(__DIR__ . '/database/migrations');
+        // ProjectInfoListSchema lists the project's Sanctum tokens.
+        $this->loadMigrationsFrom(dirname(__DIR__) . '/vendor/laravel/sanctum/database/migrations');
     }
 }

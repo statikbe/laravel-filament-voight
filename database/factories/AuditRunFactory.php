@@ -35,6 +35,14 @@ class AuditRunFactory extends Factory
         ]);
     }
 
+    public function failed(): static
+    {
+        return $this->state([
+            'status' => AuditRunStatus::Failed,
+            'error_message' => fake()->sentence(),
+        ]);
+    }
+
     public function running(): static
     {
         return $this->state([

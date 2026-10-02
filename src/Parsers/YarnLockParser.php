@@ -3,6 +3,7 @@
 namespace Statikbe\FilamentVoight\Parsers;
 
 use Statikbe\FilamentVoight\Enums\PackageType;
+use Statikbe\FilamentVoight\Enums\SyncWarning;
 
 class YarnLockParser
 {
@@ -10,9 +11,15 @@ class YarnLockParser
      * @param  string  $content  Raw yarn.lock content
      * @param  string|null  $packageJsonContent  Raw package.json content for is_dev/is_direct detection
      * @return array<int, array{name: string, version: string, type: PackageType, is_direct: bool, is_dev: bool, require: array<string>}>
+     *
+     * @throws UnsupportedLockfileException for a Yarn Berry (v2+) lockfile
      */
     public function parse(string $content, ?string $packageJsonContent = null): array
     {
+        if (preg_match('/^__metadata:/m', $content) === 1) {
+            throw new UnsupportedLockfileException(SyncWarning::YarnBerryUnsupported);
+        }
+
         $blocks = $this->parseBlocks($content);
         [$directDeps, $directDevDeps] = $this->parsePackageJson($packageJsonContent);
 

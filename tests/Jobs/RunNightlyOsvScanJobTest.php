@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Http;
+use Statikbe\FilamentVoight\Enums\AuditRunStatus;
 use Statikbe\FilamentVoight\Enums\AuditRunTrigger;
 use Statikbe\FilamentVoight\Jobs\RunNightlyOsvScanJob;
 use Statikbe\FilamentVoight\Jobs\RunOsvScanJob;
@@ -105,5 +106,34 @@ it('does nothing when there are no scan_nightly environments', function () {
     RunNightlyOsvScanJob::dispatchSync();
 
     Http::assertNothingSent();
+    expect(AuditRun::count())->toBe(0);
+});
+
+it('records a failed nightly run for every scan_nightly environment once the sweep has finally failed', function () {
+    $nightly = Environment::factory()->count(2)->create();
+    $optedOut = Environment::factory()->notNightly()->create();
+
+    (new RunNightlyOsvScanJob)->failed(new RuntimeException('scanner unreachable'));
+
+    $runs = AuditRun::all();
+
+    expect($runs)->toHaveCount(2)
+        ->and($runs->pluck('environment_id')->sort()->values()->all())->toBe($nightly->pluck('id')->sort()->values()->all())
+        ->and($runs->every(fn (AuditRun $run): bool => $run->status === AuditRunStatus::Failed
+            && $run->trigger === AuditRunTrigger::Nightly
+            && $run->error_message === 'scanner unreachable'))->toBeTrue()
+        ->and(AuditRun::where('environment_id', $optedOut->id)->exists())->toBeFalse();
+});
+
+it('records no runs for a failed attempt that will still be retried', function () {
+    $laravel = Package::factory()->composer()->create(['name' => 'laravel/framework']);
+    $nightly = Environment::factory()->create();
+    EnvironmentPackage::factory()->create(['environment_id' => $nightly->id, 'package_id' => $laravel->id, 'version' => 'v10.9.0']);
+
+    Http::fake(['scanner.test/packages' => Http::response('scanner exploded', 500)]);
+
+    // Calling handle() directly is one attempt; the queue only calls failed() after the last one.
+    expect(fn () => app()->call([new RunNightlyOsvScanJob, 'handle']))->toThrow(RuntimeException::class);
+
     expect(AuditRun::count())->toBe(0);
 });

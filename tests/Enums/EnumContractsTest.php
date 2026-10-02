@@ -8,8 +8,10 @@ use Statikbe\FilamentVoight\Enums\AlertFrequency;
 use Statikbe\FilamentVoight\Enums\AuditRunStatus;
 use Statikbe\FilamentVoight\Enums\AuditRunTrigger;
 use Statikbe\FilamentVoight\Enums\DependencySyncStatus;
+use Statikbe\FilamentVoight\Enums\EnvironmentIssueType;
 use Statikbe\FilamentVoight\Enums\PackageType;
 use Statikbe\FilamentVoight\Enums\Severity;
+use Statikbe\FilamentVoight\Enums\SyncWarning;
 use Statikbe\FilamentVoight\Enums\VulnerabilitySource;
 
 $enums = [
@@ -21,6 +23,8 @@ $enums = [
     VulnerabilitySource::class,
     AlertChannel::class,
     AlertFrequency::class,
+    SyncWarning::class,
+    EnvironmentIssueType::class,
 ];
 
 it('implements the Filament contracts with exhaustive, well-formed color and icon maps', function (string $enum) {

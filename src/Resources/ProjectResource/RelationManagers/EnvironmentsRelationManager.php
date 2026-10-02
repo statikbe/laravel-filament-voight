@@ -10,13 +10,22 @@ use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Schemas\Schema;
+use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Columns\ToggleColumn;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Collection;
+use Statikbe\FilamentVoight\Enums\EnvironmentIssueType;
+use Statikbe\FilamentVoight\Models\Environment;
+use Statikbe\FilamentVoight\Services\EnvironmentHealthService;
+use Statikbe\FilamentVoight\Support\EnvironmentIssue;
 
 class EnvironmentsRelationManager extends RelationManager
 {
+    private const string HEALTHY = 'healthy';
+
     protected static string $relationship = 'environments';
 
     public static function getTitle(Model $ownerRecord, string $pageClass): string
@@ -41,10 +50,19 @@ class EnvironmentsRelationManager extends RelationManager
     public function table(Table $table): Table
     {
         return $table
+            ->modifyQueryUsing(fn (Builder $query) => $query->with(Environment::HEALTH_RELATIONS))
             ->columns([
                 TextColumn::make('name')
                     ->label(voightTrans('models.environment.fields.name'))
                     ->sortable(),
+                IconColumn::make('health')
+                    ->label(voightTrans('models.environment.fields.health'))
+                    ->state(fn (Environment $record): string => $this->issues($record)->first()?->type->value ?? self::HEALTHY)
+                    ->icon(fn (string $state): string => EnvironmentIssueType::tryFrom($state)?->getIcon() ?? 'heroicon-o-check-circle')
+                    ->color(fn (string $state): string => EnvironmentIssueType::tryFrom($state)?->getColor() ?? 'success')
+                    ->tooltip(fn (Environment $record): string => $this->issues($record)
+                        ->map(fn (EnvironmentIssue $issue): string => $issue->message)
+                        ->implode("\n") ?: voightTrans('models.environment.healthy')),
                 ToggleColumn::make('scan_nightly')
                     ->label(voightTrans('models.environment.fields.scan_nightly'))
                     ->sortable(),
@@ -68,5 +86,13 @@ class EnvironmentsRelationManager extends RelationManager
             ->toolbarActions([
                 DeleteBulkAction::make(),
             ]);
+    }
+
+    /**
+     * @return Collection<int, EnvironmentIssue> worst first
+     */
+    private function issues(Environment $environment): Collection
+    {
+        return app(EnvironmentHealthService::class)->issuesFor($environment);
     }
 }

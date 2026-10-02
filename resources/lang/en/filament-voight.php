@@ -42,6 +42,34 @@ return [
             'nightly' => 'Nightly',
             'manual' => 'Manual',
         ],
+        'sync_warning' => [
+            'unsupported_lockfile' => [
+                'label' => 'Unsupported lockfile',
+                'message' => ':file is not supported yet; its packages were not imported.',
+            ],
+            'npm_lockfile_v1_unsupported' => [
+                'label' => 'npm lockfile v1',
+                'message' => ':file uses npm lockfile version 1, which is not supported; regenerate it with npm 7 or newer.',
+            ],
+            'yarn_berry_unsupported' => [
+                'label' => 'Yarn Berry lockfile',
+                'message' => ':file is a Yarn Berry (v2+) lockfile, which is not supported; its packages were not imported.',
+            ],
+            'yarn_workspaces_unsupported' => [
+                'label' => 'Yarn workspaces',
+                'message' => ':file belongs to a Yarn workspaces project; direct dependencies of the workspace packages may be detected incorrectly.',
+            ],
+            'lockfile_missing_on_disk' => [
+                'label' => 'Lockfile missing',
+                'message' => ':file was not found in storage and was skipped.',
+            ],
+        ],
+        'environment_issue_type' => [
+            'sync_failed' => 'Sync failed',
+            'scan_failed' => 'Scan failed',
+            'sync_warning' => 'Sync warning',
+            'never_synced' => 'Never synced',
+        ],
         'vulnerability_source' => [
             'osv' => 'OSV',
             'github_advisory' => 'GitHub Advisory',
@@ -130,8 +158,10 @@ return [
                 'name' => 'Name',
                 'scan_nightly' => 'Nightly scan',
                 'scanned_at' => 'Last Scanned',
+                'health' => 'Health',
             ],
             'never_scanned' => 'Never scanned',
+            'healthy' => 'No issues',
         ],
         'package' => [
             'label' => 'Package',

@@ -16,11 +16,13 @@ use RuntimeException;
 use Statikbe\FilamentVoight\Enums\AuditRunTrigger;
 use Statikbe\FilamentVoight\Enums\DependencySyncStatus;
 use Statikbe\FilamentVoight\Enums\PackageType;
+use Statikbe\FilamentVoight\Enums\SyncWarning;
 use Statikbe\FilamentVoight\Facades\FilamentVoight;
 use Statikbe\FilamentVoight\Models\DependencySync;
 use Statikbe\FilamentVoight\Models\Package;
 use Statikbe\FilamentVoight\Parsers\ComposerLockParser;
 use Statikbe\FilamentVoight\Parsers\PackageLockParser;
+use Statikbe\FilamentVoight\Parsers\UnsupportedLockfileException;
 use Statikbe\FilamentVoight\Parsers\YarnLockParser;
 
 class ProcessLockFilesJob implements ShouldQueue
@@ -36,6 +38,21 @@ class ProcessLockFilesJob implements ShouldQueue
 
     /** @var array<int> */
     public array $backoff = [10, 60, 180];
+
+    /**
+     * Manifests are uploaded next to lockfiles so parsers can detect direct
+     * dependencies; they are never parsed on their own.
+     *
+     * @var array<int, string>
+     */
+    private const array MANIFEST_FILENAMES = ['composer.json', 'package.json'];
+
+    /**
+     * Warnings collected while parsing, stored on the sync when it completes.
+     *
+     * @var array<int, array{code: string, context: array<string, string>}>
+     */
+    private array $warnings = [];
 
     public function __construct(
         public DependencySync $sync,
@@ -57,6 +74,8 @@ class ProcessLockFilesJob implements ShouldQueue
             'lockfiles' => $this->sync->lockfile_paths,
         ]);
 
+        $this->warnings = [];
+
         try {
             $parsedPackages = $this->parseLockFiles();
 
@@ -72,6 +91,7 @@ class ProcessLockFilesJob implements ShouldQueue
             $this->sync->update([
                 'status' => DependencySyncStatus::Completed,
                 'package_count' => count($parsedPackages),
+                'warnings' => $this->warnings ?: null,
                 'synced_at' => now(),
             ]);
 
@@ -109,6 +129,12 @@ class ProcessLockFilesJob implements ShouldQueue
         $packages = [];
 
         foreach ($this->sync->lockfile_paths ?? [] as $path) {
+            $filename = basename($path);
+
+            if (in_array($filename, self::MANIFEST_FILENAMES, true)) {
+                continue;
+            }
+
             $content = $disk->get($path);
 
             if (! $content) {
@@ -116,21 +142,29 @@ class ProcessLockFilesJob implements ShouldQueue
                     'sync' => $this->sync->id,
                     'path' => $path,
                 ]);
+                $this->addWarning(SyncWarning::LockfileMissingOnDisk, $filename);
 
                 continue;
             }
 
-            $filename = basename($path);
+            try {
+                $parsed = match ($filename) {
+                    'composer.lock' => (new ComposerLockParser)->parse($content),
+                    'package-lock.json' => (new PackageLockParser)->parse($content),
+                    'yarn.lock' => $this->parseYarnLock($path, $content, $disk),
+                    default => null,
+                };
+            } catch (UnsupportedLockfileException $e) {
+                $this->warnUnsupported($e->warning, $path);
 
-            $parsed = match ($filename) {
-                'composer.lock' => (new ComposerLockParser)->parse($content),
-                'package-lock.json' => (new PackageLockParser)->parse($content),
-                'yarn.lock' => (new YarnLockParser)->parse(
-                    $content,
-                    $this->findCompanionFile($path, 'package.json', $disk),
-                ),
-                default => [],
-            };
+                continue;
+            }
+
+            if ($parsed === null) {
+                $this->warnUnsupported(SyncWarning::UnsupportedLockfile, $path);
+
+                continue;
+            }
 
             Log::debug('[Voight] Parsed lockfile', [
                 'sync' => $this->sync->id,
@@ -142,6 +176,36 @@ class ProcessLockFilesJob implements ShouldQueue
         }
 
         return $packages;
+    }
+
+    /**
+     * @return array<int, array{name: string, version: string, type: PackageType, is_direct: bool, is_dev: bool, require: array<string>}>
+     */
+    private function parseYarnLock(string $path, string $content, Filesystem $disk): array
+    {
+        $packageJson = $this->findCompanionFile($path, 'package.json', $disk);
+
+        if ($packageJson !== null && array_key_exists('workspaces', (array) json_decode($packageJson, true))) {
+            $this->warnUnsupported(SyncWarning::YarnWorkspacesUnsupported, $path);
+        }
+
+        return (new YarnLockParser)->parse($content, $packageJson);
+    }
+
+    private function warnUnsupported(SyncWarning $warning, string $path): void
+    {
+        Log::warning('[Voight] Lockfile not fully supported', [
+            'sync' => $this->sync->id,
+            'path' => $path,
+            'warning' => $warning->value,
+        ]);
+
+        $this->addWarning($warning, basename($path));
+    }
+
+    private function addWarning(SyncWarning $warning, string $filename): void
+    {
+        $this->warnings[] = ['code' => $warning->value, 'context' => ['file' => $filename]];
     }
 
     /**

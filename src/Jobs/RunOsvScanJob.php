@@ -79,7 +79,7 @@ class RunOsvScanJob implements ShouldQueue
                 'attempt' => $this->attempts(),
             ]);
 
-            $this->recordFailedRun();
+            $this->recordFailedRun($e);
 
             throw $e;
         }
@@ -122,7 +122,7 @@ class RunOsvScanJob implements ShouldQueue
         return $files;
     }
 
-    private function recordFailedRun(): void
+    private function recordFailedRun(\Throwable $e): void
     {
         /** @var class-string<AuditRun> $auditRunModel */
         $auditRunModel = FilamentVoight::config()->getAuditRunModel();
@@ -133,6 +133,7 @@ class RunOsvScanJob implements ShouldQueue
             'trigger' => $this->trigger,
             'started_at' => now(),
             'completed_at' => now(),
+            'error_message' => mb_substr($e->getMessage(), 0, 500),
         ]);
     }
 }

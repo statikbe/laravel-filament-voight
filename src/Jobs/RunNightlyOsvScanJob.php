@@ -11,13 +11,16 @@ use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
+use Statikbe\FilamentVoight\Enums\AuditRunStatus;
 use Statikbe\FilamentVoight\Enums\AuditRunTrigger;
 use Statikbe\FilamentVoight\Enums\PackageType;
 use Statikbe\FilamentVoight\Facades\FilamentVoight;
+use Statikbe\FilamentVoight\Models\AuditRun;
 use Statikbe\FilamentVoight\Models\Environment;
 use Statikbe\FilamentVoight\Models\EnvironmentPackage;
 use Statikbe\FilamentVoight\Services\OsvScannerClient;
 use Statikbe\FilamentVoight\Services\RecordEnvironmentAuditRunsService;
+use Throwable;
 
 class RunNightlyOsvScanJob implements ShouldQueue
 {
@@ -50,6 +53,30 @@ class RunNightlyOsvScanJob implements ShouldQueue
 
         $this->scanDeduplicated($dedupeEnvironments, $client, $recorder);
         $this->scanCommitPinned($lockfileEnvironments);
+    }
+
+    /**
+     * Called once every retry is exhausted. A failing sweep stops before any
+     * environment is recorded (and before commit-pinned scans are dispatched), so
+     * every in-scope environment gets a failed run explaining its missing scan.
+     */
+    public function failed(Throwable $e): void
+    {
+        /** @var class-string<Environment> $environmentModel */
+        $environmentModel = FilamentVoight::config()->getEnvironmentModel();
+        /** @var class-string<AuditRun> $auditRunModel */
+        $auditRunModel = FilamentVoight::config()->getAuditRunModel();
+
+        foreach ($environmentModel::query()->where('scan_nightly', true)->get() as $environment) {
+            $auditRunModel::create([
+                'environment_id' => $environment->id,
+                'status' => AuditRunStatus::Failed,
+                'trigger' => AuditRunTrigger::Nightly,
+                'started_at' => now(),
+                'completed_at' => now(),
+                'error_message' => mb_substr($e->getMessage(), 0, 500),
+            ]);
+        }
     }
 
     /**

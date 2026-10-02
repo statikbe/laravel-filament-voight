@@ -3,12 +3,15 @@
 namespace Statikbe\FilamentVoight\Parsers;
 
 use Statikbe\FilamentVoight\Enums\PackageType;
+use Statikbe\FilamentVoight\Enums\SyncWarning;
 
 class PackageLockParser
 {
     /**
      * @param  string  $content  Raw package-lock.json content
      * @return array<int, array{name: string, version: string, type: PackageType, is_direct: bool, is_dev: bool, require: array<string>}>
+     *
+     * @throws UnsupportedLockfileException for a lockfile v1 (no `packages` key)
      */
     public function parse(string $content): array
     {
@@ -16,6 +19,10 @@ class PackageLockParser
 
         if (! is_array($lock)) {
             return [];
+        }
+
+        if (! array_key_exists('packages', $lock)) {
+            throw new UnsupportedLockfileException(SyncWarning::NpmLockfileV1Unsupported);
         }
 
         $packages = [];

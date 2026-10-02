@@ -63,3 +63,8 @@ it('adds scan_nightly and trigger via the incremental migrations', function () {
     expect(Schema::hasColumn('voight_environments', 'scan_nightly'))->toBeTrue()
         ->and(Schema::hasColumn('voight_audit_runs', 'trigger'))->toBeTrue();
 });
+
+it('adds warnings to voight_dependency_syncs and error_message to voight_audit_runs', function () {
+    expect(Schema::hasColumn('voight_dependency_syncs', 'warnings'))->toBeTrue()
+        ->and(Schema::hasColumn('voight_audit_runs', 'error_message'))->toBeTrue();
+});

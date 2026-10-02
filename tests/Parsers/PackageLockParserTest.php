@@ -1,7 +1,9 @@
 <?php
 
 use Statikbe\FilamentVoight\Enums\PackageType;
+use Statikbe\FilamentVoight\Enums\SyncWarning;
 use Statikbe\FilamentVoight\Parsers\PackageLockParser;
+use Statikbe\FilamentVoight\Parsers\UnsupportedLockfileException;
 
 it('parses packages from package-lock.json', function () {
     $content = json_encode([
@@ -75,4 +77,14 @@ it('returns empty array for invalid json', function () {
     $packages = $parser->parse('not json');
 
     expect($packages)->toBeEmpty();
+});
+
+it('rejects an npm lockfile v1 as unsupported', function () {
+    $lockfileV1 = json_encode([
+        'lockfileVersion' => 1,
+        'dependencies' => ['lodash' => ['version' => '4.17.21']],
+    ]);
+
+    expect(fn () => (new PackageLockParser)->parse($lockfileV1))
+        ->toThrow(fn (UnsupportedLockfileException $e) => expect($e->warning)->toBe(SyncWarning::NpmLockfileV1Unsupported));
 });

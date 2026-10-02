@@ -21,6 +21,7 @@ class ProjectInfoListSchema
     public static function configure(Schema $schema): Schema
     {
         return $schema->components([
+            EnvironmentHealthCallouts::make(),
             Grid::make(2)
                 ->components([
                     Section::make(voightTrans('models.project.sections.general'))

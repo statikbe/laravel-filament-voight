@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Storage;
 use Statikbe\FilamentVoight\Enums\DependencySyncStatus;
 use Statikbe\FilamentVoight\Enums\PackageType;
+use Statikbe\FilamentVoight\Enums\SyncWarning;
 use Statikbe\FilamentVoight\Jobs\ProcessLockFilesJob;
 use Statikbe\FilamentVoight\Jobs\RunOsvScanJob;
 use Statikbe\FilamentVoight\Models\DependencySync;
@@ -168,4 +169,106 @@ it('marks sync as failed on error', function () {
     $sync->refresh();
     expect($sync->status)->toBe(DependencySyncStatus::Completed)
         ->and($sync->package_count)->toBe(0);
+});
+
+/**
+ * Store the given files on the lockfiles disk and run a sync over them.
+ *
+ * @param  array<string, string>  $files  path => contents
+ */
+function syncLockfiles(array $files, array $extraPaths = []): DependencySync
+{
+    foreach ($files as $path => $contents) {
+        Storage::disk('voight-lockfiles')->put($path, $contents);
+    }
+
+    $sync = DependencySync::factory()->for(Environment::factory())->create([
+        'lockfile_paths' => [...array_keys($files), ...$extraPaths],
+        'status' => DependencySyncStatus::Pending,
+    ]);
+
+    ProcessLockFilesJob::dispatchSync($sync);
+
+    return $sync->refresh();
+}
+
+it('stores no warnings for a fully supported sync', function () {
+    $sync = syncLockfiles([
+        'p/production/composer.lock' => json_encode(['packages' => [['name' => 'a/b', 'version' => '1.0.0']]]),
+        'p/production/composer.json' => json_encode(['require' => ['a/b' => '^1.0']]),
+        'p/production/package.json' => json_encode(['dependencies' => []]),
+    ]);
+
+    expect($sync->status)->toBe(DependencySyncStatus::Completed)
+        ->and($sync->warnings)->toBeNull();
+});
+
+it('warns about a lockfile without a parser and still completes', function () {
+    $sync = syncLockfiles([
+        'p/production/pnpm-lock.yaml' => "lockfileVersion: '9.0'\n",
+        'p/production/composer.lock' => json_encode(['packages' => [['name' => 'a/b', 'version' => '1.0.0']]]),
+    ]);
+
+    expect($sync->status)->toBe(DependencySyncStatus::Completed)
+        ->and($sync->package_count)->toBe(1)
+        ->and($sync->warnings)->toBe([
+            ['code' => SyncWarning::UnsupportedLockfile->value, 'context' => ['file' => 'pnpm-lock.yaml']],
+        ]);
+});
+
+it('warns about a lockfile missing on disk', function () {
+    $sync = syncLockfiles([], ['p/production/composer.lock']);
+
+    expect($sync->status)->toBe(DependencySyncStatus::Completed)
+        ->and($sync->warnings)->toBe([
+            ['code' => SyncWarning::LockfileMissingOnDisk->value, 'context' => ['file' => 'composer.lock']],
+        ]);
+});
+
+it('warns about an npm lockfile v1', function () {
+    $sync = syncLockfiles([
+        'p/production/package-lock.json' => json_encode(['lockfileVersion' => 1, 'dependencies' => []]),
+    ]);
+
+    expect($sync->status)->toBe(DependencySyncStatus::Completed)
+        ->and($sync->warnings)->toBe([
+            ['code' => SyncWarning::NpmLockfileV1Unsupported->value, 'context' => ['file' => 'package-lock.json']],
+        ]);
+});
+
+it('warns about a yarn berry lockfile', function () {
+    $sync = syncLockfiles([
+        'p/production/yarn.lock' => "__metadata:\n  version: 8\n",
+    ]);
+
+    expect($sync->warnings)->toBe([
+        ['code' => SyncWarning::YarnBerryUnsupported->value, 'context' => ['file' => 'yarn.lock']],
+    ]);
+});
+
+it('warns about yarn workspaces but still imports the packages', function () {
+    $sync = syncLockfiles([
+        'p/production/yarn.lock' => "lodash@^4.17.0:\n  version \"4.17.21\"\n",
+        'p/production/package.json' => json_encode(['workspaces' => ['packages/*'], 'dependencies' => ['lodash' => '^4.17.0']]),
+    ]);
+
+    expect($sync->status)->toBe(DependencySyncStatus::Completed)
+        ->and($sync->package_count)->toBe(1)
+        ->and($sync->warnings)->toBe([
+            ['code' => SyncWarning::YarnWorkspacesUnsupported->value, 'context' => ['file' => 'yarn.lock']],
+        ]);
+});
+
+it('stores no warnings on a sync that fails', function () {
+    $files = [
+        'p/production/pnpm-lock.yaml' => "lockfileVersion: '9.0'\n",
+        // A package without a name makes the composer parser blow up.
+        'p/production/composer.lock' => json_encode(['packages' => [['version' => '1.0.0']]]),
+    ];
+
+    expect(fn () => syncLockfiles($files))->toThrow(ErrorException::class);
+
+    $sync = DependencySync::sole();
+    expect($sync->status)->toBe(DependencySyncStatus::Failed)
+        ->and($sync->warnings)->toBeNull();
 });

@@ -116,3 +116,13 @@ it('does not dispatch the alerts job when the scanner fails', function () {
     expect(AuditRun::sole()->status)->toBe(AuditRunStatus::Failed);
     Bus::assertNotDispatched(SendAuditAlertsJob::class);
 });
+
+it('stores why the scan failed on the failed run', function () {
+    Http::fake(['scanner.test/locks' => Http::response('scanner exploded', 500)]);
+
+    $environment = createScannableEnvironment();
+
+    expect(fn () => RunOsvScanJob::dispatchSync($environment))->toThrow(RuntimeException::class);
+
+    expect(AuditRun::sole()->error_message)->toContain('500');
+});

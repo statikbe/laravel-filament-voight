@@ -17,6 +17,7 @@ use Statikbe\FilamentVoight\Enums\DependencySyncStatus;
  * @property int $package_count
  * @property DependencySyncStatus $status
  * @property string|null $error_message
+ * @property array<int, array{code: string, context: array<string, string>}>|null $warnings
  * @property Carbon|null $synced_at
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
@@ -38,6 +39,7 @@ class DependencySync extends Model
         return [
             'status' => DependencySyncStatus::class,
             'lockfile_paths' => 'array',
+            'warnings' => 'array',
             'synced_at' => 'datetime',
         ];
     }
