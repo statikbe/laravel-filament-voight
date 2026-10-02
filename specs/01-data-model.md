@@ -97,7 +97,8 @@ Unique constraint: (name, type)
 
 ### EnvironmentPackage
 
-Links an environment to its installed packages (the full dependency tree).
+One installed node in an environment's dependency graph. An environment can hold
+several rows for the same package (nested npm installs). See `12-dependency-graph.md`.
 
 | Field             | Type   | Notes                                    |
 |-------------------|--------|------------------------------------------|
@@ -107,9 +108,20 @@ Links an environment to its installed packages (the full dependency tree).
 | version           | string | installed version                        |
 | is_direct         | bool   | true = declared in composer/package.json  |
 | is_dev            | bool   | true = dev dependency                    |
-| parent_package_id | ulid   | nullable, FK → Package (dependency tree) |
 | created_at        | timestamp |                                        |
 | updated_at        | timestamp |                                        |
+
+### EnvironmentPackageDependency
+
+An edge between two installed nodes of the same environment
+(`voight_environment_package_dependencies`).
+
+| Field      | Type   | Notes                                     |
+|------------|--------|-------------------------------------------|
+| parent_id  | ulid   | PK, FK → EnvironmentPackage, cascade      |
+| child_id   | ulid   | PK, FK → EnvironmentPackage, cascade      |
+| constraint | string | nullable, declared range, e.g. `^4.17`    |
+| kind       | enum   | `dependency`, `optional` or `peer`        |
 
 ### DependencySync
 
@@ -124,6 +136,7 @@ Records each sync event when a project pushes its lockfiles.
 | status         | enum   | `pending`, `processing`, `completed`, `failed` |
 | lockfile_paths | json   | nullable, relative paths of stored lockfiles |
 | error_message  | text   | nullable                  |
+| warnings       | json   | nullable, `[{code, context}]` (spec 14) |
 | synced_at      | timestamp |                         |
 | created_at     | timestamp |                         |
 | updated_at     | timestamp |                         |
@@ -173,6 +186,7 @@ A security audit execution against an environment.
 | status         | enum   | `pending`, `running`, `completed`, `failed` |
 | started_at     | timestamp | nullable               |
 | completed_at   | timestamp | nullable               |
+| error_message  | string | nullable, why the run failed (spec 14) |
 | created_at     | timestamp |                         |
 | updated_at     | timestamp |                         |
 
@@ -215,4 +229,4 @@ Configures how and when notifications are sent.
 - All models are overridable via the `FilamentVoightConfig` class (accessed via `FilamentVoight::config()` facade). A configurable morph map is registered for all models.
 - Authorization handled via Laravel policies — no roles table needed in v1.
 - Severity is derived from `vulnerability_score` using CVSS v3 ranges: critical (9.0–10.0), high (7.0–8.9), medium (4.0–6.9), low (0.1–3.9), none (0.0). Implemented as an accessor on the Vulnerability model, not stored.
-- The `parent_package_id` on EnvironmentPackage enables reconstructing the dependency tree, but a package can be pulled in by multiple parents. Consider this a "primary parent" for display purposes; full graph may need a separate edge table in a future iteration.
+- The dependency graph is stored as EnvironmentPackage nodes plus EnvironmentPackageDependency edges, so a node can have multiple parents. Traversal happens in PHP via `DependencyGraphService` (`12-dependency-graph.md`).

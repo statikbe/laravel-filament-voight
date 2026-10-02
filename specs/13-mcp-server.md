@@ -232,10 +232,17 @@ Shared conventions:
   - `package`, `type`, `current_version`, `is_dev`
   - `resolves[]`: vulnerability `id`, `severity`, the vulnerable `package`,
     its `installed_version` and `fixed_version`
-  - `paths[]`: each path from `pathsToRoots()`, as `[{name, version, constraint}]`
-    root → vulnerable node, where `constraint` is the edge's declared range
+  - `paths[]`: each path from `pathsToRoots()`, as
+    `[{name, version, constraint, kind}]` root → vulnerable node, where
+    `constraint` and `kind` (`dependency` | `optional` | `peer`) describe the edge
+    leading into that step (`null` for the root). The tool description explains
+    that bumping a `peer` parent does not change the child's installed version.
+  - `paths_truncated`: `DependencyPathResult::truncated` for any of its paths
   - A vulnerable package that is itself direct is its own action with a single
     one-node path.
+- Findings are mapped to installed nodes with
+  `DependencyGraphService::nodesFor()` (package + `installed_version`); a
+  version installed at several paths contributes every node's paths.
 - No registry lookups: the tool does not determine which version of the direct
   dependency pulls in a fixed transitive version. The constraints and fixed
   versions let the model reason about it (e.g. "`^0.0.8` excludes `1.2.6`, so a
@@ -329,7 +336,8 @@ Pest, using `laravel/mcp`'s server test helpers
   "current findings" ignore older audit runs, `include_dev`.
 - **`get_upgrade_plan`:** transitive vulnerability grouped under its direct
   dependency with path and constraints; a direct vulnerable package; two direct
-  dependencies introducing the same vulnerable node.
+  dependencies introducing the same vulnerable node; one vulnerable version
+  installed at two nested paths; `paths_truncated`.
 - **`find_package_usage`:** each comparison operator; `v` prefix.
 - **`get_vulnerability`:** lookup by source id, CVE alias, GHSA alias.
 - **Write tools:** team restriction for remote users; duplicate code fails
