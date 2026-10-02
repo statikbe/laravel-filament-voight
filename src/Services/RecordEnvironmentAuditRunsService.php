@@ -11,6 +11,7 @@ use Statikbe\FilamentVoight\Facades\FilamentVoight;
 use Statikbe\FilamentVoight\Models\AuditFinding;
 use Statikbe\FilamentVoight\Models\AuditRun;
 use Statikbe\FilamentVoight\Models\Environment;
+use Statikbe\FilamentVoight\Models\EnvironmentPackage;
 use Statikbe\FilamentVoight\Models\Package;
 use Statikbe\FilamentVoight\Models\Vulnerability;
 use Statikbe\FilamentVoight\Models\VulnerablePackageRange;
@@ -63,7 +64,12 @@ class RecordEnvironmentAuditRunsService
             'started_at' => now(),
         ]);
 
-        foreach ($environment->environmentPackages()->with('package')->get() as $environmentPackage) {
+        $installedVersions = $environment->environmentPackages()
+            ->with('package')
+            ->get()
+            ->unique(fn (EnvironmentPackage $environmentPackage): string => $environmentPackage->package_id . '|' . $environmentPackage->version);
+
+        foreach ($installedVersions as $environmentPackage) {
             $package = $environmentPackage->package;
 
             if (! $package) {
@@ -149,9 +155,9 @@ class RecordEnvironmentAuditRunsService
                 'audit_run_id' => $auditRun->id,
                 'package_id' => $package->id,
                 'vulnerability_id' => $vulnerability->id,
+                'installed_version' => $installedVersion,
             ],
             [
-                'installed_version' => $installedVersion,
                 'fixed_version' => $fixedVersion,
             ],
         );

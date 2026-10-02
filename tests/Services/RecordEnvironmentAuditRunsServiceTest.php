@@ -92,3 +92,36 @@ it('is idempotent across repeated runs for the same environment', function () {
     // Two runs, but the range stays unique per (vuln, package).
     expect(VulnerablePackageRange::where('package_id', $pkg->id)->count())->toBe(1);
 });
+
+it('records one finding per vulnerable installed version of the same package', function () {
+    $lodash = Package::factory()->npm()->create(['name' => 'lodash']);
+    $environment = Environment::factory()->create();
+    EnvironmentPackage::factory()->create(['environment_id' => $environment->id, 'package_id' => $lodash->id, 'version' => '4.17.15']);
+    EnvironmentPackage::factory()->create(['environment_id' => $environment->id, 'package_id' => $lodash->id, 'version' => '4.17.11']);
+
+    $raw = ['GHSA-p6mc' => rawVuln('GHSA-p6mc', 'lodash', '4.17.21')];
+    $map = [
+        'npm|lodash|4.17.15' => [['vulnerability_id' => 'GHSA-p6mc', 'max_severity' => '7.2']],
+        'npm|lodash|4.17.11' => [['vulnerability_id' => 'GHSA-p6mc', 'max_severity' => '7.2']],
+    ];
+    $service = app(RecordEnvironmentAuditRunsService::class);
+
+    $run = $service->record($environment, $map, $service->upsertVulnerabilities($raw, ['GHSA-p6mc' => '7.2']), $raw, AuditRunTrigger::PostSync);
+
+    expect(AuditFinding::where('audit_run_id', $run->id)->pluck('installed_version')->sort()->values()->all())
+        ->toBe(['4.17.11', '4.17.15']);
+});
+
+it('records a version installed at two nested paths only once', function () {
+    $lodash = Package::factory()->npm()->create(['name' => 'lodash']);
+    $environment = Environment::factory()->create();
+    EnvironmentPackage::factory()->count(2)->create(['environment_id' => $environment->id, 'package_id' => $lodash->id, 'version' => '4.17.11']);
+
+    $raw = ['GHSA-p6mc' => rawVuln('GHSA-p6mc', 'lodash', '4.17.21')];
+    $map = ['npm|lodash|4.17.11' => [['vulnerability_id' => 'GHSA-p6mc', 'max_severity' => '7.2']]];
+    $service = app(RecordEnvironmentAuditRunsService::class);
+
+    $run = $service->record($environment, $map, $service->upsertVulnerabilities($raw, ['GHSA-p6mc' => '7.2']), $raw, AuditRunTrigger::PostSync);
+
+    expect(AuditFinding::where('audit_run_id', $run->id)->count())->toBe(1);
+});
