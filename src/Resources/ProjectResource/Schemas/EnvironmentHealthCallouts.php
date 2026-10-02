@@ -33,9 +33,12 @@ class EnvironmentHealthCallouts
             ->with(Environment::HEALTH_RELATIONS)
             ->orderBy('name')
             ->get()
-            ->map(fn (Environment $environment): array => [$environment, $healthService->issuesFor($environment)])
-            ->reject(fn (array $environmentIssues): bool => $environmentIssues[1]->isEmpty())
-            ->map(fn (array $environmentIssues): Callout => self::callout(...$environmentIssues))
+            ->map(function (Environment $environment) use ($healthService): ?Callout {
+                $issues = $healthService->issuesFor($environment);
+
+                return $issues->isEmpty() ? null : self::callout($environment, $issues);
+            })
+            ->filter()
             ->values()
             ->all();
     }

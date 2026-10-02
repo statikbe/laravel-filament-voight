@@ -2,6 +2,7 @@
 
 namespace Statikbe\FilamentVoight\Services;
 
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Statikbe\FilamentVoight\Enums\AuditRunStatus;
 use Statikbe\FilamentVoight\Enums\DependencySyncStatus;
@@ -45,7 +46,7 @@ class EnvironmentHealthService
         }
 
         if ($sync->status === DependencySyncStatus::Failed) {
-            return [$this->failure(EnvironmentIssueType::SyncFailed, $sync->error_message, $sync)];
+            return [$this->failure(EnvironmentIssueType::SyncFailed, $sync->error_message, $sync->updated_at)];
         }
 
         $issues = [];
@@ -70,13 +71,14 @@ class EnvironmentHealthService
             return [];
         }
 
-        return [$this->failure(EnvironmentIssueType::ScanFailed, $auditRun->error_message, $auditRun)];
+        return [$this->failure(EnvironmentIssueType::ScanFailed, $auditRun->error_message, $auditRun->completed_at)];
     }
 
-    private function failure(EnvironmentIssueType $type, ?string $errorMessage, DependencySync | AuditRun $source): EnvironmentIssue
+    /**
+     * Falls back to the issue type's label when no error message was stored.
+     */
+    private function failure(EnvironmentIssueType $type, ?string $errorMessage, ?Carbon $occurredAt): EnvironmentIssue
     {
-        $occurredAt = $source instanceof AuditRun ? $source->completed_at : $source->updated_at;
-
         return new EnvironmentIssue($type, $errorMessage ?: $type->getLabel(), $occurredAt);
     }
 }

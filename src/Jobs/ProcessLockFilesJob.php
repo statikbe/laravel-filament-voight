@@ -142,7 +142,7 @@ class ProcessLockFilesJob implements ShouldQueue
                     'sync' => $this->sync->id,
                     'path' => $path,
                 ]);
-                $this->addWarning(SyncWarning::LockfileMissingOnDisk, $filename);
+                $this->addWarning(SyncWarning::LockfileMissingOnDisk, $path);
 
                 continue;
             }
@@ -200,12 +200,12 @@ class ProcessLockFilesJob implements ShouldQueue
             'warning' => $warning->value,
         ]);
 
-        $this->addWarning($warning, basename($path));
+        $this->addWarning($warning, $path);
     }
 
-    private function addWarning(SyncWarning $warning, string $filename): void
+    private function addWarning(SyncWarning $warning, string $path): void
     {
-        $this->warnings[] = ['code' => $warning->value, 'context' => ['file' => $filename]];
+        $this->warnings[] = ['code' => $warning->value, 'context' => ['file' => basename($path)]];
     }
 
     /**
