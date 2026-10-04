@@ -55,9 +55,10 @@ class CustomerResource extends Resource
      */
     public static function getGlobalSearchResultDetails(Model $record): array
     {
-        return array_filter([
+        /** @var Customer $record */
+        return [
             voightTrans('models.customer.fields.slug') => $record->slug,
-        ], fn (mixed $value): bool => $value !== null);
+        ];
     }
 
     public static function form(Schema $schema): Schema

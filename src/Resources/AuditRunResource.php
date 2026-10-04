@@ -51,6 +51,7 @@ class AuditRunResource extends Resource
     // No single title column exists, so the title is composed from the project and environment.
     public static function getGlobalSearchResultTitle(Model $record): string | Htmlable
     {
+        /** @var AuditRun $record */
         return $record->environment->project->name . ' — ' . $record->environment->name;
     }
 
@@ -59,6 +60,7 @@ class AuditRunResource extends Resource
      */
     public static function getGlobalSearchResultDetails(Model $record): array
     {
+        /** @var AuditRun $record */
         return array_filter([
             voightTrans('models.audit_run.fields.status') => $record->status->label(),
             voightTrans('models.audit_run.fields.started_at') => $record->started_at?->toDayDateTimeString(),
