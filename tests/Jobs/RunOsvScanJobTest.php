@@ -42,7 +42,7 @@ beforeEach(function () {
 it('scans one environment via /locks and records findings with the given trigger', function () {
     $laravel = Package::factory()->composer()->create(['name' => 'laravel/framework']);
     $env = Environment::factory()->create();
-    EnvironmentPackage::factory()->create(['environment_id' => $env->id, 'package_id' => $laravel->id, 'version' => 'v10.9.0']);
+    EnvironmentPackage::factory()->create(['environment_id' => $env->id, 'package_id' => $laravel->id, 'version' => '10.9.0']);
 
     Storage::disk('voight-lockfiles')->put('p/production/composer.lock', '{}');
     DependencySync::factory()->for($env)->create([
@@ -154,4 +154,33 @@ it('records a finding for a vulnerable npm version installed only in a nested no
     expect($finding->package->name)->toBe('ms')
         ->and($finding->installed_version)->toBe('2.0.0')
         ->and($finding->auditRun->environment_id)->toBe($environment->id);
+});
+
+it('records a finding for a composer package whose lockfile version has a v prefix', function () {
+    // /locks reports the version as written in composer.lock; the parser stores it without the "v".
+    Http::fake(['scanner.test/locks' => Http::response([
+        'summary' => ['skipped_packages' => []],
+        'findings' => [
+            ['ecosystem' => 'Packagist', 'name' => 'laravel/framework', 'version' => 'v10.9.0', 'vulnerability_id' => 'GHSA-78fx', 'max_severity' => '7.5'],
+        ],
+        'vulnerabilities' => ['GHSA-78fx' => [
+            'id' => 'GHSA-78fx', 'summary' => 'framework issue', 'database_specific' => ['severity' => 'HIGH'],
+            'affected' => [['package' => ['name' => 'laravel/framework'], 'ranges' => [['events' => [['introduced' => '0'], ['fixed' => 'v10.48.29']]]]]],
+        ]],
+    ], 200)]);
+
+    $environment = Environment::factory()->create();
+    Storage::disk('voight-lockfiles')->put('p/production/composer.lock', json_encode([
+        'packages' => [['name' => 'laravel/framework', 'version' => 'v10.9.0']],
+    ]));
+    $sync = DependencySync::factory()->for($environment)->create([
+        'lockfile_paths' => ['p/production/composer.lock'],
+        'status' => DependencySyncStatus::Pending,
+    ]);
+
+    ProcessLockFilesJob::dispatchSync($sync);
+
+    $finding = AuditFinding::sole();
+    expect($finding->package->name)->toBe('laravel/framework')
+        ->and($finding->installed_version)->toBe('10.9.0');
 });

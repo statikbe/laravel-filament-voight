@@ -22,13 +22,13 @@ it('scans only scan_nightly environments and records per-environment audit runs'
     $nightly = Environment::factory()->create();
     $optedOut = Environment::factory()->notNightly()->create();
 
-    EnvironmentPackage::factory()->create(['environment_id' => $nightly->id, 'package_id' => $laravel->id, 'version' => 'v10.9.0']);
-    EnvironmentPackage::factory()->create(['environment_id' => $optedOut->id, 'package_id' => $laravel->id, 'version' => 'v10.9.0']);
+    EnvironmentPackage::factory()->create(['environment_id' => $nightly->id, 'package_id' => $laravel->id, 'version' => '10.9.0']);
+    EnvironmentPackage::factory()->create(['environment_id' => $optedOut->id, 'package_id' => $laravel->id, 'version' => '10.9.0']);
 
     Http::fake(['scanner.test/packages' => Http::response([
         'batch_id' => 'x',
         'findings' => [
-            ['ecosystem' => 'Packagist', 'name' => 'laravel/framework', 'version' => 'v10.9.0',
+            ['ecosystem' => 'Packagist', 'name' => 'laravel/framework', 'version' => '10.9.0',
                 'vulnerability_id' => 'GHSA-5vg9', 'max_severity' => '9.1'],
         ],
         'vulnerabilities' => ['GHSA-5vg9' => [
@@ -128,7 +128,7 @@ it('records a failed nightly run for every scan_nightly environment once the swe
 it('records no runs for a failed attempt that will still be retried', function () {
     $laravel = Package::factory()->composer()->create(['name' => 'laravel/framework']);
     $nightly = Environment::factory()->create();
-    EnvironmentPackage::factory()->create(['environment_id' => $nightly->id, 'package_id' => $laravel->id, 'version' => 'v10.9.0']);
+    EnvironmentPackage::factory()->create(['environment_id' => $nightly->id, 'package_id' => $laravel->id, 'version' => '10.9.0']);
 
     Http::fake(['scanner.test/packages' => Http::response('scanner exploded', 500)]);
 
