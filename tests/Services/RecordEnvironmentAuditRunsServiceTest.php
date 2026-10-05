@@ -3,6 +3,7 @@
 use Statikbe\FilamentVoight\Enums\AuditRunStatus;
 use Statikbe\FilamentVoight\Enums\AuditRunTrigger;
 use Statikbe\FilamentVoight\Models\AuditFinding;
+use Statikbe\FilamentVoight\Models\AuditRun;
 use Statikbe\FilamentVoight\Models\Environment;
 use Statikbe\FilamentVoight\Models\EnvironmentPackage;
 use Statikbe\FilamentVoight\Models\Package;
@@ -124,4 +125,24 @@ it('records a version installed at two nested paths only once', function () {
     $run = $service->record($environment, $map, $service->upsertVulnerabilities($raw, ['GHSA-p6mc' => '7.2']), $raw, AuditRunTrigger::PostSync);
 
     expect(AuditFinding::where('audit_run_id', $run->id)->count())->toBe(1);
+});
+
+it('records one failed run with a truncated message', function () {
+    $environment = Environment::factory()->create();
+
+    $run = app(RecordEnvironmentAuditRunsService::class)->recordFailed($environment->id, AuditRunTrigger::PostSync, str_repeat('x', 600));
+
+    expect($run->status)->toBe(AuditRunStatus::Failed)
+        ->and($run->trigger)->toBe(AuditRunTrigger::PostSync)
+        ->and($run->completed_at)->not->toBeNull()
+        ->and(mb_strlen($run->error_message))->toBe(500);
+});
+
+it('records failed runs only for environments that still exist', function () {
+    $kept = Environment::factory()->create();
+
+    app(RecordEnvironmentAuditRunsService::class)->recordFailedForEnvironments([$kept->id, '01J9ZK3M4N5P6R7S8T9V0WGONE'], AuditRunTrigger::Nightly, 'boom');
+
+    expect(AuditRun::count())->toBe(1)
+        ->and(AuditRun::first()->environment_id)->toBe($kept->id);
 });

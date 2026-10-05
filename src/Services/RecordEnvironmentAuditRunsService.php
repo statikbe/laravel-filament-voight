@@ -99,6 +99,35 @@ class RecordEnvironmentAuditRunsService
         return $auditRun;
     }
 
+    public function recordFailed(string $environmentId, AuditRunTrigger $trigger, string $message): AuditRun
+    {
+        /** @var class-string<AuditRun> $auditRunModel */
+        $auditRunModel = FilamentVoight::config()->getAuditRunModel();
+
+        return $auditRunModel::create([
+            'environment_id' => $environmentId,
+            'status' => AuditRunStatus::Failed,
+            'trigger' => $trigger,
+            'started_at' => now(),
+            'completed_at' => now(),
+            'error_message' => mb_substr($message, 0, 500),
+        ]);
+    }
+
+    /**
+     * @param  array<int, string>  $environmentIds
+     */
+    public function recordFailedForEnvironments(array $environmentIds, AuditRunTrigger $trigger, string $message): void
+    {
+        /** @var class-string<Environment> $environmentModel */
+        $environmentModel = FilamentVoight::config()->getEnvironmentModel();
+
+        // Environments deleted since the scan started have nothing to record against.
+        foreach ($environmentModel::query()->whereKey($environmentIds)->pluck('id') as $environmentId) {
+            $this->recordFailed((string) $environmentId, $trigger, $message);
+        }
+    }
+
     /**
      * @param  array<string, mixed>  $record
      */
