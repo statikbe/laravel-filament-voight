@@ -3,6 +3,8 @@
 namespace Statikbe\FilamentVoight;
 
 use Illuminate\Foundation\Auth\User;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Route;
 use Statikbe\FilamentVoight\Models\AlertRecipient;
 use Statikbe\FilamentVoight\Models\AlertSetting;
 use Statikbe\FilamentVoight\Models\AuditFinding;
@@ -55,6 +57,34 @@ class FilamentVoightConfig
         $secret = $this->packageConfig('scanner.callback_secret');
 
         return is_string($secret) && $secret !== '' ? $secret : null;
+    }
+
+    /**
+     * Where the scanner posts completion callbacks, or null when callbacks are
+     * off (polling still completes every scan). The scanner only accepts https.
+     */
+    public function getScannerCallbackUrl(): ?string
+    {
+        $url = $this->packageConfig('scanner.callback_url');
+
+        if ($url === null) {
+            // Default to the package's own callback route, when it is registered.
+            $url = Route::has('voight.scans.callback') ? route('voight.scans.callback') : null;
+        }
+
+        if ($url === null || $url === '') {
+            return null;
+        }
+
+        $url = (string) $url;
+
+        if (! str_starts_with(strtolower($url), 'https://')) {
+            Log::warning("Voight scanner callbacks are disabled: the callback URL {$url} is not https. Scans still complete by polling.");
+
+            return null;
+        }
+
+        return $url;
     }
 
     public function getScannerPollInterval(): int

@@ -1,5 +1,8 @@
 <?php
 
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\URL;
 use Statikbe\FilamentVoight\Facades\FilamentVoight;
 use Statikbe\FilamentVoight\Models\NightlySweep;
 use Statikbe\FilamentVoight\Models\OsvScan;
@@ -120,4 +123,51 @@ it('reads the async scanner settings with spec defaults', function () {
 it('resolves the scan models from config', function () {
     expect(FilamentVoight::config()->getOsvScanModel())->toBe(OsvScan::class)
         ->and(FilamentVoight::config()->getNightlySweepModel())->toBe(NightlySweep::class);
+});
+
+it('turns callbacks off with an empty callback url', function () {
+    config()->set('filament-voight.scanner.callback_url', '');
+
+    expect(FilamentVoight::config()->getScannerCallbackUrl())->toBeNull();
+});
+
+it('uses a configured callback url as-is', function () {
+    config()->set('filament-voight.scanner.callback_url', 'https://voight.example/cb');
+
+    expect(FilamentVoight::config()->getScannerCallbackUrl())->toBe('https://voight.example/cb');
+});
+
+it('turns callbacks off with a warning when the configured callback url is not https', function () {
+    Log::spy();
+    config()->set('filament-voight.scanner.callback_url', 'http://voight.example/cb');
+
+    expect(FilamentVoight::config()->getScannerCallbackUrl())->toBeNull();
+    Log::shouldHaveReceived('warning')->once()->withArgs(fn (string $message) => str_contains($message, 'callbacks are disabled') && str_contains($message, 'https'));
+});
+
+it('defaults the callback url to the package callback route', function () {
+    Route::post('api/voight/scans/callback', fn () => null)->name('voight.scans.callback');
+    Route::getRoutes()->refreshNameLookups();
+    URL::forceRootUrl('https://voight.test');
+    URL::forceScheme('https');
+    config()->set('filament-voight.scanner.callback_url', null);
+
+    expect(FilamentVoight::config()->getScannerCallbackUrl())->toBe('https://voight.test/api/voight/scans/callback');
+});
+
+it('turns callbacks off with a warning when the default callback route is not https', function () {
+    Log::spy();
+    Route::post('api/voight/scans/callback', fn () => null)->name('voight.scans.callback');
+    Route::getRoutes()->refreshNameLookups();
+    config()->set('filament-voight.scanner.callback_url', null);
+
+    expect(FilamentVoight::config()->getScannerCallbackUrl())->toBeNull();
+    Log::shouldHaveReceived('warning')->once();
+});
+
+it('has no callback url when unset and the callback route is not registered', function () {
+    config()->set('filament-voight.scanner.callback_url', null);
+
+    expect(Route::has('voight.scans.callback'))->toBeFalse()
+        ->and(FilamentVoight::config()->getScannerCallbackUrl())->toBeNull();
 });
