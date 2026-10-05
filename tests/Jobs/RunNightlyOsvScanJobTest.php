@@ -7,6 +7,7 @@ use Statikbe\FilamentVoight\Enums\AuditRunStatus;
 use Statikbe\FilamentVoight\Enums\AuditRunTrigger;
 use Statikbe\FilamentVoight\Enums\NightlySweepStatus;
 use Statikbe\FilamentVoight\Enums\OsvScanType;
+use Statikbe\FilamentVoight\Facades\FilamentVoight;
 use Statikbe\FilamentVoight\Jobs\RunNightlyOsvScanJob;
 use Statikbe\FilamentVoight\Jobs\RunOsvScanJob;
 use Statikbe\FilamentVoight\Jobs\SubmitOsvScanJob;
@@ -144,4 +145,34 @@ it('records a failed nightly run for every scan_nightly environment when the job
 
     expect(AuditRun::count())->toBe(2)
         ->and(AuditRun::all()->every(fn (AuditRun $run) => $run->status === AuditRunStatus::Failed && $run->error_message === 'database unavailable'))->toBeTrue();
+});
+
+it('clamps a batch size below 1 to one package per batch instead of creating an empty sweep', function () {
+    Bus::fake([SubmitOsvScanJob::class]);
+    config()->set('filament-voight.scanner.batch_size', 0);
+    $environment = Environment::factory()->create();
+    foreach (['symfony/console', 'symfony/process'] as $name) {
+        EnvironmentPackage::factory()->create(['environment_id' => $environment->id, 'package_id' => Package::factory()->composer()->create(['name' => $name])->id, 'version' => '7.1.5']);
+    }
+
+    RunNightlyOsvScanJob::dispatchSync();
+
+    expect(OsvScan::count())->toBe(2);
+});
+
+it('clamps the batch size to the scanner limit of 8000 packages', function (int $configured, int $expected) {
+    config()->set('filament-voight.scanner.batch_size', $configured);
+
+    expect(FilamentVoight::config()->getScannerBatchSize())->toBe($expected);
+})->with([
+    'too large' => [9000, 8000],
+    'at the limit' => [8000, 8000],
+    'in range' => [5000, 5000],
+    'zero' => [0, 1],
+    'negative' => [-5, 1],
+]);
+
+it('is not retried, so it has no backoff', function () {
+    expect(new RunNightlyOsvScanJob)->tries->toBe(1)
+        ->and(property_exists(RunNightlyOsvScanJob::class, 'backoff'))->toBeFalse();
 });

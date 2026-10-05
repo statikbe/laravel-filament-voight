@@ -37,9 +37,6 @@ class RunNightlyOsvScanJob implements ShouldQueue
 
     public int $timeout = 120;
 
-    /** @var array<int> */
-    public array $backoff = [30, 120, 300];
-
     public function handle(OsvScanSubmitter $submitter): void
     {
         /** @var class-string<Environment> $environmentModel */

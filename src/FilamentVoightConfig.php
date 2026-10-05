@@ -42,9 +42,10 @@ class FilamentVoightConfig
         return $this->packageConfig('scanner.token');
     }
 
+    /** Packages per nightly batch, clamped to the scanner's 1..8000 (MAX_PACKAGES_PER_BATCH). */
     public function getScannerBatchSize(): int
     {
-        return (int) $this->packageConfig('scanner.batch_size', 5000);
+        return max(1, min(8000, (int) $this->packageConfig('scanner.batch_size', 5000)));
     }
 
     public function getScannerCallbackSecret(): ?string

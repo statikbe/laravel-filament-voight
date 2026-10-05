@@ -68,6 +68,7 @@ return [
         'callback_url' => env('VOIGHT_SCANNER_CALLBACK_URL'),
         'callback_secret' => env('VOIGHT_SCANNER_CALLBACK_SECRET'),
 
+        // Packages per nightly batch: 1..8000 (the scanner's limit); clamped into range.
         'batch_size' => (int) env('VOIGHT_SCANNER_BATCH_SIZE', 5000),
         'poll_interval' => (int) env('VOIGHT_SCANNER_POLL_INTERVAL', 15),
         'max_resubmits' => (int) env('VOIGHT_SCANNER_MAX_RESUBMITS', 2),
