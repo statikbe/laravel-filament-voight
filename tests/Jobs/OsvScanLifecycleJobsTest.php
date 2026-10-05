@@ -112,6 +112,7 @@ it('poll deadline records a failed run', function () {
 });
 
 it('poll past its deadline records "poll deadline exceeded"', function () {
+    fakeScanner(status: 'running');
     $scan = OsvScan::factory()->create();
 
     (new PollOsvScanJob($scan, $scan->scanner_scan_id))->failed(new MaxAttemptsExceededException('PollOsvScanJob has been attempted too many times.'));
@@ -129,6 +130,7 @@ it('poll timing out is not reported as the poll deadline', function () {
 });
 
 it('poll fails once the deadline passed when the worker picks it up again', function () {
+    fakeScanner(status: 'running');
     $scan = OsvScan::factory()->create();
     $job = new PollOsvScanJob($scan, $scan->scanner_scan_id);
     $payload = json_encode([
@@ -203,3 +205,23 @@ it('gives the lifecycle jobs a 300 second timeout so a result download is not ki
     'poll' => PollOsvScanJob::class,
     'complete' => CompleteOsvScanJob::class,
 ]);
+
+it('poll past its deadline records a scan that finished meanwhile instead of failing it', function () {
+    Bus::fake([SendAuditAlertsJob::class]);
+    fakeScanner();
+    $scan = OsvScan::factory()->create();
+
+    (new PollOsvScanJob($scan, $scan->scanner_scan_id))->failed(new MaxAttemptsExceededException('PollOsvScanJob has been attempted too many times.'));
+
+    expect($scan->refresh()->status)->toBe(OsvScanStatus::Completed)
+        ->and(AuditRun::sole()->status)->toBe(AuditRunStatus::Completed);
+});
+
+it('poll past its deadline still records the deadline when the final status check fails', function () {
+    Http::fake(['*' => Http::response('down', 500)]);
+    $scan = OsvScan::factory()->create();
+
+    (new PollOsvScanJob($scan, $scan->scanner_scan_id))->failed(new MaxAttemptsExceededException('PollOsvScanJob has been attempted too many times.'));
+
+    expect(AuditRun::sole()->error_message)->toBe('poll deadline exceeded');
+});

@@ -72,10 +72,36 @@ class PollOsvScanJob implements ShouldQueue
     {
         // retryUntil() passing surfaces as MaxAttemptsExceededException; a job
         // timeout is a subclass of it but is not the deadline.
-        $message = $e instanceof MaxAttemptsExceededException && ! $e instanceof TimeoutExceededException
-            ? 'poll deadline exceeded'
-            : 'Polling the scan failed: ' . $e->getMessage();
+        $deadlinePassed = $e instanceof MaxAttemptsExceededException && ! $e instanceof TimeoutExceededException;
+        $handler = app(OsvScanResultHandler::class);
 
-        app(OsvScanResultHandler::class)->failForGood($this->scan, $message, $this->scannerScanId);
+        if ($deadlinePassed && $this->finishedMeanwhile($handler)) {
+            return;
+        }
+
+        $message = $deadlinePassed ? 'poll deadline exceeded' : 'Polling the scan failed: ' . $e->getMessage();
+
+        $handler->failForGood($this->scan, $message, $this->scannerScanId);
+    }
+
+    /**
+     * One last look before giving up on the deadline: a scan that finished since
+     * the previous poll is recorded normally instead of failed.
+     */
+    private function finishedMeanwhile(OsvScanResultHandler $handler): bool
+    {
+        try {
+            $status = app(OsvScannerClient::class)->getScan($this->scannerScanId);
+        } catch (Throwable) {
+            return false;
+        }
+
+        if (! $status->isTerminal()) {
+            return false;
+        }
+
+        $handler->handleTerminal($this->scan, $this->scannerScanId, $status);
+
+        return true;
     }
 }
