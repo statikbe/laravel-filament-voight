@@ -132,12 +132,14 @@ it('turns callbacks off with an empty callback url', function () {
 });
 
 it('uses a configured callback url as-is', function () {
+    config()->set('filament-voight.scanner.callback_secret', 'cb-secret');
     config()->set('filament-voight.scanner.callback_url', 'https://voight.example/cb');
 
     expect(FilamentVoight::config()->getScannerCallbackUrl())->toBe('https://voight.example/cb');
 });
 
 it('turns callbacks off with a warning when the configured callback url is not https', function () {
+    config()->set('filament-voight.scanner.callback_secret', 'cb-secret');
     Log::spy();
     config()->set('filament-voight.scanner.callback_url', 'http://voight.example/cb');
 
@@ -146,6 +148,7 @@ it('turns callbacks off with a warning when the configured callback url is not h
 });
 
 it('defaults the callback url to the package callback route', function () {
+    config()->set('filament-voight.scanner.callback_secret', 'cb-secret');
     Route::post('api/voight/scans/callback', fn () => null)->name('voight.scans.callback');
     Route::getRoutes()->refreshNameLookups();
     URL::forceRootUrl('https://voight.test');
@@ -156,6 +159,7 @@ it('defaults the callback url to the package callback route', function () {
 });
 
 it('turns callbacks off with a warning when the default callback route is not https', function () {
+    config()->set('filament-voight.scanner.callback_secret', 'cb-secret');
     Log::spy();
     Route::post('api/voight/scans/callback', fn () => null)->name('voight.scans.callback');
     Route::getRoutes()->refreshNameLookups();
@@ -166,8 +170,18 @@ it('turns callbacks off with a warning when the default callback route is not ht
 });
 
 it('defaults the callback url to the real registered package route', function () {
+    config()->set('filament-voight.scanner.callback_secret', 'cb-secret');
     URL::forceScheme('https');
     config()->set('filament-voight.scanner.callback_url', null);
 
     expect(FilamentVoight::config()->getScannerCallbackUrl())->toBe(url('/api/voight/scans/callback'));
+});
+
+it('turns callbacks off with a warning when no callback secret is configured', function () {
+    Log::spy();
+    config()->set('filament-voight.scanner.callback_secret', null);
+    config()->set('filament-voight.scanner.callback_url', 'https://voight.example/cb');
+
+    expect(FilamentVoight::config()->getScannerCallbackUrl())->toBeNull();
+    Log::shouldHaveReceived('warning')->once()->withArgs(fn (string $message) => str_contains($message, 'callbacks are disabled') && str_contains($message, 'VOIGHT_SCANNER_CALLBACK_SECRET'));
 });

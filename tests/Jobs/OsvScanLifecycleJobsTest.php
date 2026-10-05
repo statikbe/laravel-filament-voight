@@ -26,6 +26,7 @@ beforeEach(function () {
     config()->set('filament-voight.scanner.url', 'https://scanner.test/scans');
     config()->set('filament-voight.scanner.token', 'secret');
     config()->set('filament-voight.scanner.callback_url', 'https://voight.test/api/voight/scans/callback');
+    config()->set('filament-voight.scanner.callback_secret', 'cb-secret');
     config()->set('filament-voight.scanner.poll_interval', 15);
 });
 

@@ -56,7 +56,8 @@ class FilamentVoightConfig
 
     /**
      * Where the scanner posts completion callbacks, or null when callbacks are
-     * off (polling still completes every scan). The scanner only accepts https.
+     * off (polling still completes every scan). The scanner only accepts https,
+     * and callbacks need a callback secret to be verified.
      */
     public function getScannerCallbackUrl(): ?string
     {
@@ -72,6 +73,12 @@ class FilamentVoightConfig
         }
 
         $url = (string) $url;
+
+        if ($this->getScannerCallbackSecret() === null) {
+            Log::warning('Voight scanner callbacks are disabled: VOIGHT_SCANNER_CALLBACK_SECRET is not set, so every callback would be rejected. Scans still complete by polling.');
+
+            return null;
+        }
 
         if (! str_starts_with(strtolower($url), 'https://')) {
             Log::warning("Voight scanner callbacks are disabled: the callback URL {$url} is not https. Scans still complete by polling.");
