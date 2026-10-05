@@ -9,17 +9,20 @@ use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Statikbe\FilamentVoight\Enums\AuditRunStatus;
 use Statikbe\FilamentVoight\Enums\AuditRunTrigger;
+use Statikbe\FilamentVoight\Enums\NightlySweepStatus;
+use Statikbe\FilamentVoight\Enums\OsvScanType;
 use Statikbe\FilamentVoight\Enums\PackageType;
 use Statikbe\FilamentVoight\Facades\FilamentVoight;
 use Statikbe\FilamentVoight\Models\AuditRun;
 use Statikbe\FilamentVoight\Models\Environment;
 use Statikbe\FilamentVoight\Models\EnvironmentPackage;
-use Statikbe\FilamentVoight\Services\OsvScannerClient;
-use Statikbe\FilamentVoight\Services\RecordEnvironmentAuditRunsService;
+use Statikbe\FilamentVoight\Models\NightlySweep;
+use Statikbe\FilamentVoight\Services\OsvScanSubmitter;
 use Throwable;
 
 class RunNightlyOsvScanJob implements ShouldQueue
@@ -29,14 +32,15 @@ class RunNightlyOsvScanJob implements ShouldQueue
     use Queueable;
     use SerializesModels;
 
-    public int $tries = 3;
+    // A retry after the sweep committed would create a second sweep.
+    public int $tries = 1;
 
-    public int $timeout = 900;
+    public int $timeout = 120;
 
     /** @var array<int> */
     public array $backoff = [30, 120, 300];
 
-    public function handle(OsvScannerClient $client, RecordEnvironmentAuditRunsService $recorder): void
+    public function handle(OsvScanSubmitter $submitter): void
     {
         /** @var class-string<Environment> $environmentModel */
         $environmentModel = FilamentVoight::config()->getEnvironmentModel();
@@ -51,14 +55,15 @@ class RunNightlyOsvScanJob implements ShouldQueue
 
         [$dedupeEnvironments, $lockfileEnvironments] = $this->partitionEnvironments($environments);
 
-        $this->scanDeduplicated($dedupeEnvironments, $client, $recorder);
+        $this->scanDeduplicated($dedupeEnvironments, $submitter);
         $this->scanCommitPinned($lockfileEnvironments);
     }
 
     /**
-     * Called once every retry is exhausted. A failing sweep stops before any
-     * environment is recorded (and before commit-pinned scans are dispatched), so
-     * every in-scope environment gets a failed run explaining its missing scan.
+     * Called when this job itself fails (it is not retried). Creating the sweep is
+     * atomic, so a failure here means no sweep exists and commit-pinned scans were
+     * not dispatched; every in-scope environment gets a failed run explaining its
+     * missing scan. Failures of the submitted batches are handled per scan.
      */
     public function failed(Throwable $e): void
     {
@@ -108,13 +113,14 @@ class RunNightlyOsvScanJob implements ShouldQueue
     }
 
     /**
+     * Create the sweep and all of its batches in one transaction: a sweep with
+     * missing batches could otherwise "complete" and record a false clean result.
+     * The submissions are queued after commit (see OsvScanSubmitter).
+     *
      * @param  Collection<int, Environment>  $environments
      */
-    private function scanDeduplicated(
-        Collection $environments,
-        OsvScannerClient $client,
-        RecordEnvironmentAuditRunsService $recorder,
-    ): void {
+    private function scanDeduplicated(Collection $environments, OsvScanSubmitter $submitter): void
+    {
         if ($environments->isEmpty()) {
             return;
         }
@@ -127,34 +133,31 @@ class RunNightlyOsvScanJob implements ShouldQueue
             return;
         }
 
-        $findingsMap = [];
-        $vulnerabilities = [];
-        $maxSeverityById = [];
-
+        /** @var class-string<NightlySweep> $sweepModel */
+        $sweepModel = FilamentVoight::config()->getNightlySweepModel();
         $batchSize = FilamentVoight::config()->getScannerBatchSize();
 
-        foreach ($packages->chunk($batchSize) as $chunk) {
-            $payload = $chunk->map(fn (array $package): array => [
-                'ecosystem' => $this->ecosystem($package['type']),
-                'name' => $package['name'],
-                'version' => $package['version'],
-            ])->values()->all();
+        DB::transaction(function () use ($environments, $packages, $sweepModel, $batchSize, $submitter): void {
+            $sweep = $sweepModel::create([
+                'status' => NightlySweepStatus::Scanning,
+                'environment_ids' => $environments->pluck('id')->values()->all(),
+                'started_at' => now(),
+            ]);
 
-            // A chunk failure throws; $tries/$backoff retry the whole job. We never
-            // record AuditRuns from a partial map — fan-out runs only after every
-            // chunk has succeeded.
-            $response = $client->scanPackages($payload, (string) Str::ulid());
+            foreach ($packages->chunk($batchSize) as $chunk) {
+                $batchId = (string) Str::ulid();
+                $input = json_encode([
+                    'batch_id' => $batchId,
+                    'packages' => $chunk->map(fn (array $package): array => [
+                        'ecosystem' => $this->ecosystem($package['type']),
+                        'name' => $package['name'],
+                        'version' => $package['version'],
+                    ])->values()->all(),
+                ], JSON_THROW_ON_ERROR);
 
-            $findingsMap = $this->mergeFindings($findingsMap, $response->findingsByPackageKey());
-            $vulnerabilities += $response->vulnerabilities;
-            $maxSeverityById = $this->mergeMaxSeverity($maxSeverityById, $response->maxSeverityById());
-        }
-
-        $models = $recorder->upsertVulnerabilities($vulnerabilities, $maxSeverityById);
-
-        foreach ($environments as $environment) {
-            $recorder->record($environment, $findingsMap, $models, $vulnerabilities, AuditRunTrigger::Nightly);
-        }
+                $submitter->start(OsvScanType::Packages, $input, ['batch_id' => $batchId], AuditRunTrigger::Nightly, nightlySweepId: $sweep->id);
+            }
+        });
     }
 
     /**
@@ -176,41 +179,5 @@ class RunNightlyOsvScanJob implements ShouldQueue
     private function ecosystem(PackageType $type): string
     {
         return $type === PackageType::Npm ? 'npm' : 'Packagist';
-    }
-
-    /**
-     * @param  array<string, array<int, array{vulnerability_id: string, max_severity: string|null}>>  $into
-     * @param  array<string, array<int, array{vulnerability_id: string, max_severity: string|null}>>  $from
-     * @return array<string, array<int, array{vulnerability_id: string, max_severity: string|null}>>
-     */
-    private function mergeFindings(array $into, array $from): array
-    {
-        foreach ($from as $key => $findings) {
-            $into[$key] = array_merge($into[$key] ?? [], $findings);
-        }
-
-        return $into;
-    }
-
-    /**
-     * @param  array<string, string|null>  $into
-     * @param  array<string, string|null>  $from
-     * @return array<string, string|null>
-     */
-    private function mergeMaxSeverity(array $into, array $from): array
-    {
-        foreach ($from as $id => $severity) {
-            if (! array_key_exists($id, $into)) {
-                $into[$id] = $severity;
-
-                continue;
-            }
-
-            if ($severity !== null && (float) $severity > (float) ($into[$id] ?? 0)) {
-                $into[$id] = $severity;
-            }
-        }
-
-        return $into;
     }
 }
