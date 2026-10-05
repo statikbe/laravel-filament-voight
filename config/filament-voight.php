@@ -58,7 +58,6 @@ return [
     */
     'scanner' => [
         'url' => env('VOIGHT_SCANNER_URL'),
-        'packages_url' => env('VOIGHT_SCANNER_PACKAGES_URL'),
         'token' => env('VOIGHT_SCANNER_TOKEN'),
 
         /*

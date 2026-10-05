@@ -1,5 +1,9 @@
 # Nightly deduplicated OSV scan — design
 
+> **Transport superseded (2026-10-05):** batches are now submitted as async scans;
+> see [15 — Asynchronous OSV scans](15-async-osv-scans.md). Partitioning,
+> deduplication and fan-out below are unchanged.
+
 **Date:** 2026-07-09
 **Status:** approved design, not yet implemented
 **Counterpart spec:** `voight-osv-scanner-lambda/docs/specs/packages-endpoint.md`

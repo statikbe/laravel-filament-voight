@@ -37,11 +37,6 @@ class FilamentVoightConfig
         return $this->packageConfig('scanner.url');
     }
 
-    public function getScannerPackagesUrl(): ?string
-    {
-        return $this->packageConfig('scanner.packages_url');
-    }
-
     public function getScannerToken(): ?string
     {
         return $this->packageConfig('scanner.token');

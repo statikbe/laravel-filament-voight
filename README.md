@@ -19,8 +19,8 @@ CI/CD project  →  POST /api/voight/lock-file  →  Voight app  →  ProcessLoc
 
 1. A `script.sh` (or `voight:sync-lockfile`) runs in each project on deploy/install and POSTs lockfiles to the Voight API.
 2. `ProcessLockFilesJob` parses `composer.lock` / `package-lock.json` and syncs the full dependency tree into the database.
-3. `RunOsvScanJob` dispatches immediately after every successful sync, sending that environment's stored lockfiles to the OSV Scanner Lambda's `/locks` endpoint and persisting results as `AuditRun`, `AuditFinding`, and `Vulnerability` records.
-4. `RunNightlyOsvScanJob` runs on a daily cron. Instead of re-scanning every environment's lockfiles, it collects the **distinct** `(ecosystem, name, version)` set across all environments flagged `scan_nightly`, scans it in a few batched calls to the Lambda's `/packages` endpoint, and fans the results back out to per-environment `AuditRun`s. Environments containing commit-pinned (`dev-*`) dependencies fall back to the per-environment `/locks` path.
+3. `RunOsvScanJob` dispatches immediately after every successful sync, submitting that environment's stored lockfiles as an asynchronous scan (`POST /scans`, upload, then callback or polling) and persisting results as `AuditRun`, `AuditFinding`, and `Vulnerability` records.
+4. `RunNightlyOsvScanJob` runs on a daily cron. Instead of re-scanning every environment's lockfiles, it collects the **distinct** `(ecosystem, name, version)` set across all environments flagged `scan_nightly`, scans it as a few asynchronous `packages` batches, and fans the merged results back out to per-environment `AuditRun`s. Environments containing commit-pinned (`dev-*`) dependencies fall back to per-environment scans. See [specs/15-async-osv-scans.md](specs/15-async-osv-scans.md).
 
 ## Installation
 
@@ -89,8 +89,13 @@ return [
     ],
 
     'scanner' => [
-        'url'   => env('VOIGHT_SCANNER_URL'),
-        'token' => env('VOIGHT_SCANNER_TOKEN'),
+        'url'             => env('VOIGHT_SCANNER_URL'),
+        'token'           => env('VOIGHT_SCANNER_TOKEN'),
+        'callback_url'    => env('VOIGHT_SCANNER_CALLBACK_URL'),
+        'callback_secret' => env('VOIGHT_SCANNER_CALLBACK_SECRET'),
+        'batch_size'      => (int) env('VOIGHT_SCANNER_BATCH_SIZE', 5000),
+        'poll_interval'   => (int) env('VOIGHT_SCANNER_POLL_INTERVAL', 15),
+        'max_resubmits'   => (int) env('VOIGHT_SCANNER_MAX_RESUBMITS', 2),
     ],
 ];
 ```
@@ -99,9 +104,15 @@ Add to your `.env`:
 
 ```dotenv
 VOIGHT_LOCKFILES_DISK=voight-lockfiles
-VOIGHT_SCANNER_URL=https://your-lambda-url/locks
+VOIGHT_SCANNER_URL=https://your-lambda-url/prod/scans
 VOIGHT_SCANNER_TOKEN=your-lambda-secret
+VOIGHT_SCANNER_CALLBACK_SECRET=at-least-32-characters-equal-to-the-lambda-CALLBACK_SECRET
 ```
+
+- `VOIGHT_SCANNER_URL` must point at the lambda's `ScansUrl` output (ending in `/scans`). `VOIGHT_SCANNER_PACKAGES_URL` no longer exists.
+- `VOIGHT_SCANNER_CALLBACK_SECRET` must equal the lambda's `CALLBACK_SECRET` (minimum 32 characters). The scanner signs completion callbacks to `POST api/voight/scans/callback` with it.
+- `VOIGHT_SCANNER_CALLBACK_URL` is optional: unset uses the package route, an empty string disables callbacks. A callback URL that is not `https` is omitted (a warning is logged); polling still completes the scan.
+- Scans are asynchronous, so a **queue worker is required**. Publish and run the new migrations: `php artisan vendor:publish --tag=filament-voight-migrations && php artisan migrate`.
 
 Add the lockfiles disk to `config/filesystems.php`:
 
@@ -188,7 +199,7 @@ Processing is async — the client gets an immediate acknowledgement and the syn
 
 ```bash
 php artisan voight:run-osv-scan --nightly                                     # deduplicated nightly sweep
-php artisan voight:run-osv-scan                                               # all environments (per-environment /locks)
+php artisan voight:run-osv-scan                                               # all environments (per-environment scans)
 php artisan voight:run-osv-scan --project=my-project                          # one project
 php artisan voight:run-osv-scan --project=my-project --environment=production # one environment
 ```
