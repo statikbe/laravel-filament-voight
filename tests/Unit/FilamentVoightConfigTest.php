@@ -165,9 +165,9 @@ it('turns callbacks off with a warning when the default callback route is not ht
     Log::shouldHaveReceived('warning')->once();
 });
 
-it('has no callback url when unset and the callback route is not registered', function () {
+it('defaults the callback url to the real registered package route', function () {
+    URL::forceScheme('https');
     config()->set('filament-voight.scanner.callback_url', null);
 
-    expect(Route::has('voight.scans.callback'))->toBeFalse()
-        ->and(FilamentVoight::config()->getScannerCallbackUrl())->toBeNull();
+    expect(FilamentVoight::config()->getScannerCallbackUrl())->toBe(url('/api/voight/scans/callback'));
 });
