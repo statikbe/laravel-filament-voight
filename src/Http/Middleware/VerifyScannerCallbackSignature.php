@@ -21,7 +21,7 @@ class VerifyScannerCallbackSignature
         $timestamp = (string) $request->header('X-Voight-Timestamp', '');
         $signature = (string) $request->header('X-Voight-Signature', '');
 
-        if ($secret === null || ! ctype_digit($timestamp) || abs(time() - (int) $timestamp) > self::MAX_SKEW_SECONDS) {
+        if ($secret === null || ! ctype_digit($timestamp) || abs(now()->getTimestamp() - (int) $timestamp) > self::MAX_SKEW_SECONDS) {
             return response()->json(['error' => 'Invalid signature'], 401);
         }
 

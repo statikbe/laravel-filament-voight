@@ -1,5 +1,6 @@
 <?php
 
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Bus;
 use Statikbe\FilamentVoight\Jobs\CompleteOsvScanJob;
 use Statikbe\FilamentVoight\Models\OsvScan;
@@ -14,7 +15,7 @@ beforeEach(function () {
  */
 function signedCallback(array $payload, ?int $timestamp = null, string $secret = 'cb-secret')
 {
-    $timestamp ??= time();
+    $timestamp ??= now()->getTimestamp();
     $body = json_encode($payload);
 
     return test()->withHeaders([
@@ -42,8 +43,8 @@ it('rejects a wrong signature', function () {
 it('rejects a timestamp outside five minutes', function () {
     $scan = OsvScan::factory()->create();
 
-    signedCallback(['scan_id' => $scan->scanner_scan_id, 'status' => 'done'], timestamp: time() - 301)->assertStatus(401);
-    signedCallback(['scan_id' => $scan->scanner_scan_id, 'status' => 'done'], timestamp: time() + 301)->assertStatus(401);
+    signedCallback(['scan_id' => $scan->scanner_scan_id, 'status' => 'done'], timestamp: now()->getTimestamp() - 301)->assertStatus(401);
+    signedCallback(['scan_id' => $scan->scanner_scan_id, 'status' => 'done'], timestamp: now()->getTimestamp() + 301)->assertStatus(401);
 });
 
 it('rejects every callback when no secret is configured', function () {
@@ -83,8 +84,33 @@ it('does not require the project token API middleware', function () {
     signedCallback(['scan_id' => $scan->scanner_scan_id, 'status' => 'failed'])->assertStatus(202);
 });
 
-it('agrees with the scanner implementation on a known signature vector', function () {
+/**
+ * POSTs a raw body exactly as the scanner would, so the signature covers these bytes.
+ */
+function rawCallback(string $body, string $timestamp, string $signature)
+{
+    return test()->call('POST', '/api/voight/scans/callback', server: [
+        'CONTENT_TYPE' => 'application/json',
+        'HTTP_X_VOIGHT_TIMESTAMP' => $timestamp,
+        'HTTP_X_VOIGHT_SIGNATURE' => $signature,
+    ], content: $body);
+}
+
+it('accepts the scanner implementation\'s known signature vector end to end', function () {
     // Vector produced by the lambda sender's algorithm (verified with openssl).
-    expect('sha256=' . hash_hmac('sha256', '1759658400.{"a":1}', 'k'))
-        ->toBe('sha256=524dd8efed8d924a9b5c6f9f6edeab8264ff488aa353ec5920ad6f1abb70cda7');
+    config()->set('filament-voight.scanner.callback_secret', 'k');
+    Carbon::setTestNow(Carbon::createFromTimestamp(1759658400));
+
+    // Past the signature check: the body names no scan, so the controller answers 404.
+    rawCallback('{"a":1}', '1759658400', 'sha256=524dd8efed8d924a9b5c6f9f6edeab8264ff488aa353ec5920ad6f1abb70cda7')
+        ->assertStatus(404)
+        ->assertJson(['error' => 'Unknown scan']);
+});
+
+it('rejects the known signature vector with one hex digit changed', function () {
+    config()->set('filament-voight.scanner.callback_secret', 'k');
+    Carbon::setTestNow(Carbon::createFromTimestamp(1759658400));
+
+    rawCallback('{"a":1}', '1759658400', 'sha256=524dd8efed8d924a9b5c6f9f6edeab8264ff488aa353ec5920ad6f1abb70cda8')
+        ->assertStatus(401);
 });
