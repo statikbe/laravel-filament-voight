@@ -60,7 +60,18 @@ return [
         'url' => env('VOIGHT_SCANNER_URL'),
         'packages_url' => env('VOIGHT_SCANNER_PACKAGES_URL'),
         'token' => env('VOIGHT_SCANNER_TOKEN'),
+
+        /*
+        | Where the scanner posts completion callbacks. Unset uses the package's
+        | own route; an empty string disables callbacks (polling still works),
+        | e.g. for local development the scanner cannot reach.
+        */
+        'callback_url' => env('VOIGHT_SCANNER_CALLBACK_URL'),
+        'callback_secret' => env('VOIGHT_SCANNER_CALLBACK_SECRET'),
+
         'batch_size' => (int) env('VOIGHT_SCANNER_BATCH_SIZE', 5000),
+        'poll_interval' => (int) env('VOIGHT_SCANNER_POLL_INTERVAL', 15),
+        'max_resubmits' => (int) env('VOIGHT_SCANNER_MAX_RESUBMITS', 2),
 
         /*
         | Cron expression for the nightly deduplicated OSV scan. Defaults to
@@ -109,6 +120,8 @@ return [
         // 'vulnerable_package_range' => \Statikbe\FilamentVoight\Models\VulnerablePackageRange::class,
         // 'audit_run' => \Statikbe\FilamentVoight\Models\AuditRun::class,
         // 'audit_finding' => \Statikbe\FilamentVoight\Models\AuditFinding::class,
+        // 'osv_scan' => \Statikbe\FilamentVoight\Models\OsvScan::class,
+        // 'nightly_sweep' => \Statikbe\FilamentVoight\Models\NightlySweep::class,
         // 'alert_setting' => \Statikbe\FilamentVoight\Models\AlertSetting::class,
         // 'user' => \App\Models\User::class,
     ],

@@ -1,6 +1,8 @@
 <?php
 
 use Statikbe\FilamentVoight\Facades\FilamentVoight;
+use Statikbe\FilamentVoight\Models\NightlySweep;
+use Statikbe\FilamentVoight\Models\OsvScan;
 use Statikbe\FilamentVoight\Tests\Support\User;
 
 it('resolves the user model from the models.user config', function () {
@@ -95,4 +97,27 @@ it('allows composer.json in the published config', function () {
     $publishedConfig = require dirname(__DIR__, 2) . '/config/filament-voight.php';
 
     expect($publishedConfig['lockfiles']['allowed_names'])->toContain('composer.json');
+});
+
+it('reads the async scanner settings with spec defaults', function () {
+    config()->set('filament-voight.scanner.poll_interval', null);
+    config()->set('filament-voight.scanner.max_resubmits', null);
+    config()->set('filament-voight.scanner.callback_secret', '');
+
+    expect(FilamentVoight::config()->getScannerPollInterval())->toBe(15)
+        ->and(FilamentVoight::config()->getScannerMaxResubmits())->toBe(2)
+        ->and(FilamentVoight::config()->getScannerCallbackSecret())->toBeNull();
+
+    config()->set('filament-voight.scanner.poll_interval', 5);
+    config()->set('filament-voight.scanner.max_resubmits', 0);
+    config()->set('filament-voight.scanner.callback_secret', 's3cret');
+
+    expect(FilamentVoight::config()->getScannerPollInterval())->toBe(5)
+        ->and(FilamentVoight::config()->getScannerMaxResubmits())->toBe(0)
+        ->and(FilamentVoight::config()->getScannerCallbackSecret())->toBe('s3cret');
+});
+
+it('resolves the scan models from config', function () {
+    expect(FilamentVoight::config()->getOsvScanModel())->toBe(OsvScan::class)
+        ->and(FilamentVoight::config()->getNightlySweepModel())->toBe(NightlySweep::class);
 });

@@ -11,6 +11,8 @@ use Statikbe\FilamentVoight\Models\Customer;
 use Statikbe\FilamentVoight\Models\DependencySync;
 use Statikbe\FilamentVoight\Models\Environment;
 use Statikbe\FilamentVoight\Models\EnvironmentPackage;
+use Statikbe\FilamentVoight\Models\NightlySweep;
+use Statikbe\FilamentVoight\Models\OsvScan;
 use Statikbe\FilamentVoight\Models\Package;
 use Statikbe\FilamentVoight\Models\Project;
 use Statikbe\FilamentVoight\Models\Team;
@@ -46,6 +48,23 @@ class FilamentVoightConfig
     public function getScannerBatchSize(): int
     {
         return (int) $this->packageConfig('scanner.batch_size', 5000);
+    }
+
+    public function getScannerCallbackSecret(): ?string
+    {
+        $secret = $this->packageConfig('scanner.callback_secret');
+
+        return is_string($secret) && $secret !== '' ? $secret : null;
+    }
+
+    public function getScannerPollInterval(): int
+    {
+        return (int) ($this->packageConfig('scanner.poll_interval') ?? 15);
+    }
+
+    public function getScannerMaxResubmits(): int
+    {
+        return (int) ($this->packageConfig('scanner.max_resubmits') ?? 2);
     }
 
     public function getScannerNightlyCron(): string
@@ -150,6 +169,22 @@ class FilamentVoightConfig
     public function getAuditFindingModel(): string
     {
         return $this->packageConfig('models.audit_finding', AuditFinding::class);
+    }
+
+    /**
+     * @return class-string<OsvScan>
+     */
+    public function getOsvScanModel(): string
+    {
+        return $this->packageConfig('models.osv_scan', OsvScan::class);
+    }
+
+    /**
+     * @return class-string<NightlySweep>
+     */
+    public function getNightlySweepModel(): string
+    {
+        return $this->packageConfig('models.nightly_sweep', NightlySweep::class);
     }
 
     /**
