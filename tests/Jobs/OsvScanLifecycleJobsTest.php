@@ -193,3 +193,13 @@ it('polls until the 30-minute deadline', function () {
     expect($job->retryUntil()->getTimestamp())->toBeGreaterThanOrEqual(now()->addMinutes(29)->getTimestamp())
         ->and($job->tries)->toBe(0);
 });
+
+it('gives the lifecycle jobs a 300 second timeout so a result download is not killed at the worker default', function (string $jobClass) {
+    $scan = OsvScan::factory()->create();
+
+    expect((new $jobClass($scan, (string) $scan->scanner_scan_id))->timeout)->toBe(300);
+})->with([
+    'submit' => SubmitOsvScanJob::class,
+    'poll' => PollOsvScanJob::class,
+    'complete' => CompleteOsvScanJob::class,
+]);

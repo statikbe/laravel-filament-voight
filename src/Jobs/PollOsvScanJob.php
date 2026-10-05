@@ -31,6 +31,9 @@ class PollOsvScanJob implements ShouldQueue
     /** Unlimited attempts: retryUntil() bounds polling, not a try count. */
     public int $tries = 0;
 
+    /** Large uploads, result downloads and recording can outlast the worker default of 60 s. */
+    public int $timeout = 300;
+
     public bool $deleteWhenMissingModels = true;
 
     public function __construct(public OsvScan $scan, public string $scannerScanId) {}

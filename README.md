@@ -113,6 +113,7 @@ VOIGHT_SCANNER_CALLBACK_SECRET=at-least-32-characters-equal-to-the-lambda-CALLBA
 - `VOIGHT_SCANNER_CALLBACK_SECRET` must equal the lambda's `CALLBACK_SECRET` (minimum 32 characters). The scanner signs completion callbacks to `POST api/voight/scans/callback` with it.
 - `VOIGHT_SCANNER_CALLBACK_URL` is optional: unset uses the package route, an empty string disables callbacks. A callback URL that is not `https` is omitted (a warning is logged); polling still completes the scan.
 - Scans are asynchronous, so a **queue worker is required**. Publish and run the new migrations: `php artisan vendor:publish --tag=filament-voight-migrations && php artisan migrate`.
+- Queue timeouts: the scan jobs run for up to 300 seconds and `RecordNightlySweepJob` for up to 900 seconds. The queue connection's `retry_after` (in `config/queue.php`) must be **greater than 900**, and the worker's `--timeout` must be **at least 900** (e.g. `php artisan queue:work --timeout=900`, with `retry_after` set to 960). Otherwise a long-running job is killed, or handed to a second worker while the first is still running.
 
 Add the lockfiles disk to `config/filesystems.php`:
 

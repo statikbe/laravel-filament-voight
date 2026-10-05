@@ -25,6 +25,9 @@ class CompleteOsvScanJob implements ShouldQueue
 
     public int $tries = 3;
 
+    /** Large uploads, result downloads and recording can outlast the worker default of 60 s. */
+    public int $timeout = 300;
+
     /** @var array<int> */
     public array $backoff = [10, 30, 60];
 
