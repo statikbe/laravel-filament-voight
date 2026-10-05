@@ -19,6 +19,7 @@ use Statikbe\FilamentVoight\Models\Environment;
 use Statikbe\FilamentVoight\Models\EnvironmentPackage;
 use Statikbe\FilamentVoight\Models\OsvScan;
 use Statikbe\FilamentVoight\Models\Package;
+use Statikbe\FilamentVoight\Services\OsvScanSubmitter;
 
 beforeEach(function () {
     Storage::fake('voight-lockfiles');
@@ -167,4 +168,30 @@ it('records a finding for a composer package whose lockfile version has a v pref
     $finding = AuditFinding::sole();
     expect($finding->package->name)->toBe('laravel/framework')
         ->and($finding->installed_version)->toBe('10.9.0');
+});
+
+it('records one failed run once starting the scan has failed on every try', function () {
+    $environment = environmentWithLockfiles();
+
+    (new RunOsvScanJob($environment, AuditRunTrigger::PostSync))->failed(new RuntimeException('database unavailable'));
+
+    expect(AuditRun::sole())
+        ->environment_id->toBe($environment->id)
+        ->status->toBe(AuditRunStatus::Failed)
+        ->trigger->toBe(AuditRunTrigger::PostSync)
+        ->error_message->toBe('Starting the scan failed: database unavailable');
+});
+
+it('records a failed run when the submitter keeps throwing through the queue', function () {
+    $this->mock(OsvScanSubmitter::class)->shouldReceive('start')->andThrow(new RuntimeException('disk full'));
+
+    expect(fn () => RunOsvScanJob::dispatchSync(environmentWithLockfiles()))->toThrow(RuntimeException::class, 'disk full');
+
+    expect(AuditRun::sole()->error_message)->toBe('Starting the scan failed: disk full');
+});
+
+it('records no failed run when there is no completed sync to scan', function () {
+    RunOsvScanJob::dispatchSync(Environment::factory()->create());
+
+    expect(AuditRun::count())->toBe(0);
 });

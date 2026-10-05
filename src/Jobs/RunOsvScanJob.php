@@ -8,13 +8,14 @@ use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Storage;
-use RuntimeException;
 use Statikbe\FilamentVoight\Enums\AuditRunTrigger;
 use Statikbe\FilamentVoight\Enums\DependencySyncStatus;
 use Statikbe\FilamentVoight\Enums\OsvScanType;
 use Statikbe\FilamentVoight\Facades\FilamentVoight;
 use Statikbe\FilamentVoight\Models\Environment;
 use Statikbe\FilamentVoight\Services\OsvScanSubmitter;
+use Statikbe\FilamentVoight\Services\RecordEnvironmentAuditRunsService;
+use Throwable;
 
 /**
  * Starts an asynchronous lockfile scan for one environment. The outcome is
@@ -42,7 +43,7 @@ class RunOsvScanJob implements ShouldQueue
         $files = $this->resolveLockfileContents();
 
         if ($files === []) {
-            $this->fail(new RuntimeException(
+            $this->fail(new NoScannableLockfilesException(
                 "No completed dependency sync found for environment '{$this->environment->name}'. Run a lock file sync first."
             ));
 
@@ -62,6 +63,23 @@ class RunOsvScanJob implements ShouldQueue
             ['project_code' => $this->environment->project->project_code, 'environment' => $this->environment->name],
             $this->trigger,
             environmentId: $this->environment->id,
+        );
+    }
+
+    /**
+     * Starting the scan failed on every try, so no OsvScan will ever record an
+     * outcome for this environment: record the failure here instead.
+     */
+    public function failed(Throwable $e): void
+    {
+        if ($e instanceof NoScannableLockfilesException) {
+            return;
+        }
+
+        app(RecordEnvironmentAuditRunsService::class)->recordFailed(
+            $this->environment->id,
+            $this->trigger,
+            'Starting the scan failed: ' . $e->getMessage(),
         );
     }
 
