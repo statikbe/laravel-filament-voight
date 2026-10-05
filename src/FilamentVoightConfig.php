@@ -92,6 +92,18 @@ class FilamentVoightConfig
         return (int) ($this->packageConfig('scanner.max_resubmits') ?? 2);
     }
 
+    /** Minutes a scan may stay pending or processing before the reaper fails it. */
+    public function getScannerReapScansAfterMinutes(): int
+    {
+        return (int) ($this->packageConfig('scanner.reap_scans_after_minutes') ?? 120);
+    }
+
+    /** Minutes a nightly sweep may stay scanning or recording before the reaper fails it. */
+    public function getScannerReapSweepsAfterMinutes(): int
+    {
+        return (int) ($this->packageConfig('scanner.reap_sweeps_after_minutes') ?? 360);
+    }
+
     public function getScannerNightlyCron(): string
     {
         return (string) $this->packageConfig('scanner.nightly_cron', '0 0 * * *');

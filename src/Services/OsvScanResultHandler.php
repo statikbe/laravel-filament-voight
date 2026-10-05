@@ -2,6 +2,7 @@
 
 namespace Statikbe\FilamentVoight\Services;
 
+use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -80,6 +81,29 @@ class OsvScanResultHandler
         }
 
         $this->markFailed($scan->refresh(), $message);
+    }
+
+    /**
+     * Fail a scan stranded pending or processing since before $staleBefore (its
+     * poll job was lost, or a worker died after claiming it). The claim also
+     * requires the row to be unchanged since then, so a completion that claimed
+     * it in the meantime wins. Returns whether this call failed the scan.
+     */
+    public function failAbandoned(OsvScan $scan, CarbonInterface $staleBefore, string $message): bool
+    {
+        $claimed = $this->scanQuery()
+            ->whereKey($scan->id)
+            ->whereIn('status', [OsvScanStatus::Pending, OsvScanStatus::Processing])
+            ->where('updated_at', '<=', $staleBefore)
+            ->update(['status' => OsvScanStatus::Processing]);
+
+        if ($claimed === 0) {
+            return false;
+        }
+
+        $this->markFailed($scan->refresh(), $message);
+
+        return true;
     }
 
     private function claim(OsvScan $scan, string $scannerScanId): bool

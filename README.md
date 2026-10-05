@@ -96,6 +96,8 @@ return [
         'batch_size'      => (int) env('VOIGHT_SCANNER_BATCH_SIZE', 5000),
         'poll_interval'   => (int) env('VOIGHT_SCANNER_POLL_INTERVAL', 15),
         'max_resubmits'   => (int) env('VOIGHT_SCANNER_MAX_RESUBMITS', 2),
+        'reap_scans_after_minutes'  => (int) env('VOIGHT_SCANNER_REAP_SCANS_AFTER_MINUTES', 120),
+        'reap_sweeps_after_minutes' => (int) env('VOIGHT_SCANNER_REAP_SWEEPS_AFTER_MINUTES', 360),
     ],
 ];
 ```
@@ -218,6 +220,13 @@ The run time is configurable via a cron expression (`scanner.nightly_cron`, defa
 ```dotenv
 VOIGHT_SCANNER_NIGHTLY_CRON="0 2 * * *"
 ```
+
+The package also schedules `voight:reap-stranded-scans` hourly (independent of the nightly cron). It recovers scans that can no longer finish on their own — a lost poll job, or a worker killed mid-recording:
+
+- a scan still `pending` or `processing` after `scanner.reap_scans_after_minutes` (default 120) is failed with `scan abandoned: no result after N minutes`. A lockfile scan records one failed audit run; a nightly batch fails its sweep, recording a failed run per sweep environment;
+- a nightly sweep still `scanning` or `recording` after `scanner.reap_sweeps_after_minutes` (default 360) is failed, recording a failed nightly run per environment.
+
+A scan that completes at the same moment is never double-recorded: the reaper and the completion claim the row atomically and only one wins. Keep the thresholds well above the 30-minute poll deadline and the 900-second recording timeout. You can also run `php artisan voight:reap-stranded-scans` by hand.
 
 Scans also trigger automatically after every successful lockfile sync (post-sync hook). Environments can be excluded from the nightly sweep by turning off their **Nightly scan** toggle (the `scan_nightly` flag).
 

@@ -73,6 +73,14 @@ return [
         'max_resubmits' => (int) env('VOIGHT_SCANNER_MAX_RESUBMITS', 2),
 
         /*
+        | The hourly voight:reap-stranded-scans command fails scans still pending
+        | or processing after this many minutes, and nightly sweeps still scanning
+        | or recording after this many minutes, recording failed audit runs.
+        */
+        'reap_scans_after_minutes' => (int) env('VOIGHT_SCANNER_REAP_SCANS_AFTER_MINUTES', 120),
+        'reap_sweeps_after_minutes' => (int) env('VOIGHT_SCANNER_REAP_SWEEPS_AFTER_MINUTES', 360),
+
+        /*
         | Cron expression for the nightly deduplicated OSV scan. Defaults to
         | midnight daily. Set to any valid cron expression (e.g. '0 2 * * *'
         | for 02:00) or an empty string to disable the automatic schedule.

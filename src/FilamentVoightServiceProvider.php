@@ -80,9 +80,10 @@ class FilamentVoightServiceProvider extends PackageServiceProvider
         }
 
         $this->callAfterResolving(Schedule::class, function (Schedule $schedule) {
-            // Registered before the scan schedule: digests are independent of the
-            // scanner cron and must keep running even when it is disabled.
+            // Registered before the scan schedule: digests and the reaper are
+            // independent of the scanner cron and must keep running when it is disabled.
             $schedule->command('voight:send-alert-digests')->hourly();
+            $schedule->command('voight:reap-stranded-scans')->hourly()->withoutOverlapping();
 
             $cron = FilamentVoight::config()->getScannerNightlyCron();
 
@@ -116,6 +117,7 @@ class FilamentVoightServiceProvider extends PackageServiceProvider
             Commands\SyncLockFileCommand::class,
             Commands\CreateProjectTokenCommand::class,
             Commands\RunOsvScanCommand::class,
+            Commands\ReapStrandedScansCommand::class,
             Commands\SendAlertDigestsCommand::class,
             Commands\ReprocessLockfilesCommand::class,
         ];
