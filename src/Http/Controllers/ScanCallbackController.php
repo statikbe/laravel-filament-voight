@@ -13,11 +13,15 @@ class ScanCallbackController extends Controller
 {
     public function __invoke(Request $request): JsonResponse
     {
-        $scannerScanId = (string) $request->json('scan_id', '');
+        $scannerScanId = $request->json('scan_id');
+
+        if (! is_string($scannerScanId) || $scannerScanId === '') {
+            return response()->json(['error' => 'Unknown scan'], 404);
+        }
 
         /** @var class-string<OsvScan> $scanModel */
         $scanModel = FilamentVoight::config()->getOsvScanModel();
-        $scan = $scannerScanId === '' ? null : $scanModel::query()->where('scanner_scan_id', $scannerScanId)->first();
+        $scan = $scanModel::query()->where('scanner_scan_id', $scannerScanId)->first();
 
         if (! $scan) {
             return response()->json(['error' => 'Unknown scan'], 404);

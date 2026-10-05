@@ -63,6 +63,19 @@ it('returns 404 for an unknown scan', function () {
     Bus::assertNotDispatched(CompleteOsvScanJob::class);
 });
 
+it('returns 404, not a server error, for a scan_id that is not a string', function (array $payload) {
+    OsvScan::factory()->create(['scanner_scan_id' => '123']);
+
+    signedCallback($payload)->assertStatus(404);
+
+    Bus::assertNotDispatched(CompleteOsvScanJob::class);
+})->with([
+    'array' => [['scan_id' => ['123'], 'status' => 'done']],
+    'number' => [['scan_id' => 123, 'status' => 'done']],
+    'null' => [['scan_id' => null, 'status' => 'done']],
+    'missing' => [['status' => 'done']],
+]);
+
 it('does not require the project token API middleware', function () {
     // TestCase sets api.middleware to ['auth']; an unauthenticated signed call must still pass.
     $scan = OsvScan::factory()->create();
