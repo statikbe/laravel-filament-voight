@@ -82,3 +82,17 @@ it('marks the sweep failed and records a failed run per environment once retries
         ->and(AuditRun::where('status', AuditRunStatus::Failed)->count())->toBe(2)
         ->and(AuditRun::first()->error_message)->toBe('Recording the nightly scan failed: db down');
 });
+
+it('records a sweep once when the job runs twice', function () {
+    $environments = Environment::factory()->count(2)->create();
+    $sweep = NightlySweep::factory()->create(['status' => NightlySweepStatus::Recording, 'environment_ids' => $environments->pluck('id')->all()]);
+    OsvScan::factory()->packages()->create(['nightly_sweep_id' => $sweep->id, 'status' => OsvScanStatus::Completed]);
+    fakeScanner();
+
+    // A duplicate delivery (retry_after expiring mid-run) still holds the old in-memory sweep.
+    app()->call([new RecordNightlySweepJob($sweep), 'handle']);
+    app()->call([new RecordNightlySweepJob($sweep), 'handle']);
+
+    expect(AuditRun::count())->toBe(2)
+        ->and($sweep->refresh()->status)->toBe(NightlySweepStatus::Completed);
+});

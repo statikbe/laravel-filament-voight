@@ -63,14 +63,24 @@ class RecordNightlySweepJob implements ShouldQueue
         /** @var class-string<Environment> $environmentModel */
         $environmentModel = FilamentVoight::config()->getEnvironmentModel();
 
-        DB::transaction(function () use ($recorder, $environmentModel, $findingsMap, $vulnerabilities, $maxSeverityById): void {
+        /** @var class-string<NightlySweep> $sweepModel */
+        $sweepModel = FilamentVoight::config()->getNightlySweepModel();
+
+        DB::transaction(function () use ($recorder, $environmentModel, $sweepModel, $findingsMap, $vulnerabilities, $maxSeverityById): void {
+            // A duplicate run (retry_after expiring while this one still runs) must not record twice.
+            $sweep = $sweepModel::query()->whereKey($this->sweep->id)->lockForUpdate()->first();
+
+            if ($sweep?->status !== NightlySweepStatus::Recording) {
+                return;
+            }
+
             $models = $recorder->upsertVulnerabilities($vulnerabilities, $maxSeverityById);
 
             foreach ($environmentModel::query()->whereKey($this->sweep->environment_ids)->get() as $environment) {
                 $recorder->record($environment, $findingsMap, $models, $vulnerabilities, AuditRunTrigger::Nightly);
             }
 
-            $this->sweep->update(['status' => NightlySweepStatus::Completed, 'completed_at' => now()]);
+            $sweep->update(['status' => NightlySweepStatus::Completed, 'completed_at' => now()]);
         });
     }
 
