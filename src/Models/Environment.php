@@ -19,6 +19,8 @@ use Statikbe\FilamentVoight\Enums\DependencySyncStatus;
  * @property string $name
  * @property bool $scan_nightly
  * @property Carbon|null $scanned_at
+ * @property array<string, mixed>|null $system_details
+ * @property Carbon|null $system_details_received_at
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
@@ -46,6 +48,8 @@ class Environment extends Model
         return [
             'scan_nightly' => 'boolean',
             'scanned_at' => 'datetime',
+            'system_details' => 'array',
+            'system_details_received_at' => 'datetime',
         ];
     }
 

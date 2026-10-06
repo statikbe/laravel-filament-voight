@@ -164,8 +164,18 @@ return [
                 'scan_nightly' => 'Nightly scan',
                 'scanned_at' => 'Last Scanned',
                 'health' => 'Health',
+                'system_details_received_at' => 'Server reported',
             ],
             'never_scanned' => 'Never scanned',
+            'never_reported' => 'Never',
+            'system_details' => [
+                'action' => 'System details',
+                'heading' => 'System details: :name',
+                'close' => 'Close',
+                'collected_at' => 'Collected at',
+                'yes' => 'Yes',
+                'no' => 'No',
+            ],
             'healthy' => 'No issues',
         ],
         'package' => [

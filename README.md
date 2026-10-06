@@ -17,7 +17,7 @@ CI/CD project  →  POST /api/voight/lock-file  →  Voight app  →  ProcessLoc
                                                    AuditRun + AuditFindings + Vulnerabilities
 ```
 
-1. A `script.sh` (or `voight:sync-lockfile`) runs in each project on deploy/install and POSTs lockfiles to the Voight API.
+1. A `voight.sh` (or `voight:sync-lockfile`) runs in each project on deploy/install and POSTs lockfiles to the Voight API.
 2. `ProcessLockFilesJob` parses `composer.lock` / `package-lock.json` and syncs the full dependency tree into the database.
 3. `RunOsvScanJob` dispatches immediately after every successful sync, sending that environment's stored lockfiles to the OSV Scanner Lambda's `/locks` endpoint and persisting results as `AuditRun`, `AuditFinding`, and `Vulnerability` records.
 4. `RunNightlyOsvScanJob` runs on a daily cron. Instead of re-scanning every environment's lockfiles, it collects the **distinct** `(ecosystem, name, version)` set across all environments flagged `scan_nightly`, scans it in a few batched calls to the Lambda's `/packages` endpoint, and fans the results back out to per-environment `AuditRun`s. Environments containing commit-pinned (`dev-*`) dependencies fall back to the per-environment `/locks` path.
@@ -126,10 +126,10 @@ The plaintext token is shown once — store it in your CI secrets.
 
 ### Option A — shell script (recommended for CI/CD)
 
-Copy `vendor/statikbe/laravel-filament-voight/resources/scripts/script.sh` into your project. Add environment variables (`.env` or CI secrets):
+Copy `vendor/statikbe/laravel-filament-voight/resources/scripts/voight.sh` into your project. Add environment variables (`.env` or CI secrets):
 
 ```dotenv
-VOIGHT_API_URL=https://your-voight-app.example.com/api/voight/lock-file
+VOIGHT_API_BASE_URL=https://your-voight-app.example.com
 VOIGHT_API_TOKEN=1|your-project-token
 PROJECT_CODE=my-project
 APP_ENV=production
@@ -138,7 +138,7 @@ APP_ENV=production
 Run it after every install or deploy:
 
 ```bash
-sh script.sh
+sh voight.sh
 ```
 
 The script auto-discovers `composer.lock`, `package-lock.json`, `yarn.lock`, `pnpm-lock.yaml`, and `bun.lock` in the current directory and POSTs them as `multipart/form-data`.
@@ -175,6 +175,32 @@ Response `202 Accepted`:
 ```
 
 Processing is async — the client gets an immediate acknowledgement and the sync + scan happen in the background queue.
+
+### `POST /api/voight/system-details`
+
+Authenticated via the project bearer token. The token names the project, so there is no `project_code` field.
+
+| Field | Type | Notes |
+|---|---|---|
+| `environment` | string | required; must match the name used for the lockfile sync (`APP_ENV`) |
+| `collected_at` | date | required |
+| `server` | object | required (`php`, `system`, `database`, …) |
+| `laravel` | object | optional (output of `php artisan about`) |
+
+Response `204 No Content`. Voight keeps only the latest snapshot per environment (overwritten on each push); bodies over 256 KB get `413`. The snapshot shows in the Environments tab of the project ("Server reported" column and "System details" action).
+
+Pushing is done by the client app, using [`statikbe/laravel-filament-system-details`](https://github.com/statikbe/laravel-filament-system-details) and the same project token as the lockfile sync:
+
+```dotenv
+VOIGHT_API_BASE_URL=https://your-voight-app.example.com
+VOIGHT_API_TOKEN=1|your-project-token
+```
+
+These are the same variables `voight.sh` already uses, so there is nothing extra to set.
+
+```bash
+php artisan system-details:push
+```
 
 ## Artisan commands
 
