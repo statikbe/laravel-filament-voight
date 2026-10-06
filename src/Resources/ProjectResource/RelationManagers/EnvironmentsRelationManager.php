@@ -20,6 +20,7 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Statikbe\FilamentVoight\Enums\EnvironmentIssueType;
 use Statikbe\FilamentVoight\Models\Environment;
+use Statikbe\FilamentVoight\Resources\EnvironmentResource;
 use Statikbe\FilamentVoight\Services\EnvironmentHealthService;
 use Statikbe\FilamentVoight\Support\EnvironmentIssue;
 
@@ -51,7 +52,7 @@ class EnvironmentsRelationManager extends RelationManager
     public function table(Table $table): Table
     {
         return $table
-            ->modifyQueryUsing(fn (Builder $query) => $query->with(Environment::HEALTH_RELATIONS))
+            ->modifyQueryUsing(fn (Builder $query) => $query->with([...Environment::HEALTH_RELATIONS, 'systemDetails']))
             ->columns([
                 TextColumn::make('name')
                     ->label(voightTrans('models.environment.fields.name'))
@@ -72,11 +73,22 @@ class EnvironmentsRelationManager extends RelationManager
                     ->dateTime()
                     ->sortable()
                     ->placeholder(voightTrans('models.environment.never_scanned')),
+                TextColumn::make('systemDetails.php_version')
+                    ->label(voightTrans('models.environment.fields.php_version'))
+                    ->placeholder('—'),
+                TextColumn::make('systemDetails.received_at')
+                    ->label(voightTrans('models.environment.fields.system_details_received_at'))
+                    ->since()
+                    ->placeholder(voightTrans('models.environment.never_reported')),
                 TextColumn::make('environment_packages_count')
                     ->label(voightTrans('models.package.plural'))
                     ->counts(['environmentPackages' => fn (Builder $query) => $query->select(DB::raw('count(distinct package_id)'))])
                     ->sortable(),
             ])
+            ->recordUrl(fn (Environment $record): string => EnvironmentResource::getUrl('view', [
+                'project' => $this->getOwnerRecord(),
+                'record' => $record,
+            ]))
             ->headerActions([
                 CreateAction::make(),
             ])

@@ -66,6 +66,14 @@ class Environment extends Model
     }
 
     /**
+     * @return HasOne<EnvironmentSystemDetail, $this>
+     */
+    public function systemDetails(): HasOne
+    {
+        return $this->hasOne(EnvironmentSystemDetail::class);
+    }
+
+    /**
      * @return HasMany<DependencySync, $this>
      */
     public function dependencySyncs(): HasMany

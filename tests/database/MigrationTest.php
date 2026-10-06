@@ -19,6 +19,7 @@ it('creates all voight tables', function () {
         'voight_alert_settings',
         'voight_alert_recipients',
         'voight_alert_notification_logs',
+        'voight_environment_system_details',
     ];
 
     foreach ($tables as $table) {
