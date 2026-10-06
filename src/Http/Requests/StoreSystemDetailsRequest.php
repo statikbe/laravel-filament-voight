@@ -22,6 +22,8 @@ class StoreSystemDetailsRequest extends FormRequest
         return [
             'environment' => ['required', 'string', 'max:255'],
             'collected_at' => ['required', 'date'],
+            'versions' => ['nullable', 'array'],
+            'versions.*' => ['nullable', 'string', 'max:255'],
             'server' => ['required', 'array'],
             'laravel' => ['nullable', 'array'],
         ];

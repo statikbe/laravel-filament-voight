@@ -18,10 +18,18 @@ class SystemDetailsController extends Controller
             $data['environment'],
         );
 
-        $environment->update([
-            'system_details' => $data,
-            'system_details_received_at' => now(),
-        ]);
+        $environment->systemDetails()->updateOrCreate(
+            ['environment_id' => $environment->getKey()],
+            [
+                'php_version' => $data['versions']['php'] ?? null,
+                'laravel_version' => $data['versions']['laravel'] ?? null,
+                'filament_version' => $data['versions']['filament'] ?? null,
+                'livewire_version' => $data['versions']['livewire'] ?? null,
+                'payload' => $data,
+                'collected_at' => $data['collected_at'],
+                'received_at' => now(),
+            ],
+        );
 
         return response()->noContent();
     }

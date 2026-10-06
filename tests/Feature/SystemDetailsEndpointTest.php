@@ -8,6 +8,7 @@ use Statikbe\FilamentVoight\Events\EnvironmentCreatedViaApi;
 use Statikbe\FilamentVoight\Http\Middleware\AuthenticateProjectToken;
 use Statikbe\FilamentVoight\Models\Customer;
 use Statikbe\FilamentVoight\Models\Environment;
+use Statikbe\FilamentVoight\Models\EnvironmentSystemDetail;
 use Statikbe\FilamentVoight\Models\Project;
 
 beforeEach(function () {
@@ -21,7 +22,8 @@ function systemDetailsPayload(array $overrides = []): array
     return array_merge([
         'environment' => 'production',
         'collected_at' => '2026-10-06T09:00:00+00:00',
-        'server' => ['php' => ['version' => '8.3.12', 'opcache' => true]],
+        'versions' => ['php' => '8.3.12', 'laravel' => '12.0.0', 'filament' => '5.0.0', 'livewire' => null],
+        'server' => ['php' => ['version' => '8.3.12', 'extensions' => ['curl', 'mbstring']]],
         'laravel' => ['environment' => ['laravel_version' => '12.0.0']],
     ], $overrides);
 }
@@ -44,16 +46,32 @@ it('rejects a token that does not belong to a project', function () {
     $this->withToken($token)->postJson('/api/voight/system-details', systemDetailsPayload())->assertUnauthorized();
 });
 
-it('stores the snapshot on the token project environment', function () {
+it('stores the snapshot and indexed versions on the token project environment', function () {
     $project = Project::factory()->create();
     $token = $project->createToken('ci')->plainTextToken;
 
     $this->withToken($token)->postJson('/api/voight/system-details', systemDetailsPayload())->assertNoContent();
 
     $environment = Environment::where('project_id', $project->id)->where('name', 'production')->firstOrFail();
-    expect($environment->system_details['server']['php']['version'])->toBe('8.3.12')
-        ->and($environment->system_details['laravel'])->not->toBeEmpty()
-        ->and($environment->system_details_received_at)->not->toBeNull();
+    $details = $environment->systemDetails;
+
+    expect($details->php_version)->toBe('8.3.12')
+        ->and($details->laravel_version)->toBe('12.0.0')
+        ->and($details->filament_version)->toBe('5.0.0')
+        ->and($details->livewire_version)->toBeNull()
+        ->and($details->payload['server']['php']['version'])->toBe('8.3.12')
+        ->and($details->payload['laravel'])->not->toBeEmpty()
+        ->and($details->collected_at->toIso8601String())->toBe('2026-10-06T09:00:00+00:00')
+        ->and($details->received_at)->not->toBeNull();
+});
+
+it('accepts a payload without versions', function () {
+    $project = Project::factory()->create();
+    $token = $project->createToken('ci')->plainTextToken;
+
+    $this->withToken($token)->postJson('/api/voight/system-details', systemDetailsPayload(['versions' => null]))->assertNoContent();
+
+    expect(EnvironmentSystemDetail::first()->php_version)->toBeNull();
 });
 
 it('overwrites the previous snapshot', function () {
@@ -62,11 +80,14 @@ it('overwrites the previous snapshot', function () {
 
     $this->withToken($token)->postJson('/api/voight/system-details', systemDetailsPayload())->assertNoContent();
     $this->withToken($token)->postJson('/api/voight/system-details', systemDetailsPayload([
+        'versions' => ['php' => '8.4.1'],
         'server' => ['php' => ['version' => '8.4.1']],
     ]))->assertNoContent();
 
     expect(Environment::count())->toBe(1)
-        ->and(Environment::first()->system_details['server']['php']['version'])->toBe('8.4.1');
+        ->and(EnvironmentSystemDetail::count())->toBe(1)
+        ->and(EnvironmentSystemDetail::first()->php_version)->toBe('8.4.1')
+        ->and(EnvironmentSystemDetail::first()->payload['server']['php']['version'])->toBe('8.4.1');
 });
 
 it('creates an unknown environment and dispatches the event', function () {
