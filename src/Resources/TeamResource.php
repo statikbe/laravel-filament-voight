@@ -20,6 +20,9 @@ class TeamResource extends Resource
 {
     protected static ?string $model = Team::class;
 
+    // The team is the tenant itself; Filament would otherwise show only the active one.
+    protected static bool $isScopedToTenant = false;
+
     protected static string | \BackedEnum | null $navigationIcon = Heroicon::OutlinedUserGroup;
 
     protected static ?string $recordTitleAttribute = 'name';

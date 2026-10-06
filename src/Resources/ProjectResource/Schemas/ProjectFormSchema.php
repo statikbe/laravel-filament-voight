@@ -3,6 +3,7 @@
 namespace Statikbe\FilamentVoight\Resources\ProjectResource\Schemas;
 
 use Filament\Actions\Action;
+use Filament\Facades\Filament;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
@@ -62,6 +63,8 @@ class ProjectFormSchema
                             )
                             ->searchable()
                             ->preload()
+                            // Inside a tenant panel Filament assigns the active team itself.
+                            ->visible(fn (): bool => Filament::getTenant() === null)
                             ->required(),
                     ])
                     ->extraAttributes(['class' => 'h-full [&>.fi-section]:h-full']),

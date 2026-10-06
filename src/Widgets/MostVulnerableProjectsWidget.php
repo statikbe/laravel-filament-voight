@@ -39,7 +39,11 @@ class MostVulnerableProjectsWidget extends TableWidget
                             ->whereIn('voight_audit_findings.audit_run_id', $auditRunModel::latestIdsPerEnvironment())
                             ->whereHas('vulnerability', fn (Builder $vq): Builder => $vq->whereBetween('vulnerability_score', [7.0, 8.9])),
                     ])
-                    ->having('total_findings_count', '>', 0)
+                    // whereHas instead of having(): SQLite rejects HAVING on an aggregate-free query.
+                    ->whereHas('findings', fn (Builder $q): Builder => $q->whereIn(
+                        'voight_audit_findings.audit_run_id',
+                        $auditRunModel::latestIdsPerEnvironment(),
+                    ))
                     ->orderByDesc('total_findings_count'),
             )
             ->columns([

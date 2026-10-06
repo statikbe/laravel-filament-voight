@@ -2,12 +2,14 @@
 
 namespace Statikbe\FilamentVoight\Widgets;
 
+use Filament\Facades\Filament;
 use Filament\Support\Icons\Heroicon;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 use Illuminate\Support\Carbon;
 use Statikbe\FilamentVoight\Enums\Severity;
 use Statikbe\FilamentVoight\Facades\FilamentVoight;
+use Statikbe\FilamentVoight\Support\TenantProjectScope;
 
 class SeverityOverviewWidget extends StatsOverviewWidget
 {
@@ -60,7 +62,7 @@ class SeverityOverviewWidget extends StatsOverviewWidget
 
         $auditFindingModel = FilamentVoight::config()->getAuditFindingModel();
 
-        $counts = $auditFindingModel::query()
+        $counts = TenantProjectScope::apply($auditFindingModel::query(), Filament::getTenant(), ['auditRun.environment.project'])
             ->join('voight_vulnerabilities', 'voight_audit_findings.vulnerability_id', '=', 'voight_vulnerabilities.id')
             ->join('voight_audit_runs', 'voight_audit_findings.audit_run_id', '=', 'voight_audit_runs.id')
             ->whereBetween('voight_vulnerabilities.vulnerability_score', [$min, $max])

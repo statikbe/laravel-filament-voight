@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use Statikbe\FilamentVoight\Models\EnvironmentPackage;
 use Statikbe\FilamentVoight\Models\Package;
+use Statikbe\FilamentVoight\Resources\Concerns\ScopesToTenantThroughProjects;
 use Statikbe\FilamentVoight\Resources\PackageResource\Pages\ListPackages;
 use Statikbe\FilamentVoight\Resources\PackageResource\Pages\ViewPackage;
 use Statikbe\FilamentVoight\Resources\PackageResource\RelationManagers\ActiveFindingsRelationManager;
@@ -19,6 +20,8 @@ use Statikbe\FilamentVoight\Resources\PackageResource\Schemas\PackageTableSchema
 
 class PackageResource extends Resource
 {
+    use ScopesToTenantThroughProjects;
+
     protected static ?string $model = Package::class;
 
     protected static string | \BackedEnum | null $navigationIcon = Heroicon::OutlinedCube;
@@ -99,5 +102,13 @@ class PackageResource extends Resource
             'index' => ListPackages::route('/'),
             'view' => ViewPackage::route('/{record}'),
         ];
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    protected static function getTenantProjectPaths(): array
+    {
+        return ['environmentPackages.environment.project'];
     }
 }

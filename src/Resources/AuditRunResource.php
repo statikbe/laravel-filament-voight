@@ -14,9 +14,12 @@ use Statikbe\FilamentVoight\Resources\AuditRunResource\Pages\ListAuditRuns;
 use Statikbe\FilamentVoight\Resources\AuditRunResource\Pages\ViewAuditRun;
 use Statikbe\FilamentVoight\Resources\AuditRunResource\RelationManagers\FindingsRelationManager;
 use Statikbe\FilamentVoight\Resources\AuditRunResource\Schemas\AuditRunTableSchema;
+use Statikbe\FilamentVoight\Resources\Concerns\ScopesToTenantThroughProjects;
 
 class AuditRunResource extends Resource
 {
+    use ScopesToTenantThroughProjects;
+
     protected static ?string $model = AuditRun::class;
 
     protected static string | \BackedEnum | null $navigationIcon = Heroicon::OutlinedClipboardDocumentCheck;
@@ -93,5 +96,13 @@ class AuditRunResource extends Resource
             'index' => ListAuditRuns::route('/'),
             'view' => ViewAuditRun::route('/{record}'),
         ];
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    protected static function getTenantProjectPaths(): array
+    {
+        return ['environment.project'];
     }
 }

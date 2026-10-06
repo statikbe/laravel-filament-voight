@@ -6,8 +6,10 @@ use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Statikbe\FilamentVoight\Models\Customer;
+use Statikbe\FilamentVoight\Resources\Concerns\ScopesToTenantThroughProjects;
 use Statikbe\FilamentVoight\Resources\CustomerResource\Pages\CreateCustomer;
 use Statikbe\FilamentVoight\Resources\CustomerResource\Pages\EditCustomer;
 use Statikbe\FilamentVoight\Resources\CustomerResource\Pages\ListCustomers;
@@ -16,9 +18,12 @@ use Statikbe\FilamentVoight\Resources\CustomerResource\RelationManagers\ProjectR
 use Statikbe\FilamentVoight\Resources\CustomerResource\Schemas\CustomerFormSchema;
 use Statikbe\FilamentVoight\Resources\CustomerResource\Schemas\CustomerInfoListSchema;
 use Statikbe\FilamentVoight\Resources\CustomerResource\Schemas\CustomerTableSchema;
+use Statikbe\FilamentVoight\Support\TenantProjectScope;
 
 class CustomerResource extends Resource
 {
+    use ScopesToTenantThroughProjects;
+
     protected static ?string $model = Customer::class;
 
     protected static string | \BackedEnum | null $navigationIcon = Heroicon::OutlinedBuildingOffice;
@@ -91,5 +96,26 @@ class CustomerResource extends Resource
             'view' => ViewCustomer::route('/{record}'),
             'edit' => EditCustomer::route('/{record}/edit'),
         ];
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    protected static function getTenantProjectPaths(): array
+    {
+        return ['projects'];
+    }
+
+    /**
+     * Customers that have no project yet stay visible, otherwise a new customer could never be picked for a first project.
+     */
+    public static function scopeEloquentQueryToTenant(Builder $query, ?Model $tenant): Builder
+    {
+        if ($tenant === null) {
+            return $query;
+        }
+
+        return $query->where(fn (Builder $query): Builder => TenantProjectScope::apply($query, $tenant, static::getTenantProjectPaths())
+            ->orWhereDoesntHave('projects', fn (Builder $projects): Builder => $projects->withoutGlobalScopes()));
     }
 }
