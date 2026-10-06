@@ -11,6 +11,7 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Filters\SelectFilter;
+use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
 use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Database\Eloquent\Builder;
@@ -100,26 +101,35 @@ class ListEnvironments extends Page implements HasTable
         return $table
             ->query($environmentModel::query()->whereIn('project_id', $projectIds())->with(['project', 'systemDetails']))
             ->columns($columns)
-            ->filters(array_map(
-                fn (string $column): SelectFilter => SelectFilter::make($column)
-                    ->label(voightTrans("models.environment.fields.{$column}"))
-                    ->options(fn (): array => EnvironmentSystemDetail::query()
-                        ->whereIn('environment_id', $environmentModel::query()->whereIn('project_id', $projectIds())->select('id'))
-                        ->whereNotNull($column)
-                        ->distinct()
-                        ->orderBy($column)
-                        ->pluck($column, $column)
-                        ->all())
-                    ->query(fn (Builder $query, array $data): Builder => $query->when(
-                        filled($data['value'] ?? null),
-                        fn (Builder $query): Builder => $query->whereHas('systemDetails', fn (Builder $query): Builder => $query->where($column, $data['value'])),
-                    )),
-                self::VERSION_COLUMNS,
-            ))
+            ->filters([
+                TernaryFilter::make('server_reported')
+                    ->label(voightTrans('models.environment.fields.system_details_received_at'))
+                    ->default(true)
+                    ->queries(
+                        true: fn (Builder $query): Builder => $query->whereHas('systemDetails'),
+                        false: fn (Builder $query): Builder => $query->whereDoesntHave('systemDetails'),
+                    ),
+                ...array_map(
+                    fn (string $column): SelectFilter => SelectFilter::make($column)
+                        ->label(voightTrans("models.environment.fields.{$column}"))
+                        ->options(fn (): array => EnvironmentSystemDetail::query()
+                            ->whereIn('environment_id', $environmentModel::query()->whereIn('project_id', $projectIds())->select('id'))
+                            ->whereNotNull($column)
+                            ->distinct()
+                            ->orderBy($column)
+                            ->pluck($column, $column)
+                            ->all())
+                        ->query(fn (Builder $query, array $data): Builder => $query->when(
+                            filled($data['value'] ?? null),
+                            fn (Builder $query): Builder => $query->whereHas('systemDetails', fn (Builder $query): Builder => $query->where($column, $data['value'])),
+                        )),
+                    self::VERSION_COLUMNS,
+                ),
+            ])
             ->recordUrl(fn (Environment $record): string => EnvironmentResource::getUrl('view', [
                 'project' => $record->project,
                 'record' => $record,
             ]))
-            ->defaultSort('name');
+            ->defaultSort(fn (Builder $query): Builder => $sortBy('received_at')($query, 'desc')->orderBy('name'));
     }
 }

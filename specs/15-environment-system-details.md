@@ -208,6 +208,8 @@ in the request's `prepareForValidation`, 413). Real payloads are ~5 KB.
   project, environment, four versions, received since; select filters per
   version (options = distinct stored values); rows link to the view page. Access
   and query scope follow `ProjectResource` (`canViewAny()` / `getEloquentQuery()`).
+  Defaults: ternary filter `server_reported` on (only environments with a snapshot),
+  sorted by most recent report first, name as tie-breaker.
 
 ---
 
@@ -235,7 +237,7 @@ in the request's `prepareForValidation`, 413). Real payloads are ~5 KB.
 - View page renders snapshot (stack summary, database/disk lines, extensions tab, unknown
   groups in Other, `laravel` fieldsets) and the placeholder without a snapshot.
 - Relation manager shows the PHP version.
-- Global list shows all environments and filters by version.
+- Global list shows reported environments by default (newest first), all with the filter cleared, and filters by version.
 
 ---
 
@@ -277,3 +279,4 @@ in the request's `prepareForValidation`, 413). Real payloads are ~5 KB.
 | 2026-10-06 | view page redesigned (stack summary + tabs), CLI-only php ini values dropped from payload | CLI values misleading, page cluttered | Kristof |
 | 2026-10-06 | signed loopback for web-server values, richer server data, view restyled like the old system-details package with Copy as Markdown | CLI values misleading; keep familiar UI | Kristof |
 | 2026-10-06 | loopback route moved to /api/voight/system-details/collect in routes/api.php | keep all package routes under api/voight | Kristof |
+| 2026-10-06 | Environments list defaults to reported environments, newest report first | user request | Kristof |

@@ -122,9 +122,25 @@ it('lists environments across projects and filters by version', function () {
 
     Livewire::test(ListEnvironments::class)
         ->assertSuccessful()
+        ->filterTable('server_reported', null)
         ->assertCanSeeTableRecords([$php83, $php84, $never])
         ->assertTableFilterExists('php_version')
         ->filterTable('php_version', '8.3.12')
         ->assertCanSeeTableRecords([$php83])
         ->assertCanNotSeeTableRecords([$php84, $never]);
+});
+
+it('shows only reported environments by default, newest report first', function () {
+    $old = Environment::factory()->create();
+    EnvironmentSystemDetail::factory()->for($old)->create(['received_at' => now()->subDay()]);
+    $new = Environment::factory()->create();
+    EnvironmentSystemDetail::factory()->for($new)->create(['received_at' => now()]);
+    $never = Environment::factory()->create();
+
+    Livewire::test(ListEnvironments::class)
+        ->assertCanSeeTableRecords([$new, $old], inOrder: true)
+        ->assertCanNotSeeTableRecords([$never])
+        ->filterTable('server_reported', false)
+        ->assertCanSeeTableRecords([$never])
+        ->assertCanNotSeeTableRecords([$new, $old]);
 });
