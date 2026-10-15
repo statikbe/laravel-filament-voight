@@ -97,7 +97,7 @@ elif [ -d web ]; then
 fi
 
 if [ -n "$PROBE_DIR" ] && [ -n "$PROBE_URL" ]; then
-  PROBE_FILE="$PROBE_DIR/voight-probe-$(od -An -N16 -tx1 /dev/urandom | tr -d ' \n').php"
+  PROBE_FILE="$PROBE_DIR/voight-probe-$(php -r 'echo bin2hex(random_bytes(16));').php"
   trap 'rm -f "$PROBE_FILE"' EXIT
   trap 'exit 1' INT TERM
 
