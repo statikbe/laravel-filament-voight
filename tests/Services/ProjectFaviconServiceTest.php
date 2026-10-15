@@ -86,6 +86,37 @@ it('falls back to /favicon.ico when the page has no icon tags', function () {
         ->and($project->refresh()->favicon_path)->toEndWith('.ico');
 });
 
+it('skips an empty icon and stores the next one', function () {
+    fakeSite(
+        '<html><head>'
+        . '<link rel="apple-touch-icon" href="/empty.png" sizes="180x180">'
+        . '<link rel="icon" href="/icon-32.png" sizes="32x32">'
+        . '</head></html>',
+        [
+            'https://site.test/empty.png' => '',
+            'https://site.test/icon-32.png' => 'small',
+        ],
+    );
+
+    $project = Project::factory()->create();
+    Environment::factory()->for($project)->create(['name' => 'production', 'url' => 'https://site.test']);
+
+    expect(app(ProjectFaviconService::class)->fetch($project))->toBeTrue();
+    expect(Storage::disk('public')->get($project->refresh()->favicon_path))->toBe('small')
+        ->and(Storage::disk('public')->allFiles('voight/favicons'))->toHaveCount(1);
+});
+
+it('stores nothing when every icon is empty', function () {
+    fakeSite('<html><head></head></html>', ['https://site.test/favicon.ico' => '']);
+
+    $project = Project::factory()->create();
+    Environment::factory()->for($project)->create(['name' => 'production', 'url' => 'https://site.test']);
+
+    expect(app(ProjectFaviconService::class)->fetch($project))->toBeFalse()
+        ->and($project->refresh()->favicon_path)->toBeNull()
+        ->and(Storage::disk('public')->allFiles('voight/favicons'))->toBeEmpty();
+});
+
 it('keeps the previous favicon when the site is unreachable', function () {
     Http::fake(['*' => Http::response('', 500)]);
     Storage::disk('public')->put('voight/favicons/old.png', 'old');

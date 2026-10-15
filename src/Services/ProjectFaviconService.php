@@ -5,6 +5,7 @@ namespace Statikbe\FilamentVoight\Services;
 use AshAllenDesign\FaviconFetcher\Exceptions\FaviconFetcherException;
 use AshAllenDesign\FaviconFetcher\Facades\Favicon;
 use AshAllenDesign\FaviconFetcher\Favicon as FetchedFavicon;
+use Generator;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Statikbe\FilamentVoight\Enums\EnvironmentStage;
@@ -63,16 +64,7 @@ class ProjectFaviconService
         $storedPath = null;
 
         try {
-            $favicon = $this->findFavicon($sourceUrl);
-
-            if ($favicon) {
-                // Timestamped filename so browsers don't keep showing a cached old icon.
-                $storedPath = $favicon->storeAs(
-                    $config->getFaviconsDirectory(),
-                    $project->getKey() . '-' . now()->timestamp,
-                    $config->getFaviconsDisk(),
-                );
-            }
+            $storedPath = $this->storeFirstUsableFavicon($project, $sourceUrl);
         } catch (FaviconFetcherException $exception) {
             Log::info('[Voight] Favicon fetch failed', [
                 'project' => $project->project_code,
@@ -94,25 +86,54 @@ class ProjectFaviconService
     }
 
     /**
+     * Some sites answer 200 with an empty file (e.g. a placeholder /favicon.ico),
+     * so walk the candidates and keep the first one that has content.
+     *
      * @throws FaviconFetcherException
      */
-    private function findFavicon(string $url): ?FetchedFavicon
+    private function storeFirstUsableFavicon(Project $project, string $url): ?string
+    {
+        $config = FilamentVoight::config();
+        $disk = Storage::disk($config->getFaviconsDisk());
+
+        foreach ($this->candidates($url) as $favicon) {
+            // Timestamped filename so browsers don't keep showing a cached old icon.
+            $path = $favicon->storeAs(
+                $config->getFaviconsDirectory(),
+                $project->getKey() . '-' . now()->timestamp,
+                $config->getFaviconsDisk(),
+            );
+
+            if ($disk->size($path) > 0) {
+                return $path;
+            }
+
+            $disk->delete($path);
+        }
+
+        return null;
+    }
+
+    /**
+     * Icons advertised by the site, largest first, then the configured fallback drivers.
+     *
+     * @return Generator<FetchedFavicon>
+     *
+     * @throws FaviconFetcherException
+     */
+    private function candidates(string $url): Generator
     {
         // fetchAll also picks up apple-touch-icon, which is usually the sharpest option.
-        $favicon = Favicon::fetchAll($url)->largest();
-
-        if ($favicon) {
-            return $favicon;
-        }
+        yield from Favicon::fetchAll($url)
+            ->sortByDesc(fn (FetchedFavicon $favicon): int => $favicon->getIconSize() ?? 0)
+            ->values();
 
         foreach (FilamentVoight::config()->getFaviconFallbackDrivers() as $driver) {
             $favicon = Favicon::driver($driver)->fetch($url);
 
             if ($favicon) {
-                return $favicon;
+                yield $favicon;
             }
         }
-
-        return null;
     }
 }
