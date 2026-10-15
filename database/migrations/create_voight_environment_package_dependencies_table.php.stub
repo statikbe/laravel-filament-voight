@@ -8,6 +8,10 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (Schema::hasTable('voight_environment_package_dependencies')) {
+            return;
+        }
+
         Schema::create('voight_environment_package_dependencies', function (Blueprint $table) {
             $table->foreignUlid('parent_id')->constrained('voight_environment_packages')->cascadeOnDelete();
             $table->foreignUlid('child_id')->constrained('voight_environment_packages')->cascadeOnDelete();
