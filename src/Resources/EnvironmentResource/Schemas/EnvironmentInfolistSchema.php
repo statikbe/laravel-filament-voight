@@ -206,8 +206,26 @@ class EnvironmentInfolistSchema
             ->placeholder('—');
 
         if (is_bool($row['value'])) {
+            $answer = voightTrans('models.environment.system_details.' . ($row['value'] ? 'yes' : 'no'));
+
+            // Path labels (e.g. storage symlinks) show the path itself, colored by state; the icon keeps it from being color-only.
+            if (str_starts_with($row['label'], '/')) {
+                $color = $row['value'] ? 'success' : 'danger';
+
+                return TextEntry::make($name)
+                    ->label(voightTrans('models.environment.system_details.storage_linked'))
+                    ->inlineLabel()
+                    ->state($row['label'])
+                    ->fontFamily(FontFamily::Mono)
+                    ->color($color)
+                    ->icon($row['value'] ? Heroicon::CheckCircle : Heroicon::ExclamationTriangle)
+                    ->iconColor($color)
+                    ->tooltip($answer)
+                    ->wrap();
+            }
+
             return $entry
-                ->state(voightTrans('models.environment.system_details.' . ($row['value'] ? 'yes' : 'no')))
+                ->state($answer)
                 ->badge()
                 ->color($row['value'] ? 'success' : 'gray');
         }

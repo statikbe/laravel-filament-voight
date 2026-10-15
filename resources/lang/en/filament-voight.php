@@ -176,6 +176,7 @@ return [
                 'copied' => 'Copied to clipboard',
                 'yes' => 'Yes',
                 'no' => 'No',
+                'storage_linked' => 'Storage linked',
                 'empty' => 'No server snapshot received yet.',
                 'tabs' => [
                     'framework' => 'Framework',

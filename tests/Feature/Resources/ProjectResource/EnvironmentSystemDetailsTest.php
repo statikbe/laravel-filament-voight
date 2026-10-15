@@ -187,3 +187,24 @@ it('shows only reported environments by default, newest report first', function 
         ->assertCanSeeTableRecords([$never])
         ->assertCanNotSeeTableRecords([$new, $old]);
 });
+
+it('renders storage symlink paths colored by link state', function () {
+    $environment = Environment::factory()->create();
+    EnvironmentSystemDetail::factory()->for($environment)->create([
+        'payload' => [
+            'server' => [],
+            'framework' => ['name' => 'laravel', 'version' => '12.1.0', 'groups' => ['storage' => [
+                '/var/www/html/public/storage' => true,
+                '/var/www/html/public/missing' => false,
+            ]]],
+        ],
+    ]);
+
+    $this->get(viewEnvironmentUrl($environment))
+        ->assertSuccessful()
+        ->assertSee('Storage linked')
+        ->assertSee('/var/www/html/public/storage')
+        ->assertSee('/var/www/html/public/missing')
+        ->assertSee('fi-color-success', false)
+        ->assertSee('fi-color-danger', false);
+});

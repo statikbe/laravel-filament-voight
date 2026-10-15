@@ -108,7 +108,9 @@ class SystemDetailsPresenter
             return voightTrans('models.environment.system_details.tabs.framework');
         }
 
-        return trim(Str::headline($name));
+        $version = data_get($environment->systemDetails?->payload, 'framework.version');
+
+        return trim(Str::headline($name) . ' ' . (is_scalar($version) ? $version : ''));
     }
 
     public static function markdown(Environment $environment): string
