@@ -33,6 +33,13 @@ it('reports an environment that was never synced', function () {
     expect(issueTypesFor(Environment::factory()->create()))->toBe([EnvironmentIssueType::NeverSynced]);
 });
 
+it('ignores failed scans for an environment that was never synced', function () {
+    $environment = Environment::factory()->create();
+    AuditRun::factory()->for($environment)->failed()->create(['error_message' => null]);
+
+    expect(issueTypesFor($environment))->toBe([EnvironmentIssueType::NeverSynced]);
+});
+
 it('reports a failed sync with its error message', function () {
     $environment = Environment::factory()->create();
     DependencySync::factory()->for($environment)->failed()->create(['error_message' => 'Malformed composer.lock']);

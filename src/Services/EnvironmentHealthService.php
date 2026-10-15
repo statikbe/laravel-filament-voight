@@ -16,6 +16,7 @@ use Statikbe\FilamentVoight\Support\EnvironmentIssue;
 /**
  * Derives an environment's current problems from its latest finished sync and
  * scan. Nothing is stored: an issue disappears once a newer sync or scan succeeds.
+ * Scan failures only count once the environment has a finished sync.
  */
 class EnvironmentHealthService
 {
@@ -28,9 +29,11 @@ class EnvironmentHealthService
     {
         $environment->loadMissing(Environment::HEALTH_RELATIONS);
 
+        $sync = $environment->latestFinishedDependencySync;
+
         return collect([
-            ...$this->syncIssues($environment->latestFinishedDependencySync),
-            ...$this->scanIssues($environment->latestFinishedAuditRun),
+            ...$this->syncIssues($sync),
+            ...($sync === null ? [] : $this->scanIssues($environment->latestFinishedAuditRun)),
         ])
             ->sortBy(fn (EnvironmentIssue $issue): int => $issue->type->priority())
             ->values();

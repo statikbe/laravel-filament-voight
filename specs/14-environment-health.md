@@ -178,7 +178,10 @@ eager loaded in two queries instead of N:
 - `latestFinishedAuditRun()` — same, on `AuditRun`.
 
 `NeverSynced` is simply "no latest finished sync". An environment whose only
-syncs failed shows `SyncFailed`, which already says more.
+syncs failed shows `SyncFailed`, which already says more. A failed sync still
+counts as finished, so `ScanFailed` keeps showing then. Without any finished sync
+only `NeverSynced` is reported: failed audit runs are ignored, since there is
+nothing to scan.
 
 ---
 
@@ -237,3 +240,11 @@ labels, the column label, and the "no issues" tooltip.
 - Staleness ("no sync for N days") — a natural next `EnvironmentIssueType`,
   needing a configurable threshold.
 - A pnpm parser.
+
+---
+
+## Change Log
+
+| Date       | Change                                              | Why                                           | Approved by |
+|------------|-----------------------------------------------------|-----------------------------------------------|-------------|
+| 2026-10-15 | Hide scan failures when the environment never synced | stale failed runs from old code kept showing | Kristof     |

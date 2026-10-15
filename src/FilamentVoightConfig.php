@@ -13,6 +13,7 @@ use Statikbe\FilamentVoight\Models\Customer;
 use Statikbe\FilamentVoight\Models\DependencySync;
 use Statikbe\FilamentVoight\Models\Environment;
 use Statikbe\FilamentVoight\Models\EnvironmentPackage;
+use Statikbe\FilamentVoight\Models\EnvironmentSystemDetail;
 use Statikbe\FilamentVoight\Models\NightlySweep;
 use Statikbe\FilamentVoight\Models\OsvScan;
 use Statikbe\FilamentVoight\Models\Package;
@@ -117,6 +118,28 @@ class FilamentVoightConfig
         return (string) $this->packageConfig('scanner.nightly_cron', '0 0 * * *');
     }
 
+    // -- Push (system details) --
+
+    public function getPushBaseUrl(): ?string
+    {
+        return $this->packageConfig('push.base_url');
+    }
+
+    public function getPushToken(): ?string
+    {
+        return $this->packageConfig('push.token');
+    }
+
+    public function getPushEnvironment(): ?string
+    {
+        return $this->packageConfig('push.environment');
+    }
+
+    public function getPushLoopbackUrl(): string
+    {
+        return (string) ($this->packageConfig('push.loopback_url') ?: config('app.url'));
+    }
+
     // -- Lockfiles --
 
     public function getLockfilesDisk(): string
@@ -182,6 +205,14 @@ class FilamentVoightConfig
     public function getDependencySyncModel(): string
     {
         return $this->packageConfig('models.dependency_sync', DependencySync::class);
+    }
+
+    /**
+     * @return class-string<EnvironmentSystemDetail>
+     */
+    public function getEnvironmentSystemDetailModel(): string
+    {
+        return $this->packageConfig('models.environment_system_detail', EnvironmentSystemDetail::class);
     }
 
     /**

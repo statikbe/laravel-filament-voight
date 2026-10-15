@@ -52,7 +52,7 @@ class LockFileSyncService
         return $project;
     }
 
-    private function resolveEnvironment(Project $project, string $environmentName): Environment
+    public function resolveEnvironment(Project $project, string $environmentName): Environment
     {
         $environmentModel = FilamentVoight::config()->getEnvironmentModel();
         $environment = $environmentModel::firstOrCreate(
