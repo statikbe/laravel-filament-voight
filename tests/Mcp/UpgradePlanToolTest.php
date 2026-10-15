@@ -41,7 +41,7 @@ it('groups a transitive vulnerability under its direct dependency with path and 
     $ms = planNode($this->environment, 'ms', '2.0.0');
     planEdge($express, $send, '0.17.1');
     planEdge($send, $ms, '2.0.0', DependencyKind::Peer);
-    mcpFinding($this->environment, Vulnerability::factory()->high()->create(['source_id' => 'GHSA-ms']), 'ms', '2.0.0', '2.1.3', installed: false);
+    mcpFinding($this->environment, Vulnerability::factory()->create(['source_id' => 'GHSA-ms', 'vulnerability_score' => 7.5]), 'ms', '2.0.0', '2.1.3', installed: false);
 
     expect(planActions())->toBe([[
         'package' => 'express',
@@ -51,7 +51,7 @@ it('groups a transitive vulnerability under its direct dependency with path and 
         'resolves' => [[
             'id' => 'GHSA-ms',
             'severity' => 'high',
-            'score' => (float) Vulnerability::query()->where('source_id', 'GHSA-ms')->value('vulnerability_score'),
+            'score' => 7.5,
             'package' => 'ms',
             'installed_version' => '2.0.0',
             'fixed_version' => '2.1.3',
