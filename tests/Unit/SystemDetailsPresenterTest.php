@@ -117,3 +117,24 @@ it('hides noisy package groups from the framework details', function () {
 
     expect(array_keys(SystemDetailsPresenter::framework($environment->fresh('systemDetails'))))->toBe(['environment']);
 });
+
+it('moves the OPcache flags into the opcache group and hides hit_rate', function (array $server) {
+    $environment = Environment::factory()->create();
+    EnvironmentSystemDetail::factory()->for($environment)->create(['payload' => ['server' => $server]]);
+
+    $groups = SystemDetailsPresenter::server($environment->fresh('systemDetails'));
+    $php = array_column($groups['php']['rows'], 'key');
+    $opcache = array_column($groups['opcache']['rows'], 'key');
+
+    expect($php)->toBe(['version'])
+        ->and(array_slice($opcache, 0, 2))->toBe(['enabled', 'validate_timestamps'])
+        ->and($opcache)->not->toContain('hit_rate')
+        ->and($groups['opcache']['rows'][0])->toMatchArray(['label' => 'Enabled', 'value' => true])
+        ->and($groups['opcache']['rows'][1])->toMatchArray(['label' => 'Validate timestamps', 'value' => false]);
+})->with([
+    'old snapshot without opcache group' => [['php' => ['version' => '8.3.1', 'opcache' => true, 'opcache_validate_timestamps' => false]]],
+    'existing opcache group' => [[
+        'php' => ['version' => '8.3.1', 'opcache' => true, 'opcache_validate_timestamps' => false],
+        'opcache' => ['hit_rate' => 99.5, 'jit' => false],
+    ]],
+]);

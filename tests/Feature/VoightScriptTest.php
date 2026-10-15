@@ -82,7 +82,7 @@ it('posts framework-neutral system details and never fails the script on an endp
         ->and($payload['server'])->toHaveKeys(['php', 'system', 'deployment', 'database'])
         ->and($payload['server'])->not->toHaveKey('disk')
         ->and($payload['server']['deployment']['commit'])->toBe('abc1234')
-        ->and($payload['server']['system'])->toHaveKeys(['cgroup_memory_limit_bytes', 'cgroup_cpu_limit'])
+        ->and($payload['server']['system'])->toHaveKeys(['cgroup_memory_limit_bytes', 'cgroup_cpu_limit', 'cgroup_memory_current_bytes', 'cgroup_memory_peak_bytes', 'cgroup_cpu_throttled_count', 'cgroup_cpu_throttled_seconds', 'distro', 'architecture', 'uptime'])
         ->and($payload['server']['database'])->toHaveKey('size_bytes')
         // APP_URL is plain http, so no certificate is probed (and no network call is made).
         ->and($payload['server'])->not->toHaveKey('ssl');

@@ -38,6 +38,25 @@ class SystemDetailsPresenter
     {
         // Disk is no longer collected; old snapshots still carry it.
         $server = Arr::except((array) data_get($environment->systemDetails?->payload, 'server'), 'disk');
+
+        // The client reports the OPcache flags inside the php block; they read better next to the other OPcache values.
+        $php = (array) ($server['php'] ?? []);
+        $flags = [];
+
+        foreach (['opcache' => 'enabled', 'opcache_validate_timestamps' => 'validate_timestamps'] as $from => $to) {
+            if (array_key_exists($from, $php)) {
+                $flags[$to] = $php[$from];
+            }
+        }
+
+        if ($flags !== []) {
+            $server['php'] = Arr::except($php, ['opcache', 'opcache_validate_timestamps']);
+            // hit_rate is no longer collected; old snapshots still carry it.
+            $server['opcache'] = $flags + Arr::except((array) ($server['opcache'] ?? []), 'hit_rate');
+        } elseif (is_array($server['opcache'] ?? null)) {
+            $server['opcache'] = Arr::except($server['opcache'], 'hit_rate');
+        }
+
         $ordered = array_merge(
             array_intersect_key(array_flip(self::SERVER_ORDER), $server),
             $server,

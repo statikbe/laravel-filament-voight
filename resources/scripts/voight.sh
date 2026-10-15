@@ -146,9 +146,12 @@ function opcache_details(): ?array
         'memory_used_bytes' => $status['memory_usage']['used_memory'] ?? null,
         'memory_free_bytes' => $status['memory_usage']['free_memory'] ?? null,
         'memory_wasted_bytes' => $status['memory_usage']['wasted_memory'] ?? null,
-        'hit_rate' => isset($status['opcache_statistics']['opcache_hit_rate']) ? round((float) $status['opcache_statistics']['opcache_hit_rate'], 2) : null,
         'cached_scripts' => $status['opcache_statistics']['num_cached_scripts'] ?? null,
         'max_cached_keys' => $status['opcache_statistics']['max_cached_keys'] ?? null,
+        'oom_restarts' => $status['opcache_statistics']['oom_restarts'] ?? null,
+        'hash_restarts' => $status['opcache_statistics']['hash_restarts'] ?? null,
+        'interned_strings_used_bytes' => $status['interned_strings_usage']['used_memory'] ?? null,
+        'interned_strings_free_bytes' => $status['interned_strings_usage']['free_memory'] ?? null,
         'jit' => isset($status['jit']['enabled']) ? (bool) $status['jit']['enabled'] : null,
     ];
 }
@@ -272,12 +275,42 @@ function cgroup_limits(): array
     $memory = trim((string) @file_get_contents('/sys/fs/cgroup/memory.max'));
     [$quota, $period] = array_pad(explode(' ', trim((string) @file_get_contents('/sys/fs/cgroup/cpu.max'))), 2, null);
 
+    $current = trim((string) @file_get_contents('/sys/fs/cgroup/memory.current'));
+    $peak = trim((string) @file_get_contents('/sys/fs/cgroup/memory.peak'));
+    $cpuStat = (string) @file_get_contents('/sys/fs/cgroup/cpu.stat');
+    $throttledCount = preg_match('/^nr_throttled (\d+)$/m', $cpuStat, $count) === 1 ? (int) $count[1] : null;
+    $throttledUsec = preg_match('/^throttled_usec (\d+)$/m', $cpuStat, $usec) === 1 ? (int) $usec[1] : null;
+
     return [
         'cgroup_memory_limit_bytes' => ctype_digit($memory) ? (int) $memory : null,
         'cgroup_cpu_limit' => ctype_digit((string) $quota) && ctype_digit((string) $period) && (int) $period > 0
             ? round((int) $quota / (int) $period, 2)
             : null,
+        'cgroup_memory_current_bytes' => ctype_digit($current) ? (int) $current : null,
+        'cgroup_memory_peak_bytes' => ctype_digit($peak) ? (int) $peak : null,
+        'cgroup_cpu_throttled_count' => $throttledCount,
+        'cgroup_cpu_throttled_seconds' => $throttledUsec === null ? null : round($throttledUsec / 1_000_000, 1),
     ];
+}
+
+function os_distro(): ?string
+{
+    $osRelease = (string) @file_get_contents('/etc/os-release');
+
+    return preg_match('/^PRETTY_NAME=(?:"([^"]*)"|(\S*))$/m', $osRelease, $match) === 1 ? ($match[1] ?: ($match[2] ?? '') ?: null) : null;
+}
+
+function uptime_human(): ?string
+{
+    $seconds = (int) explode(' ', trim((string) @file_get_contents('/proc/uptime')))[0];
+
+    if ($seconds <= 0) {
+        return null;
+    }
+
+    [$days, $hours, $minutes] = [intdiv($seconds, 86400), intdiv($seconds % 86400, 3600), intdiv($seconds % 3600, 60)];
+
+    return $days > 0 ? "{$days}d {$hours}h" : "{$hours}h {$minutes}m";
 }
 
 function ssl_certificate(?string $url): ?array
@@ -426,6 +459,9 @@ echo json_encode([
         'php' => $phpBlock,
         'system' => safe(fn (): array => [
             'os' => PHP_OS_FAMILY . ' ' . php_uname('r'),
+            'distro' => os_distro(),
+            'architecture' => php_uname('m'),
+            'uptime' => uptime_human(),
             'server_software' => $serverSoftware,
             'load_average' => is_array($load) ? array_map(fn (float $v): float => round($v, 2), array_values($load)) : null,
             'cpu_cores' => $cpuInfo === false ? null : (preg_match_all('/^processor\s*:/m', $cpuInfo) ?: null),

@@ -29,6 +29,8 @@ class EnvironmentInfolistSchema
         'system' => Heroicon::ComputerDesktop,
         'deployment' => Heroicon::RocketLaunch,
         'database' => Heroicon::CircleStack,
+        'opcache' => Heroicon::Bolt,
+        'ssl' => Heroicon::LockClosed,
     ];
 
     public static function configure(Schema $schema): Schema
