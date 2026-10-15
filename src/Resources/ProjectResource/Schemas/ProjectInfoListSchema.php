@@ -3,7 +3,6 @@
 namespace Statikbe\FilamentVoight\Resources\ProjectResource\Schemas;
 
 use Filament\Actions\Action;
-use Filament\Forms\Components\TextInput\Actions\CopyAction;
 use Filament\Infolists\Components\RepeatableEntry;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Notifications\Notification;
@@ -12,6 +11,7 @@ use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Support\Enums\IconPosition;
 use Filament\Support\Icons\Heroicon;
+use Illuminate\Support\Js;
 use Statikbe\FilamentVoight\Models\Project;
 use Statikbe\FilamentVoight\Resources\CustomerResource;
 use Statikbe\FilamentVoight\Resources\TeamResource;
@@ -94,9 +94,12 @@ class ProjectInfoListSchema
                                         ->body($token->plainTextToken)
                                         ->persistent()
                                         ->actions([
-                                            CopyAction::make('copy_token')
+                                            Action::make('copy_token')
                                                 ->label(voightTrans('models.project.actions.copy_token'))
-                                                ->copyMessage($token->plainTextToken)
+                                                ->alpineClickHandler(
+                                                    'window.navigator.clipboard.writeText(' . Js::from($token->plainTextToken) . '); '
+                                                    . '$tooltip(' . Js::from(__('filament-forms::components.text_input.actions.copy.message')) . ', { theme: $store.theme, timeout: 2000 })'
+                                                )
                                                 ->button()
                                                 ->color('primary'),
                                         ])
