@@ -26,7 +26,7 @@ it('builds markdown with a heading per group and formatted values', function () 
         ->toContain('- **Xdebug loaded:** No')
         ->toContain('- **Load average (1/5/15 min):** 0.08 / 0.09 / 0.08')
         ->toContain('- **CPU cores:** —')
-        ->toContain('- **Free:** 40 GB')
+        ->not->toContain('40 GB')
         ->toContain("## Future Group\n- **New Field:** shiny")
         ->toContain("## Extensions\ncurl, mbstring, redis 6.3.0")
         ->not->toContain('**Extensions:**');
@@ -97,7 +97,7 @@ it('orders the new server groups and formats their byte values', function () {
 
     $server = SystemDetailsPresenter::server($environment->fresh('systemDetails'));
 
-    expect(array_keys($server))->toBe(['php', 'opcache', 'system', 'ssl', 'disk'])
+    expect(array_keys($server))->toBe(['php', 'opcache', 'system', 'ssl'])
         ->and($server['opcache']['title'])->toBe('OPcache')
         ->and($server['opcache']['rows'][0])->toMatchArray(['label' => 'Memory used', 'value' => '1 MB'])
         ->and($server['system']['rows'][0])->toMatchArray(['label' => 'Container memory limit', 'value' => '4 GB'])

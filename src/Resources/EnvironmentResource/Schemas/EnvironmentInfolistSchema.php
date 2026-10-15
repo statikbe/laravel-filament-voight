@@ -29,7 +29,6 @@ class EnvironmentInfolistSchema
         'system' => Heroicon::ComputerDesktop,
         'deployment' => Heroicon::RocketLaunch,
         'database' => Heroicon::CircleStack,
-        'disk' => Heroicon::ServerStack,
     ];
 
     public static function configure(Schema $schema): Schema
@@ -158,7 +157,7 @@ class EnvironmentInfolistSchema
     }
 
     /**
-     * PHP alone on the left, every other group stacked on the right. The database group stays out:
+     * PHP and OPcache on the left, every other group stacked on the right. The database group stays out:
      * the stat card already shows it (the Markdown export keeps it).
      *
      * @param  array<string, array{title: string, rows: array<int, array{key: string, label: string, value: string|bool|null}>}>  $groups
@@ -166,11 +165,11 @@ class EnvironmentInfolistSchema
     private static function serverColumns(array $groups): Grid
     {
         $groups = Arr::except($groups, 'database');
-        $left = Arr::only($groups, 'php');
+        $left = Arr::only($groups, ['php', 'opcache']);
 
         return Grid::make(['default' => 1, 'lg' => 2])->components([
             Group::make(self::sections($left, 'server')),
-            Group::make(self::sections(Arr::except($groups, 'php'), 'server')),
+            Group::make(self::sections(Arr::except($groups, ['php', 'opcache']), 'server')),
         ]);
     }
 

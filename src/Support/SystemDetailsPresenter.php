@@ -2,6 +2,7 @@
 
 namespace Statikbe\FilamentVoight\Support;
 
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Lang;
 use Illuminate\Support\Number;
 use Illuminate\Support\Str;
@@ -14,7 +15,7 @@ use Statikbe\FilamentVoight\Models\Environment;
 class SystemDetailsPresenter
 {
     /** Known server groups come first, in this order; unknown groups follow. */
-    private const array SERVER_ORDER = ['php', 'opcache', 'system', 'deployment', 'database', 'ssl', 'disk'];
+    private const array SERVER_ORDER = ['php', 'opcache', 'system', 'deployment', 'database', 'ssl'];
 
     /** Package sections from `about` that add noise, not insight. */
     private const array HIDDEN_FRAMEWORK_GROUPS = ['livewire', 'spatie_permissions', 'filament_shield'];
@@ -35,7 +36,8 @@ class SystemDetailsPresenter
      */
     public static function server(Environment $environment): array
     {
-        $server = (array) data_get($environment->systemDetails?->payload, 'server');
+        // Disk is no longer collected; old snapshots still carry it.
+        $server = Arr::except((array) data_get($environment->systemDetails?->payload, 'server'), 'disk');
         $ordered = array_merge(
             array_intersect_key(array_flip(self::SERVER_ORDER), $server),
             $server,

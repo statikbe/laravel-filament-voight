@@ -319,8 +319,12 @@ function ssl_certificate(?string $url): ?array
 
 function commit(string $cwd): ?string
 {
-    // Deployer writes REVISION into the release directory; checkouts have .git instead.
-    $revision = @file_get_contents($cwd . '/REVISION');
+    // VOIGHT_COMMIT (set by the deploy) wins; else the Deployer REVISION file in the release directory; checkouts have .git instead.
+    $revision = getenv('VOIGHT_COMMIT');
+
+    if (! is_string($revision) || $revision === '') {
+        $revision = @file_get_contents($cwd . '/REVISION');
+    }
 
     if ($revision === false) {
         $head = trim((string) @file_get_contents($cwd . '/.git/HEAD'));
@@ -434,10 +438,6 @@ echo json_encode([
             'server_time' => date('Y-m-d H:i:s T'),
         ]),
         'database' => $database,
-        'disk' => safe(fn (): array => [
-            'free_bytes' => @disk_free_space($cwd) ?: null,
-            'total_bytes' => @disk_total_space($cwd) ?: null,
-        ]),
     ] + array_filter([
         // Groups without data are left out so the UI shows no empty section.
         'opcache' => $opcache,

@@ -71,6 +71,8 @@ it('renders the view page with the snapshot', function () {
         ->assertSee('Linux 6.1')
         ->assertSee('web-01')
         ->assertSee('/var/www/html')
+        // Old snapshots still hold server.disk; it no longer renders.
+        ->assertDontSee('Disk')
         ->assertSee('Drivers')
         ->assertSee('redis')
         ->assertSee('Future Group')

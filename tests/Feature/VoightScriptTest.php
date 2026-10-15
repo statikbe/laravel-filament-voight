@@ -35,6 +35,7 @@ it('posts framework-neutral system details and never fails the script on an endp
         'PROJECT_CODE' => 'demo',
         'APP_ENV' => 'staging',
         'APP_DEBUG' => 'true',
+        'VOIGHT_COMMIT' => 'abc1234def',
         'APP_URL' => "http://127.0.0.1:{$port}",
     ]);
 
@@ -78,7 +79,9 @@ it('posts framework-neutral system details and never fails the script on an endp
         ->and($payload['server']['php']['version'])->toBe(PHP_VERSION)
         // The web server runs with a different memory_limit than the CLI; without a docroot the CLI value is posted.
         ->and($payload['server']['php']['memory_limit'] === '345M')->toBe($docroot === 'public')
-        ->and($payload['server'])->toHaveKeys(['php', 'system', 'deployment', 'database', 'disk'])
+        ->and($payload['server'])->toHaveKeys(['php', 'system', 'deployment', 'database'])
+        ->and($payload['server'])->not->toHaveKey('disk')
+        ->and($payload['server']['deployment']['commit'])->toBe('abc1234')
         ->and($payload['server']['system'])->toHaveKeys(['cgroup_memory_limit_bytes', 'cgroup_cpu_limit'])
         ->and($payload['server']['database'])->toHaveKey('size_bytes')
         // APP_URL is plain http, so no certificate is probed (and no network call is made).

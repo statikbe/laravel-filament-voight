@@ -198,7 +198,6 @@ return [
                     'deployment' => 'Deployment',
                     'database' => 'Database',
                     'ssl' => 'SSL certificate',
-                    'disk' => 'Disk',
                 ],
                 'labels' => [
                     'sapi' => 'SAPI',
