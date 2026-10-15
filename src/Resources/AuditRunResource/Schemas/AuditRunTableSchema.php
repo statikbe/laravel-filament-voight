@@ -11,6 +11,7 @@ use Statikbe\FilamentVoight\Enums\AuditRunStatus;
 use Statikbe\FilamentVoight\Enums\AuditRunTrigger;
 use Statikbe\FilamentVoight\Enums\Severity;
 use Statikbe\FilamentVoight\Models\AuditRun;
+use Statikbe\FilamentVoight\Resources\Components\EnvironmentNameColumn;
 
 class AuditRunTableSchema
 {
@@ -29,7 +30,7 @@ class AuditRunTableSchema
                     ->label(voightTrans('models.audit_run.fields.project'))
                     ->searchable()
                     ->visible($showProject),
-                TextColumn::make('environment.name')
+                EnvironmentNameColumn::make('environment.name')
                     ->label(voightTrans('models.audit_run.fields.environment'))
                     ->searchable(),
                 TextColumn::make('trigger')

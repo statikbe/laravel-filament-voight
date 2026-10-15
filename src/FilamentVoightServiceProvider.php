@@ -208,6 +208,7 @@ class FilamentVoightServiceProvider extends PackageServiceProvider
             'create_voight_nightly_sweeps_table',
             'create_voight_osv_scans_table',
             'create_voight_environment_system_details_table',
+            'add_avatar_path_to_voight_teams_table',
         ];
     }
 }

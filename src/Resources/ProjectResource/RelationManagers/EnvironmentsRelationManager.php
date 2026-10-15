@@ -10,6 +10,7 @@ use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Schemas\Schema;
+use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Columns\ToggleColumn;
@@ -20,6 +21,7 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Statikbe\FilamentVoight\Enums\EnvironmentIssueType;
 use Statikbe\FilamentVoight\Models\Environment;
+use Statikbe\FilamentVoight\Resources\Components\EnvironmentNameColumn;
 use Statikbe\FilamentVoight\Resources\EnvironmentResource;
 use Statikbe\FilamentVoight\Services\EnvironmentHealthService;
 use Statikbe\FilamentVoight\Support\EnvironmentIssue;
@@ -29,6 +31,8 @@ class EnvironmentsRelationManager extends RelationManager
     private const string HEALTHY = 'healthy';
 
     protected static string $relationship = 'environments';
+
+    protected static string | \BackedEnum | null $icon = Heroicon::OutlinedServerStack;
 
     public static function getTitle(Model $ownerRecord, string $pageClass): string
     {
@@ -54,7 +58,7 @@ class EnvironmentsRelationManager extends RelationManager
         return $table
             ->modifyQueryUsing(fn (Builder $query) => $query->with([...Environment::HEALTH_RELATIONS, 'systemDetails']))
             ->columns([
-                TextColumn::make('name')
+                EnvironmentNameColumn::make('name')
                     ->label(voightTrans('models.environment.fields.name'))
                     ->sortable(),
                 IconColumn::make('health')

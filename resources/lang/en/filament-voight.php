@@ -114,6 +114,7 @@ return [
             'plural' => 'Teams',
             'fields' => [
                 'name' => 'Name',
+                'avatar' => 'Avatar',
                 'users' => 'Users',
                 'email' => 'Email',
                 'select_user' => 'Select a user',
@@ -351,6 +352,19 @@ return [
             ],
             'actions' => [
                 'open_source' => 'View on source',
+            ],
+            'view' => [
+                'description_tab' => 'Description',
+                'affected_projects_title' => 'Affected Projects',
+                'affected_packages_title' => 'Affected Packages',
+                'columns' => [
+                    'package' => 'Package',
+                ],
+                'empty' => [
+                    'no_affected_projects_heading' => 'No project is affected',
+                    'no_affected_projects_description' => 'No environment had this vulnerability in its latest audit run.',
+                    'no_affected_packages_heading' => 'No affected packages recorded',
+                ],
             ],
         ],
         'vulnerable_package_range' => [
