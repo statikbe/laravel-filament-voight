@@ -74,3 +74,11 @@ it('stores dependency edges between installed packages and drops parent_package_
     expect(Schema::hasColumns('voight_environment_package_dependencies', ['parent_id', 'child_id', 'constraint', 'kind']))->toBeTrue()
         ->and(Schema::hasColumn('voight_environment_packages', 'parent_package_id'))->toBeFalse();
 });
+
+it('creates the async scan tables', function () {
+    expect(Schema::hasTable('voight_nightly_sweeps'))->toBeTrue()
+        ->and(Schema::hasColumns('voight_osv_scans', [
+            'id', 'scanner_scan_id', 'type', 'status', 'environment_id', 'nightly_sweep_id',
+            'trigger', 'meta', 'resubmits', 'input_path', 'error_message', 'created_at', 'updated_at',
+        ]))->toBeTrue();
+});

@@ -19,6 +19,8 @@ CI/CD project  →  POST /api/voight/lock-file  →  Voight app  →  ProcessLoc
 
 1. A `voight.sh` (or `voight:sync-lockfile`) runs in each project on deploy/install and POSTs lockfiles to the Voight API.
 2. `ProcessLockFilesJob` parses `composer.lock` / `package-lock.json` and syncs the full dependency tree into the database.
+3. `RunOsvScanJob` dispatches immediately after every successful sync, submitting that environment's stored lockfiles as an asynchronous scan (`POST /scans`, upload, then callback or polling) and persisting results as `AuditRun`, `AuditFinding`, and `Vulnerability` records.
+4. `RunNightlyOsvScanJob` runs on a daily cron. Instead of re-scanning every environment's lockfiles, it collects the **distinct** `(ecosystem, name, version)` set across all environments flagged `scan_nightly`, scans it as a few asynchronous `packages` batches, and fans the merged results back out to per-environment `AuditRun`s. Environments containing commit-pinned (`dev-*`) dependencies fall back to per-environment scans. See [specs/15-async-osv-scans.md](specs/15-async-osv-scans.md).
 3. `RunOsvScanJob` dispatches immediately after every successful sync, sending that environment's stored lockfiles to the OSV Scanner Lambda's `/locks` endpoint and persisting results as `AuditRun`, `AuditFinding`, and `Vulnerability` records.
 4. `RunNightlyOsvScanJob` runs on a daily cron. Instead of re-scanning every environment's lockfiles, it collects the **distinct** `(ecosystem, name, version)` set across all environments flagged `scan_nightly`, scans it in a few batched calls to the Lambda's `/packages` endpoint, and fans the results back out to per-environment `AuditRun`s. Environments containing commit-pinned (`dev-*`) dependencies fall back to the per-environment `/locks` path.
 5. `voight:push-system-details` runs on each monitored server (after deploy and daily) and POSTs a server snapshot (PHP, OS, database, deployment, framework details; for Laravel the `about` output) to `/api/voight/system-details`. Voight keeps the latest snapshot per environment.
@@ -92,8 +94,15 @@ return [
     ],
 
     'scanner' => [
-        'url'   => env('VOIGHT_SCANNER_URL'),
-        'token' => env('VOIGHT_SCANNER_TOKEN'),
+        'url'             => env('VOIGHT_SCANNER_URL'),
+        'token'           => env('VOIGHT_SCANNER_TOKEN'),
+        'callback_url'    => env('VOIGHT_SCANNER_CALLBACK_URL'),
+        'callback_secret' => env('VOIGHT_SCANNER_CALLBACK_SECRET'),
+        'batch_size'      => (int) env('VOIGHT_SCANNER_BATCH_SIZE', 5000),
+        'poll_interval'   => (int) env('VOIGHT_SCANNER_POLL_INTERVAL', 15),
+        'max_resubmits'   => (int) env('VOIGHT_SCANNER_MAX_RESUBMITS', 2),
+        'reap_scans_after_minutes'  => (int) env('VOIGHT_SCANNER_REAP_SCANS_AFTER_MINUTES', 120),
+        'reap_sweeps_after_minutes' => (int) env('VOIGHT_SCANNER_REAP_SWEEPS_AFTER_MINUTES', 360),
     ],
 ];
 ```
@@ -102,9 +111,17 @@ Add to your `.env`:
 
 ```dotenv
 VOIGHT_LOCKFILES_DISK=voight-lockfiles
-VOIGHT_SCANNER_URL=https://your-lambda-url/locks
+VOIGHT_SCANNER_URL=https://your-lambda-url/prod/scans
 VOIGHT_SCANNER_TOKEN=your-lambda-secret
+VOIGHT_SCANNER_CALLBACK_SECRET=at-least-32-characters-equal-to-the-lambda-CALLBACK_SECRET
 ```
+
+- `VOIGHT_SCANNER_URL` must point at the lambda's `ScansUrl` output (ending in `/scans`). `VOIGHT_SCANNER_PACKAGES_URL` no longer exists.
+- `VOIGHT_SCANNER_CALLBACK_SECRET` must equal the lambda's `CALLBACK_SECRET` (minimum 32 characters). The scanner signs completion callbacks to `POST api/voight/scans/callback` with it.
+- `VOIGHT_SCANNER_BATCH_SIZE` is the number of packages per nightly batch. The scanner accepts at most 8000 per batch, so values are clamped to 1..8000.
+- `VOIGHT_SCANNER_CALLBACK_URL` is optional: unset uses the package route, an empty string disables callbacks. A callback URL that is not `https`, or any callback URL while `VOIGHT_SCANNER_CALLBACK_SECRET` is unset, is omitted (a warning is logged); polling still completes the scan.
+- Scans are asynchronous, so a **queue worker is required**. Publish and run the new migrations: `php artisan vendor:publish --tag=filament-voight-migrations && php artisan migrate`.
+- Queue timeouts: the scan jobs run for up to 300 seconds and `RecordNightlySweepJob` for up to 900 seconds. The queue connection's `retry_after` (in `config/queue.php`) must be **greater than 900**, and the worker's `--timeout` must be **at least 900** (e.g. `php artisan queue:work --timeout=900`, with `retry_after` set to 960). Otherwise a long-running job is killed, or handed to a second worker while the first is still running.
 
 Add the lockfiles disk to `config/filesystems.php`:
 
@@ -237,7 +254,7 @@ The command does nothing (exit 0) when `VOIGHT_API_BASE_URL` is empty and refuse
 
 ```bash
 php artisan voight:run-osv-scan --nightly                                     # deduplicated nightly sweep
-php artisan voight:run-osv-scan                                               # all environments (per-environment /locks)
+php artisan voight:run-osv-scan                                               # all environments (per-environment scans)
 php artisan voight:run-osv-scan --project=my-project                          # one project
 php artisan voight:run-osv-scan --project=my-project --environment=production # one environment
 ```
@@ -255,6 +272,13 @@ The run time is configurable via a cron expression (`scanner.nightly_cron`, defa
 ```dotenv
 VOIGHT_SCANNER_NIGHTLY_CRON="0 2 * * *"
 ```
+
+The package also schedules `voight:reap-stranded-scans` hourly (independent of the nightly cron). It recovers scans that can no longer finish on their own — a lost poll job, or a worker killed mid-recording:
+
+- a scan still `pending` or `processing` after `scanner.reap_scans_after_minutes` (default 120) is failed with `scan abandoned: no result after N minutes`. A lockfile scan records one failed audit run; a nightly batch fails its sweep, recording a failed run per sweep environment;
+- a nightly sweep still `scanning` or `recording` after `scanner.reap_sweeps_after_minutes` (default 360) is failed, recording a failed nightly run per environment.
+
+A scan that completes at the same moment is never double-recorded: the reaper and the completion claim the row atomically and only one wins. Keep the thresholds well above the 30-minute poll deadline and the 900-second recording timeout. You can also run `php artisan voight:reap-stranded-scans` by hand.
 
 Scans also trigger automatically after every successful lockfile sync (post-sync hook). Environments can be excluded from the nightly sweep by turning off their **Nightly scan** toggle (the `scan_nightly` flag).
 

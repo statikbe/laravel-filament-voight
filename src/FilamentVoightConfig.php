@@ -3,6 +3,8 @@
 namespace Statikbe\FilamentVoight;
 
 use Illuminate\Foundation\Auth\User;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Route;
 use Statikbe\FilamentVoight\Models\AlertRecipient;
 use Statikbe\FilamentVoight\Models\AlertSetting;
 use Statikbe\FilamentVoight\Models\AuditFinding;
@@ -11,6 +13,8 @@ use Statikbe\FilamentVoight\Models\Customer;
 use Statikbe\FilamentVoight\Models\DependencySync;
 use Statikbe\FilamentVoight\Models\Environment;
 use Statikbe\FilamentVoight\Models\EnvironmentPackage;
+use Statikbe\FilamentVoight\Models\NightlySweep;
+use Statikbe\FilamentVoight\Models\OsvScan;
 use Statikbe\FilamentVoight\Models\EnvironmentSystemDetail;
 use Statikbe\FilamentVoight\Models\Package;
 use Statikbe\FilamentVoight\Models\Project;
@@ -34,19 +38,79 @@ class FilamentVoightConfig
         return $this->packageConfig('scanner.url');
     }
 
-    public function getScannerPackagesUrl(): ?string
-    {
-        return $this->packageConfig('scanner.packages_url');
-    }
-
     public function getScannerToken(): ?string
     {
         return $this->packageConfig('scanner.token');
     }
 
+    /** Packages per nightly batch, clamped to the scanner's 1..8000 (MAX_PACKAGES_PER_BATCH). */
     public function getScannerBatchSize(): int
     {
-        return (int) $this->packageConfig('scanner.batch_size', 5000);
+        return max(1, min(8000, (int) $this->packageConfig('scanner.batch_size', 5000)));
+    }
+
+    public function getScannerCallbackSecret(): ?string
+    {
+        $secret = $this->packageConfig('scanner.callback_secret');
+
+        return is_string($secret) && $secret !== '' ? $secret : null;
+    }
+
+    /**
+     * Where the scanner posts completion callbacks, or null when callbacks are
+     * off (polling still completes every scan). The scanner only accepts https,
+     * and callbacks need a callback secret to be verified.
+     */
+    public function getScannerCallbackUrl(): ?string
+    {
+        $url = $this->packageConfig('scanner.callback_url');
+
+        if ($url === null) {
+            // Default to the package's own callback route, when it is registered.
+            $url = Route::has('voight.scans.callback') ? route('voight.scans.callback') : null;
+        }
+
+        if ($url === null || $url === '') {
+            return null;
+        }
+
+        $url = (string) $url;
+
+        if ($this->getScannerCallbackSecret() === null) {
+            Log::warning('Voight scanner callbacks are disabled: VOIGHT_SCANNER_CALLBACK_SECRET is not set, so every callback would be rejected. Scans still complete by polling.');
+
+            return null;
+        }
+
+        if (! str_starts_with(strtolower($url), 'https://')) {
+            Log::warning("Voight scanner callbacks are disabled: the callback URL {$url} is not https. Scans still complete by polling.");
+
+            return null;
+        }
+
+        return $url;
+    }
+
+    public function getScannerPollInterval(): int
+    {
+        return (int) ($this->packageConfig('scanner.poll_interval') ?? 15);
+    }
+
+    public function getScannerMaxResubmits(): int
+    {
+        return (int) ($this->packageConfig('scanner.max_resubmits') ?? 2);
+    }
+
+    /** Minutes a scan may stay pending or processing before the reaper fails it. */
+    public function getScannerReapScansAfterMinutes(): int
+    {
+        return (int) ($this->packageConfig('scanner.reap_scans_after_minutes') ?? 120);
+    }
+
+    /** Minutes a nightly sweep may stay scanning or recording before the reaper fails it. */
+    public function getScannerReapSweepsAfterMinutes(): int
+    {
+        return (int) ($this->packageConfig('scanner.reap_sweeps_after_minutes') ?? 360);
     }
 
     public function getScannerNightlyCron(): string
@@ -181,6 +245,22 @@ class FilamentVoightConfig
     public function getAuditFindingModel(): string
     {
         return $this->packageConfig('models.audit_finding', AuditFinding::class);
+    }
+
+    /**
+     * @return class-string<OsvScan>
+     */
+    public function getOsvScanModel(): string
+    {
+        return $this->packageConfig('models.osv_scan', OsvScan::class);
+    }
+
+    /**
+     * @return class-string<NightlySweep>
+     */
+    public function getNightlySweepModel(): string
+    {
+        return $this->packageConfig('models.nightly_sweep', NightlySweep::class);
     }
 
     /**

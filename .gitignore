@@ -18,3 +18,4 @@ view-package-*
 .claude/settings.local.json
 .claude/scripts
 
+!tests/Fixtures/lockfiles/composer/composer.lock
