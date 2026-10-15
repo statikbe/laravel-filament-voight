@@ -36,15 +36,15 @@ it('posts the snapshot with the bearer token', function () {
             && $request->hasHeader('Authorization', 'Bearer secret')
             && $request['environment'] === app()->environment()
             && filled($request['collected_at'])
-            && $request['versions']['php'] === PHP_VERSION
-            && array_key_exists('laravel', $request['versions'])
+            && $request['framework']['name'] === 'laravel'
+            && array_key_exists('groups', $request['framework'])
+            && $request['app']['environment'] === app()->environment()
             && $request['server']['php']['version'] === PHP_VERSION
-            && in_array('json', $request['server']['php']['extensions'], true)
+            && array_key_exists('json', $request['server']['php']['extensions'])
             && $request['server']['php']['sapi'] === 'cli'
             && array_key_exists('memory_limit', $request['server']['php'])
             && array_key_exists('commit', $request['server']['deployment'])
-            && isset($request['server']['system']['os'])
-            && array_key_exists('laravel', $request->data());
+            && isset($request['server']['system']['os']);
     });
 });
 
@@ -72,7 +72,7 @@ it('fails on a non-2xx response', function () {
 });
 
 it('uses the web-server snapshot from a signed loopback request when it works', function () {
-    $web = ['collected_at' => '2026-10-06T09:00:00+00:00', 'versions' => ['php' => '8.4.0'], 'server' => ['php' => ['sapi' => 'fpm-fcgi']], 'laravel' => null];
+    $web = ['collected_at' => '2026-10-06T09:00:00+00:00', 'server' => ['php' => ['version' => '8.4.0', 'sapi' => 'fpm-fcgi']], 'framework' => ['name' => 'laravel', 'version' => null, 'groups' => null]];
     Http::fake([
         'http://loopback.test/*' => Http::response($web),
         '*' => Http::response(null, 204),

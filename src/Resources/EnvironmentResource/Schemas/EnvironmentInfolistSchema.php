@@ -12,7 +12,9 @@ use Filament\Schemas\Components\Tabs\Tab;
 use Filament\Schemas\Components\Text;
 use Filament\Schemas\Schema;
 use Filament\Support\Enums\FontFamily;
+use Filament\Support\Enums\TextSize;
 use Filament\Support\Icons\Heroicon;
+use Illuminate\Support\Arr;
 use Statikbe\FilamentVoight\Models\Environment;
 use Statikbe\FilamentVoight\Support\SystemDetailsPresenter;
 
@@ -35,22 +37,20 @@ class EnvironmentInfolistSchema
         $hasSnapshot = fn (Environment $record): bool => $record->systemDetails !== null;
 
         return $schema->components([
-            Grid::make(['default' => 2, 'md' => 3, 'xl' => 6])
+            Grid::make(['default' => 2, 'md' => 3, 'xl' => 4])
                 ->columnSpanFull()
                 ->visible($hasSnapshot)
                 ->components([
-                    self::stat('laravel', Heroicon::Cube, fn (Environment $record): ?string => $record->systemDetails?->laravel_version),
-                    self::stat('filament', Heroicon::Sparkles, fn (Environment $record): ?string => $record->systemDetails?->filament_version),
                     self::stat('php', Heroicon::CodeBracket, fn (Environment $record): ?string => $record->systemDetails?->php_version),
                     self::stat('database', Heroicon::CircleStack, fn (Environment $record): ?string => SystemDetailsPresenter::database($record)),
-                    self::stat('environment', Heroicon::GlobeAlt, fn (Environment $record): string => (string) (SystemDetailsPresenter::aboutValue($record, 'environment') ?? $record->name)),
+                    self::stat('environment', Heroicon::GlobeAlt, fn (Environment $record): string => (string) (SystemDetailsPresenter::appValue($record, 'environment') ?? $record->name)),
                     Section::make()
                         ->compact()
                         ->components([
                             TextEntry::make('stat_debug_mode')
                                 ->label(voightTrans('models.environment.system_details.stats.debug_mode'))
                                 ->icon(Heroicon::BugAnt)
-                                ->state(fn (Environment $record): ?bool => is_bool($debug = SystemDetailsPresenter::aboutValue($record, 'debug_mode')) ? $debug : null)
+                                ->state(fn (Environment $record): ?bool => is_bool($debug = SystemDetailsPresenter::appValue($record, 'debug_mode')) ? $debug : null)
                                 ->formatStateUsing(fn (?bool $state): string => $state === null ? '—' : voightTrans('models.environment.system_details.' . ($state ? 'yes' : 'no')))
                                 ->badge()
                                 ->color(fn (?bool $state): string => match ($state) {
@@ -87,41 +87,50 @@ class EnvironmentInfolistSchema
     private static function tabs(Environment $record): Tabs
     {
         $tabs = [];
-        $laravel = SystemDetailsPresenter::laravel($record);
+        $framework = SystemDetailsPresenter::framework($record);
         $extensions = SystemDetailsPresenter::extensions($record);
 
-        if ($laravel !== []) {
-            $tabs[] = Tab::make(voightTrans('models.environment.system_details.tabs.laravel'))
+        if ($framework !== []) {
+            $tabs[] = Tab::make(SystemDetailsPresenter::frameworkTitle($record))
+                ->id('framework')
                 ->icon(Heroicon::Cube)
-                ->components([self::laravelColumns($laravel)]);
+                ->components([self::frameworkColumns($framework)]);
         }
 
         $tabs[] = Tab::make(voightTrans('models.environment.system_details.tabs.server'))
+            ->id('server')
             ->icon(Heroicon::ServerStack)
-            ->components([self::groupGrid(SystemDetailsPresenter::server($record), 'server')]);
+            ->components([self::serverColumns(SystemDetailsPresenter::server($record))]);
 
         if ($extensions !== []) {
             $tabs[] = Tab::make(voightTrans('models.environment.system_details.tabs.extensions'))
+                ->id('extensions')
                 ->icon(Heroicon::PuzzlePiece)
                 ->badge(count($extensions))
                 ->components([
+                    Text::make(voightTrans('models.environment.system_details.extensions_description', [
+                        'version' => data_get($record->systemDetails?->payload, 'server.php.version') ?? '—',
+                    ]))
+                        ->size(TextSize::Small)
+                        ->color('gray'),
                     TextEntry::make('php_extensions')
                         ->hiddenLabel()
-                        ->state($extensions)
+                        ->state(SystemDetailsPresenter::extensionLabels($record))
                         ->badge(),
                 ]);
         }
 
-        return Tabs::make()->tabs($tabs)->columnSpanFull();
+        return Tabs::make()->tabs($tabs)->persistTabInQueryString()->columnSpanFull();
     }
 
     /**
-     * Two independent column stacks: environment on the left, cache and storage on the right,
-     * every other group goes to whichever stack currently has fewer rows.
+     * Two independent column stacks. Placement hints apply only when the known Laravel groups exist:
+     * environment on the left, cache and storage on the right. Every other group, whatever the
+     * framework, goes to whichever stack currently has fewer rows.
      *
      * @param  array<string, array{title: string, rows: array<int, array{key: string, label: string, value: string|bool|null}>}>  $groups
      */
-    private static function laravelColumns(array $groups): Grid
+    private static function frameworkColumns(array $groups): Grid
     {
         $columns = [[], []];
         $rowCounts = [0, 0];
@@ -143,17 +152,26 @@ class EnvironmentInfolistSchema
         }
 
         return Grid::make(['default' => 1, 'lg' => 2])->components(array_map(
-            fn (array $column): Group => Group::make(self::sections($column, 'laravel')),
+            fn (array $column): Group => Group::make(self::sections($column, 'framework')),
             $columns,
         ));
     }
 
     /**
+     * PHP alone on the left, every other group stacked on the right. The database group stays out:
+     * the stat card already shows it (the Markdown export keeps it).
+     *
      * @param  array<string, array{title: string, rows: array<int, array{key: string, label: string, value: string|bool|null}>}>  $groups
      */
-    private static function groupGrid(array $groups, string $prefix): Grid
+    private static function serverColumns(array $groups): Grid
     {
-        return Grid::make(['default' => 1, 'lg' => 2])->components(self::sections($groups, $prefix));
+        $groups = Arr::except($groups, 'database');
+        $left = Arr::only($groups, 'php');
+
+        return Grid::make(['default' => 1, 'lg' => 2])->components([
+            Group::make(self::sections($left, 'server')),
+            Group::make(self::sections(Arr::except($groups, 'php'), 'server')),
+        ]);
     }
 
     /**
@@ -194,6 +212,16 @@ class EnvironmentInfolistSchema
                 ->color($row['value'] ? 'success' : 'gray');
         }
 
-        return $entry->state($row['value'])->fontFamily(FontFamily::Mono);
+        $entry->state($row['value'])->fontFamily(FontFamily::Mono);
+
+        if (is_string($row['value']) && str_starts_with($row['value'], '/')) {
+            return $entry
+                ->color('gray')
+                ->icon(pathinfo($row['value'], PATHINFO_EXTENSION) !== '' ? Heroicon::DocumentText : Heroicon::Folder)
+                ->copyable()
+                ->wrap();
+        }
+
+        return $entry;
     }
 }

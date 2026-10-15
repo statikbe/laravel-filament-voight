@@ -11,7 +11,7 @@ use Throwable;
 class SystemDetailsCollector
 {
     /**
-     * @return array{collected_at: string, versions: array<string, string|null>, server: array<string, array<string, mixed>>, laravel: array<string, mixed>|null}
+     * @return array{collected_at: string, app: array{environment: string, debug_mode: bool}, framework: array{name: string, version: string|null, groups: array<string, mixed>|null}, server: array<string, array<string, mixed>>}
      */
     public function collect(): array
     {
@@ -22,28 +22,20 @@ class SystemDetailsCollector
         try {
             return [
                 'collected_at' => now()->toIso8601String(),
-                'versions' => $this->versions(),
+                'app' => [
+                    'environment' => app()->environment(),
+                    'debug_mode' => (bool) config('app.debug'),
+                ],
+                'framework' => [
+                    'name' => 'laravel',
+                    'version' => $this->packageVersion('laravel/framework'),
+                    'groups' => $this->aboutGroups(),
+                ],
                 'server' => $this->server(),
-                'laravel' => $this->laravel(),
             ];
         } finally {
             app()->setLocale($locale);
         }
-    }
-
-    /**
-     * Mirrored into indexed columns on the receiving side so projects can be filtered by stack version.
-     *
-     * @return array<string, string|null>
-     */
-    private function versions(): array
-    {
-        return [
-            'php' => PHP_VERSION,
-            'laravel' => $this->packageVersion('laravel/framework'),
-            'filament' => $this->packageVersion('filament/filament'),
-            'livewire' => $this->packageVersion('livewire/livewire'),
-        ];
     }
 
     private function packageVersion(string $package): ?string
@@ -92,7 +84,10 @@ class SystemDetailsCollector
             'opcache_validate_timestamps' => $this->ini('opcache.validate_timestamps') === null
                 ? null
                 : filter_var($this->ini('opcache.validate_timestamps'), FILTER_VALIDATE_BOOLEAN),
-            'extensions' => collect(get_loaded_extensions())->sort(SORT_NATURAL | SORT_FLAG_CASE)->values()->all(),
+            'extensions' => collect(get_loaded_extensions())
+                ->mapWithKeys(fn (string $name): array => [$name => phpversion($name) ?: null])
+                ->sortKeys(SORT_NATURAL | SORT_FLAG_CASE)
+                ->all(),
         ];
     }
 
@@ -225,7 +220,7 @@ class SystemDetailsCollector
     /**
      * @return array<string, mixed>|null
      */
-    private function laravel(): ?array
+    private function aboutGroups(): ?array
     {
         try {
             if (Artisan::call('about', ['--json' => true]) !== 0) {

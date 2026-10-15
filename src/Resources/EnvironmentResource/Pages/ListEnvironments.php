@@ -35,8 +35,6 @@ class ListEnvironments extends Page implements HasTable
 
     protected static ?string $slug = 'environments';
 
-    private const array VERSION_COLUMNS = ['php_version', 'laravel_version', 'filament_version', 'livewire_version'];
-
     public static function canAccess(): bool
     {
         return ProjectResource::canViewAny();
@@ -75,6 +73,7 @@ class ListEnvironments extends Page implements HasTable
                 ->searchable(),
             TextColumn::make('name')
                 ->label(voightTrans('models.environment.fields.name'))
+                ->badge()
                 ->searchable()
                 ->sortable(),
         ];
@@ -85,12 +84,10 @@ class ListEnvironments extends Page implements HasTable
             $direction,
         );
 
-        foreach (self::VERSION_COLUMNS as $column) {
-            $columns[] = TextColumn::make("systemDetails.{$column}")
-                ->label(voightTrans("models.environment.fields.{$column}"))
-                ->placeholder('—')
-                ->sortable(query: $sortBy($column));
-        }
+        $columns[] = TextColumn::make('systemDetails.php_version')
+            ->label(voightTrans('models.environment.fields.php_version'))
+            ->placeholder('—')
+            ->sortable(query: $sortBy('php_version'));
 
         $columns[] = TextColumn::make('systemDetails.received_at')
             ->label(voightTrans('models.environment.fields.system_details_received_at'))
@@ -109,22 +106,28 @@ class ListEnvironments extends Page implements HasTable
                         true: fn (Builder $query): Builder => $query->whereHas('systemDetails'),
                         false: fn (Builder $query): Builder => $query->whereDoesntHave('systemDetails'),
                     ),
-                ...array_map(
-                    fn (string $column): SelectFilter => SelectFilter::make($column)
-                        ->label(voightTrans("models.environment.fields.{$column}"))
-                        ->options(fn (): array => EnvironmentSystemDetail::query()
-                            ->whereIn('environment_id', $environmentModel::query()->whereIn('project_id', $projectIds())->select('id'))
-                            ->whereNotNull($column)
-                            ->distinct()
-                            ->orderBy($column)
-                            ->pluck($column, $column)
-                            ->all())
-                        ->query(fn (Builder $query, array $data): Builder => $query->when(
-                            filled($data['value'] ?? null),
-                            fn (Builder $query): Builder => $query->whereHas('systemDetails', fn (Builder $query): Builder => $query->where($column, $data['value'])),
-                        )),
-                    self::VERSION_COLUMNS,
-                ),
+                SelectFilter::make('name')
+                    ->label(voightTrans('models.environment.fields.name'))
+                    ->multiple()
+                    ->options(fn (): array => $environmentModel::query()
+                        ->whereIn('project_id', $projectIds())
+                        ->distinct()
+                        ->orderBy('name')
+                        ->pluck('name', 'name')
+                        ->all()),
+                SelectFilter::make('php_version')
+                    ->label(voightTrans('models.environment.fields.php_version'))
+                    ->options(fn (): array => EnvironmentSystemDetail::query()
+                        ->whereIn('environment_id', $environmentModel::query()->whereIn('project_id', $projectIds())->select('id'))
+                        ->whereNotNull('php_version')
+                        ->distinct()
+                        ->orderBy('php_version')
+                        ->pluck('php_version', 'php_version')
+                        ->all())
+                    ->query(fn (Builder $query, array $data): Builder => $query->when(
+                        filled($data['value'] ?? null),
+                        fn (Builder $query): Builder => $query->whereHas('systemDetails', fn (Builder $query): Builder => $query->where('php_version', $data['value'])),
+                    )),
             ])
             ->recordUrl(fn (Environment $record): string => EnvironmentResource::getUrl('view', [
                 'project' => $record->project,

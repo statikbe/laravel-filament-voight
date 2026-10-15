@@ -22,9 +22,9 @@ function systemDetailsPayload(array $overrides = []): array
     return array_merge([
         'environment' => 'production',
         'collected_at' => '2026-10-06T09:00:00+00:00',
-        'versions' => ['php' => '8.3.12', 'laravel' => '12.0.0', 'filament' => '5.0.0', 'livewire' => null],
-        'server' => ['php' => ['version' => '8.3.12', 'extensions' => ['curl', 'mbstring']]],
-        'laravel' => ['environment' => ['laravel_version' => '12.0.0']],
+        'app' => ['environment' => 'production', 'debug_mode' => false],
+        'framework' => ['name' => 'laravel', 'version' => '12.0.0', 'groups' => ['environment' => ['laravel_version' => '12.0.0']]],
+        'server' => ['php' => ['version' => '8.3.12', 'extensions' => ['curl' => '8.3.12', 'mbstring' => null]]],
     ], $overrides);
 }
 
@@ -46,7 +46,7 @@ it('rejects a token that does not belong to a project', function () {
     $this->withToken($token)->postJson('/api/voight/system-details', systemDetailsPayload())->assertUnauthorized();
 });
 
-it('stores the snapshot and indexed versions on the token project environment', function () {
+it('stores the snapshot and indexed php version on the token project environment', function () {
     $project = Project::factory()->create();
     $token = $project->createToken('ci')->plainTextToken;
 
@@ -56,20 +56,18 @@ it('stores the snapshot and indexed versions on the token project environment', 
     $details = $environment->systemDetails;
 
     expect($details->php_version)->toBe('8.3.12')
-        ->and($details->laravel_version)->toBe('12.0.0')
-        ->and($details->filament_version)->toBe('5.0.0')
-        ->and($details->livewire_version)->toBeNull()
+        ->and($details->payload['framework']['version'])->toBe('12.0.0')
         ->and($details->payload['server']['php']['version'])->toBe('8.3.12')
-        ->and($details->payload['laravel'])->not->toBeEmpty()
+        ->and($details->payload['framework']['groups'])->not->toBeEmpty()
         ->and($details->collected_at->toIso8601String())->toBe('2026-10-06T09:00:00+00:00')
         ->and($details->received_at)->not->toBeNull();
 });
 
-it('accepts a payload without versions', function () {
+it('accepts a payload without app and framework', function () {
     $project = Project::factory()->create();
     $token = $project->createToken('ci')->plainTextToken;
 
-    $this->withToken($token)->postJson('/api/voight/system-details', systemDetailsPayload(['versions' => null]))->assertNoContent();
+    $this->withToken($token)->postJson('/api/voight/system-details', systemDetailsPayload(['app' => null, 'framework' => null, 'server' => ['php' => []]]))->assertNoContent();
 
     expect(EnvironmentSystemDetail::first()->php_version)->toBeNull();
 });
@@ -80,7 +78,6 @@ it('overwrites the previous snapshot', function () {
 
     $this->withToken($token)->postJson('/api/voight/system-details', systemDetailsPayload())->assertNoContent();
     $this->withToken($token)->postJson('/api/voight/system-details', systemDetailsPayload([
-        'versions' => ['php' => '8.4.1'],
         'server' => ['php' => ['version' => '8.4.1']],
     ]))->assertNoContent();
 

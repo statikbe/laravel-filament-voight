@@ -12,9 +12,6 @@ use Illuminate\Support\Carbon;
  * @property string $id
  * @property string $environment_id
  * @property string|null $php_version
- * @property string|null $laravel_version
- * @property string|null $filament_version
- * @property string|null $livewire_version
  * @property array<string, mixed> $payload
  * @property Carbon|null $collected_at
  * @property Carbon $received_at

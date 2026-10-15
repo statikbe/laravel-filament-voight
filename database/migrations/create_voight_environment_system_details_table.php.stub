@@ -12,9 +12,6 @@ return new class extends Migration
             $table->ulid('id')->primary();
             $table->foreignUlid('environment_id')->unique()->constrained('voight_environments')->cascadeOnDelete();
             $table->string('php_version')->nullable()->index();
-            $table->string('laravel_version')->nullable()->index();
-            $table->string('filament_version')->nullable()->index();
-            $table->string('livewire_version')->nullable()->index();
             $table->json('payload');
             $table->timestamp('collected_at')->nullable();
             $table->timestamp('received_at');

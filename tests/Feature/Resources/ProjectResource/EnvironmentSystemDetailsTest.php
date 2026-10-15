@@ -35,30 +35,42 @@ it('renders the view page with the snapshot', function () {
     $environment = Environment::factory()->create(['name' => 'production']);
     EnvironmentSystemDetail::factory()->for($environment)->create([
         'php_version' => '8.3.12',
-        'laravel_version' => '12.1.0',
-        'filament_version' => '5.2.0',
         'payload' => [
             'server' => [
-                'php' => ['version' => '8.3.12', 'sapi' => 'fpm-fcgi', 'max_input_vars' => '1000', 'xdebug' => false, 'extensions' => ['curl', 'mbstring']],
+                'php' => ['version' => '8.3.12', 'sapi' => 'fpm-fcgi', 'max_input_vars' => '1000', 'xdebug' => false, 'extensions' => ['curl' => '8.3.12', 'mbstring' => null, 'imagick' => '3.8.1']],
                 'system' => ['os' => 'Linux 6.1', 'hostname' => 'web-01', 'load_average' => [0.08, 0.09, 0.08]],
                 'database' => ['driver' => 'mysql', 'version' => '8.0.46'],
                 'disk' => ['free_bytes' => 40 * 1024 ** 3, 'total_bytes' => 100 * 1024 ** 3],
+                'deployment' => ['release_path' => '/var/www/html'],
                 'future_group' => ['new_field' => 'shiny', 'flag' => true],
             ],
-            'laravel' => ['environment' => ['environment' => 'production', 'debug_mode' => false], 'drivers' => ['queue' => 'redis']],
+            'app' => ['environment' => 'production', 'debug_mode' => false],
+            'framework' => ['name' => 'laravel', 'version' => '12.1.0', 'groups' => ['environment' => ['debug_mode' => false], 'drivers' => ['queue' => 'redis']]],
         ],
     ]);
 
+    // Database appears only in the stat card and the Copy-as-Markdown payload; the Server tab has no Database section.
+    expect(substr_count($this->get(viewEnvironmentUrl($environment))->getContent(), 'Database'))->toBe(2);
+
+    // Tab ids (not translated labels) drive the persisted ?tab= value.
+    $this->get(viewEnvironmentUrl($environment) . '?tab=server')->assertSuccessful()->assertSee('server', false);
+
     $this->get(viewEnvironmentUrl($environment))
         ->assertSuccessful()
-        ->assertSeeInOrder(['Laravel', '12.1.0', 'Filament', '5.2.0', 'PHP', '8.3.12', 'Database', 'mysql 8.0.46', 'Environment', 'Debug mode'])
+        ->assertSeeInOrder(['PHP', '8.3.12', 'Database', 'mysql 8.0.46', 'Environment', 'Debug mode'])
+        ->assertSee('Laravel 12.1.0')
         ->assertSee('Server')
         ->assertSee('Extensions')
+        ->assertSee('Extensions bundled with PHP 8.3.12 show only their name.')
+        ->assertSee('imagick 3.8.1')
+        ->assertDontSee('curl 8.3.12')
+        ->assertSee('mbstring')
         ->assertSee('Max input vars')
         ->assertSee('fpm-fcgi')
         ->assertSee('0.08 / 0.09 / 0.08')
         ->assertSee('Linux 6.1')
         ->assertSee('web-01')
+        ->assertSee('/var/www/html')
         ->assertSee('Drivers')
         ->assertSee('redis')
         ->assertSee('Future Group')
@@ -73,13 +85,13 @@ it('stacks the laravel groups in two balanced columns', function () {
     EnvironmentSystemDetail::factory()->for($environment)->create([
         'payload' => [
             'server' => [],
-            'laravel' => [
+            'framework' => ['name' => 'laravel', 'version' => '12.1.0', 'groups' => [
                 'cache' => ['driver' => 'cache-marker'],
                 'storage' => ['public' => 'storage-marker'],
                 'drivers' => ['queue' => 'drivers-marker', 'mail' => 'smtp', 'session' => 'file'],
                 'environment' => ['environment' => 'environment-marker', 'debug_mode' => false],
                 'livewire' => ['version' => 'livewire-marker'],
-            ],
+            ]],
         ],
     ]);
 
@@ -87,6 +99,24 @@ it('stacks the laravel groups in two balanced columns', function () {
     $this->get(viewEnvironmentUrl($environment))
         ->assertSuccessful()
         ->assertSeeInOrder(['environment-marker', 'drivers-marker', 'cache-marker', 'storage-marker', 'livewire-marker']);
+});
+
+it('renders a non-Laravel framework tab with its own groups', function () {
+    $environment = Environment::factory()->create();
+    EnvironmentSystemDetail::factory()->for($environment)->create([
+        'payload' => [
+            'server' => [],
+            'framework' => ['name' => 'craft', 'version' => '5.4.0', 'groups' => [
+                'edition' => ['edition' => 'pro-marker'],
+                'plugins' => ['seo' => 'plugin-marker'],
+            ]],
+        ],
+    ]);
+
+    $this->get(viewEnvironmentUrl($environment))
+        ->assertSuccessful()
+        ->assertSee('Craft 5.4.0')
+        ->assertSeeInOrder(['Edition', 'pro-marker', 'Plugins', 'plugin-marker']);
 });
 
 it('renders the view page without a snapshot', function () {
@@ -128,6 +158,19 @@ it('lists environments across projects and filters by version', function () {
         ->filterTable('php_version', '8.3.12')
         ->assertCanSeeTableRecords([$php83])
         ->assertCanNotSeeTableRecords([$php84, $never]);
+});
+
+it('filters the environments list by name', function () {
+    $production = Environment::factory()->create(['name' => 'production']);
+    $staging = Environment::factory()->create(['name' => 'staging']);
+    $acceptance = Environment::factory()->create(['name' => 'acceptance']);
+
+    Livewire::test(ListEnvironments::class)
+        ->filterTable('server_reported', null)
+        ->assertTableFilterExists('name')
+        ->filterTable('name', ['production', 'staging'])
+        ->assertCanSeeTableRecords([$production, $staging])
+        ->assertCanNotSeeTableRecords([$acceptance]);
 });
 
 it('shows only reported environments by default, newest report first', function () {

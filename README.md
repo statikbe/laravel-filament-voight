@@ -21,7 +21,7 @@ CI/CD project  →  POST /api/voight/lock-file  →  Voight app  →  ProcessLoc
 2. `ProcessLockFilesJob` parses `composer.lock` / `package-lock.json` and syncs the full dependency tree into the database.
 3. `RunOsvScanJob` dispatches immediately after every successful sync, sending that environment's stored lockfiles to the OSV Scanner Lambda's `/locks` endpoint and persisting results as `AuditRun`, `AuditFinding`, and `Vulnerability` records.
 4. `RunNightlyOsvScanJob` runs on a daily cron. Instead of re-scanning every environment's lockfiles, it collects the **distinct** `(ecosystem, name, version)` set across all environments flagged `scan_nightly`, scans it in a few batched calls to the Lambda's `/packages` endpoint, and fans the results back out to per-environment `AuditRun`s. Environments containing commit-pinned (`dev-*`) dependencies fall back to the per-environment `/locks` path.
-5. `voight:push-system-details` runs on each monitored server (after deploy and daily) and POSTs a server snapshot (PHP, OS, database, deployment, Laravel `about`) to `/api/voight/system-details`. Voight keeps the latest snapshot per environment.
+5. `voight:push-system-details` runs on each monitored server (after deploy and daily) and POSTs a server snapshot (PHP, OS, database, deployment, framework details; for Laravel the `about` output) to `/api/voight/system-details`. Voight keeps the latest snapshot per environment.
 
 ## Installation
 
@@ -187,11 +187,23 @@ Authenticated via the project bearer token. The token names the project, so ther
 |---|---|---|
 | `environment` | string | required; must match the name used for the lockfile sync (`APP_ENV`) |
 | `collected_at` | date | required |
-| `versions` | object | optional (`php`, `laravel`, `filament`, `livewire`); stored in indexed columns for filtering |
-| `server` | object | required (`php`, `system`, `database`, …) |
-| `laravel` | object | optional (output of `php artisan about`) |
+| `app` | object | optional: `environment` (string), `debug_mode` (bool); feed the Environment and Debug mode stat cards |
+| `framework` | object | optional: `name` (e.g. `laravel`, `craft`), `version`, `groups` (object of group name => key/value rows, rendered as-is in the Framework tab, titled "Name version") |
+| `server` | object | required (`php`, `system`, `database`, `deployment`, `disk`, …); `server.php.version` is stored in an indexed column for filtering, the rest only in the stored payload |
 
-Response `204 No Content`. Voight keeps only the latest snapshot per environment (overwritten on each push); bodies over 256 KB get `413`. The snapshot is stored in `voight_environment_system_details` and shown on the environment page (click an environment in the project's Environments tab): stat cards for Laravel, Filament, PHP, database, environment and debug mode, then Laravel / Server / Extensions tabs, plus a **Copy as Markdown** action. The global **Environments** list shows all environments with their PHP / Laravel / Filament / Livewire versions and filters on each.
+The contract is framework-neutral: any client (for example a Craft CMS plugin) can push the same JSON. Unknown keys and groups are rendered generically.
+
+```json
+{
+  "environment": "production",
+  "collected_at": "2026-10-15T09:00:00+00:00",
+  "app": { "environment": "production", "debug_mode": false },
+  "framework": { "name": "craft", "version": "5.4.0", "groups": { "edition": { "edition": "pro" } } },
+  "server": { "php": { "version": "8.4.1" }, "database": { "driver": "mysql", "version": "8.0.46" } }
+}
+```
+
+Response `204 No Content`. Voight keeps only the latest snapshot per environment (overwritten on each push); bodies over 256 KB get `413`. The snapshot is stored in `voight_environment_system_details` and shown on the environment page (click an environment in the project's Environments tab): stat cards for PHP, database, environment and debug mode, then Framework / Server / Extensions tabs, plus a **Copy as Markdown** action. The global **Environments** list shows all environments with their PHP version and filters on it.
 
 Pushing is done by the monitored app itself, with the `voight:push-system-details` command from this package and the same project token as the lockfile sync:
 

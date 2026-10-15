@@ -19,9 +19,9 @@ class SystemDetailsPresenter
     /**
      * @return array<string, array{title: string, rows: array<int, array{key: string, label: string, value: string|bool|null}>}>
      */
-    public static function laravel(Environment $environment): array
+    public static function framework(Environment $environment): array
     {
-        return self::groups((array) data_get($environment->systemDetails?->payload, 'laravel'));
+        return self::groups((array) data_get($environment->systemDetails?->payload, 'framework.groups'));
     }
 
     /**
@@ -39,11 +39,44 @@ class SystemDetailsPresenter
     }
 
     /**
-     * @return array<int, string>
+     * Older snapshots stored a plain list of names, so an int key means the value is the name.
+     *
+     * @return array<string, string|null>
      */
     public static function extensions(Environment $environment): array
     {
-        return array_values(array_filter((array) data_get($environment->systemDetails?->payload, 'server.php.extensions'), is_string(...)));
+        $extensions = [];
+
+        foreach ((array) data_get($environment->systemDetails?->payload, 'server.php.extensions') as $key => $value) {
+            if (is_int($key)) {
+                if (is_string($value)) {
+                    $extensions[$value] = null;
+                }
+            } else {
+                // mysqlnd reports its version as "mysqlnd 8.4.24".
+                $extensions[$key] = is_scalar($value) && $value !== '' ? Str::chopStart((string) $value, "{$key} ") : null;
+            }
+        }
+
+        uksort($extensions, strnatcasecmp(...));
+
+        return $extensions;
+    }
+
+    /**
+     * Bundled extensions report the PHP version, so only their name is shown.
+     *
+     * @return array<int, string>
+     */
+    public static function extensionLabels(Environment $environment): array
+    {
+        $phpVersion = data_get($environment->systemDetails?->payload, 'server.php.version');
+
+        return array_map(
+            fn (string $name, ?string $version): string => $version === null || $version === $phpVersion ? $name : "{$name} {$version}",
+            array_keys($extensions = self::extensions($environment)),
+            $extensions,
+        );
     }
 
     public static function database(Environment $environment): ?string
@@ -59,16 +92,30 @@ class SystemDetailsPresenter
         return trim($driver . ' ' . (is_scalar($version) ? $version : ''));
     }
 
-    public static function aboutValue(Environment $environment, string $key): mixed
+    public static function appValue(Environment $environment, string $key): mixed
     {
-        return data_get($environment->systemDetails?->payload, "laravel.environment.{$key}");
+        return data_get($environment->systemDetails?->payload, "app.{$key}");
+    }
+
+    /**
+     * "Laravel 12.1.0", "Craft 5.4.0"; the generic tab label when the client sent no framework name.
+     */
+    public static function frameworkTitle(Environment $environment): string
+    {
+        $name = data_get($environment->systemDetails?->payload, 'framework.name');
+
+        if (! is_string($name) || $name === '') {
+            return voightTrans('models.environment.system_details.tabs.framework');
+        }
+
+        return trim(Str::headline($name));
     }
 
     public static function markdown(Environment $environment): string
     {
         $lines = ["# {$environment->name}", ''];
 
-        foreach (['laravel' => self::laravel($environment), 'server' => self::server($environment)] as $groups) {
+        foreach ([self::framework($environment), self::server($environment)] as $groups) {
             foreach ($groups as $group) {
                 $lines[] = "## {$group['title']}";
 
@@ -85,7 +132,7 @@ class SystemDetailsPresenter
             }
         }
 
-        $extensions = self::extensions($environment);
+        $extensions = self::extensionLabels($environment);
 
         if ($extensions !== []) {
             $lines[] = '## ' . voightTrans('models.environment.system_details.tabs.extensions');
@@ -147,6 +194,7 @@ class SystemDetailsPresenter
     {
         $full = "filament-voight::filament-voight.models.environment.system_details.{$key}";
 
-        return Lang::has($full) ? (string) trans($full) : Str::headline($fallbackKey);
+        return Lang::has($full) ? (string) trans($full)
+            : (preg_match('/^\w+$/', $fallbackKey) === 1 ? Str::headline($fallbackKey) : $fallbackKey);
     }
 }

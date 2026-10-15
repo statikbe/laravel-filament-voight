@@ -22,10 +22,14 @@ class StoreSystemDetailsRequest extends FormRequest
         return [
             'environment' => ['required', 'string', 'max:255'],
             'collected_at' => ['required', 'date'],
-            'versions' => ['nullable', 'array'],
-            'versions.*' => ['nullable', 'string', 'max:255'],
+            'app' => ['nullable', 'array'],
+            'app.environment' => ['nullable', 'string', 'max:255'],
+            'app.debug_mode' => ['nullable', 'boolean'],
+            'framework' => ['nullable', 'array'],
+            'framework.name' => ['nullable', 'string', 'max:255'],
+            'framework.version' => ['nullable', 'string', 'max:255'],
+            'framework.groups' => ['nullable', 'array'],
             'server' => ['required', 'array'],
-            'laravel' => ['nullable', 'array'],
         ];
     }
 

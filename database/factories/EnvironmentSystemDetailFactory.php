@@ -20,12 +20,9 @@ class EnvironmentSystemDetailFactory extends Factory
         return [
             'environment_id' => Environment::factory(),
             'php_version' => $phpVersion,
-            'laravel_version' => '12.0.0',
-            'filament_version' => '5.0.0',
-            'livewire_version' => '4.0.0',
             'payload' => [
                 'server' => ['php' => ['version' => $phpVersion]],
-                'laravel' => null,
+                'framework' => ['name' => 'laravel', 'version' => null, 'groups' => null],
             ],
             'collected_at' => now(),
             'received_at' => now(),

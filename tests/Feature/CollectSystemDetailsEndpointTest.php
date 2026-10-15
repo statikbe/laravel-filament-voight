@@ -7,9 +7,14 @@ it('returns the collector output for a valid relative signature', function () {
 
     $this->getJson($url)
         ->assertSuccessful()
-        ->assertJsonPath('versions.php', PHP_VERSION)
+        ->assertJsonPath('framework.name', 'laravel')
+        ->assertJsonPath('app.environment', app()->environment())
+        ->assertJsonPath('server.php.version', PHP_VERSION)
+        ->assertJsonPath('server.php.extensions.json', phpversion('json'))
         ->assertJsonStructure([
             'collected_at',
+            'app' => ['environment', 'debug_mode'],
+            'framework' => ['name', 'version', 'groups'],
             'server' => [
                 'php' => ['version', 'sapi', 'memory_limit', 'max_input_vars', 'ini_path', 'xdebug', 'opcache', 'extensions'],
                 'system' => ['os', 'server_software', 'load_average', 'cpu_cores', 'hostname'],

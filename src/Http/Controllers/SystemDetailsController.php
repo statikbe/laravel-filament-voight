@@ -21,10 +21,7 @@ class SystemDetailsController extends Controller
         $environment->systemDetails()->updateOrCreate(
             ['environment_id' => $environment->getKey()],
             [
-                'php_version' => $data['versions']['php'] ?? null,
-                'laravel_version' => $data['versions']['laravel'] ?? null,
-                'filament_version' => $data['versions']['filament'] ?? null,
-                'livewire_version' => $data['versions']['livewire'] ?? null,
+                'php_version' => data_get($data, 'server.php.version'),
                 'payload' => $data,
                 'collected_at' => $data['collected_at'],
                 'received_at' => now(),

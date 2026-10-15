@@ -86,23 +86,24 @@ snapshot lands on a second environment record.
   {
     "environment": "production",
     "collected_at": "2026-10-06T09:00:00+00:00",
-    "versions": { "php": "8.4.1", "laravel": "12.0.0", "filament": "5.0.0", "livewire": "4.0.0" },
-    "server": { "php": {}, "system": {}, "database": {}, "disk": {} },
-    "laravel": {}
+    "app": { "environment": "production", "debug_mode": false },
+    "framework": { "name": "laravel", "version": "12.0.0", "groups": { "environment": {}, "cache": {}, "drivers": {}, "storage": {} } },
+    "server": { "php": {}, "system": {}, "deployment": {}, "database": {}, "disk": {} }
   }
   ```
 
-  `versions` = PHP_VERSION plus laravel/framework, filament/filament and
-  livewire/livewire via `Composer\InstalledVersions` (leading `v` stripped,
-  null when not installed). `server.php` = version, sapi, memory_limit, max_execution_time,
+  The contract is framework-neutral: other clients (e.g. a Craft CMS plugin) push the same
+  shape. `app` = `app()->environment()` and `config('app.debug')`. `framework.name` =
+  `laravel`; `framework.version` = laravel/framework via `Composer\InstalledVersions`
+  (leading `v` stripped, null when not installed); `framework.groups` = decoded
+  `about --json`, null if it fails. `server.php` = version, sapi, memory_limit, max_execution_time,
   upload_max_filesize, post_max_size, max_input_vars, timezone, ini_path (loaded php.ini),
-  xdebug, opcache, opcache_validate_timestamps, extensions (sorted); `server.system` = os,
+  xdebug, opcache, opcache_validate_timestamps, extensions (`name => version` map, sorted by name; version null when unknown); `server.system` = os,
   server_software (null in CLI), load_average, cpu_cores (Linux `/proc/cpuinfo`, else null),
   hostname; `server.deployment` = release_path, commit (7 chars, from `REVISION` or
   `.git/HEAD`, else null), php_user, server_time; `server.database` = driver, version
   (null on failure); `server.disk` = free/total bytes of `base_path()`. Every probe is
-  guarded and yields null on failure. `laravel` = decoded `about --json`, null if it
-  fails. The UI renders any keys generically.
+  guarded and yields null on failure. The UI renders any keys generically.
 - **Web-server values via signed loopback.** ini values differ between CLI and FPM, so the
   command first asks the app's own web server: it mints
   `URL::temporarySignedRoute('voight.system-details.collect', now()->addMinute(), absolute: false)`
@@ -145,7 +146,7 @@ Migration stub `create_voight_environment_system_details_table.php.stub`
 |---|---|---|
 | `id` | ulid | |
 | `environment_id` | foreign ulid, unique | cascade on delete; one row per environment |
-| `php_version`, `laravel_version`, `filament_version`, `livewire_version` | string, nullable, each indexed | copied from `versions`; used for filters |
+| `php_version` | string, nullable, indexed | copied from `server.php.version`; used for the filter. Laravel/Filament/Livewire versions are not columns: they come from the environment's last lockfile scan (still present in `payload`) |
 | `payload` | `json` | Full validated payload |
 | `collected_at` | timestamp, nullable | Client clock |
 | `received_at` | timestamp | Set by Voight on receipt |
@@ -164,10 +165,14 @@ factory included); `Environment::systemDetails()` is a `hasOne`.
 ```php
 'environment' => ['required', 'string', 'max:255'],
 'collected_at' => ['required', 'date'],
-'versions' => ['nullable', 'array'],
-'versions.*' => ['nullable', 'string', 'max:255'],
+'app' => ['nullable', 'array'],
+'app.environment' => ['nullable', 'string', 'max:255'],
+'app.debug_mode' => ['nullable', 'boolean'],
+'framework' => ['nullable', 'array'],
+'framework.name' => ['nullable', 'string', 'max:255'],
+'framework.version' => ['nullable', 'string', 'max:255'],
+'framework.groups' => ['nullable', 'array'],
 'server' => ['required', 'array'],
-'laravel' => ['nullable', 'array'],
 ```
 
 `SystemDetailsController::store()`:
@@ -177,7 +182,7 @@ factory included); `Environment::systemDetails()` is a `hasOne`.
    a token cannot write to another project.
 2. Environment = `LockFileSyncService::resolveEnvironment()`, made public. Same
    `firstOrCreate` + `EnvironmentCreatedViaApi` event as the lockfile sync.
-3. `$environment->systemDetails()->updateOrCreate([], [...])`: version columns from `versions`, `payload` = validated data, `collected_at`, `received_at = now()`.
+3. `$environment->systemDetails()->updateOrCreate([], [...])`: `php_version` from `server.php.version`, `payload` = validated data, `collected_at`, `received_at = now()`.
 4. Return `204`.
 
 Synchronous: one row update, no job.
@@ -191,22 +196,24 @@ in the request's `prepareForValidation`, 413). Real payloads are ~5 KB.
   `/projects/{project}/environments/{environment}`. Header subheading shows "Last reported"
   (relative plus exact time) and a "Copy as Markdown" header action (clipboard via
   `alpineClickHandler`, Markdown built server-side by `SystemDetailsPresenter::markdown()`
-  and passed through `Js::from()`). Infolist: a row of compact stat cards (Laravel,
-  Filament, PHP, Database "mysql 8.0.46", Environment, Debug mode badge; monospace values
-  with icons), then `Tabs` with icons: "Laravel" (a two-column grid of `Section`s, one per
-  `about` group, each with a heading icon), "Server" (PHP, System, Deployment, Database,
-  Disk, then unknown groups) and "Extensions" (badge = count, values as badges). Rows are
+  and passed through `Js::from()`). Infolist: a row of compact stat cards (PHP, Database "mysql 8.0.46", Environment and Debug mode badge, both from `app.*`; monospace values
+  with icons), then `Tabs` with icons: "Framework" (tab labelled by `framework.name` + `framework.version`, e.g. "Laravel 12.1.0" or "Craft 5.4.0", generic "Framework" when absent; a two-column grid of `Section`s, one per
+  `framework.groups` entry, each with a heading icon), "Server" (two independent columns at `lg`, one column on mobile: PHP on the left; System, Deployment, Disk, then unknown groups stacked on the right; Database is shown only as the stat card, but stays in the Markdown export) and "Extensions" (badge = count, one badge per extension, sorted by name case-insensitively; "name version" only when the
+  extension has its own version, the name alone when the version is null or equals the PHP
+  version; a leading "name " in the version, as mysqlnd reports it, is stripped), preceded by a small muted explanation of why only some badges show a version. Rows are
   inline label / monospace value; booleans are Yes (success) / No (gray) badges, `*_bytes`
   values human-readable, `load_average` as "0.08 / 0.09 / 0.08". Labels come from the
-  `system_details.labels` translations with `Str::headline` as fallback, so keys from newer
+  `system_details.labels` translations with `Str::headline` as fallback for plain identifier
+  keys; other keys, such as storage paths, are shown verbatim, so keys from newer
   clients need no Voight change. Without a snapshot a single empty-state text replaces
   the cards and tabs.
 - **`EnvironmentsRelationManager`**: rows link to the view page; columns
   "PHP" and "Server reported" come from the eager-loaded `systemDetails`. The
   slide-over action is gone.
 - **Environments list** (`ListEnvironments` page, navigation group Management):
-  project, environment, four versions, received since; select filters per
-  version (options = distinct stored values); rows link to the view page. Access
+  project, environment (shown as badge), PHP version, received since; multi-select filter on
+  environment name (options = distinct names) and select filter on
+  PHP version (options = distinct stored values); rows link to the view page. Access
   and query scope follow `ProjectResource` (`canViewAny()` / `getEloquentQuery()`).
   Defaults: ternary filter `server_reported` on (only environments with a snapshot),
   sorted by most recent report first, name as tie-breaker.
@@ -218,7 +225,7 @@ in the request's `prepareForValidation`, 413). Real payloads are ~5 KB.
 **voight** (`tests/Feature/PushSystemDetailsTest.php`):
 - No `push.base_url`: command exits 0, `Http::assertNothingSent()`.
 - Configured: posts to the URL with bearer token; payload has `environment`,
-  `collected_at`, `server.php`, `laravel`.
+  `collected_at`, `app`, `framework`, `server.php`.
 - `push.environment` / `--environment` override `app()->environment()`.
 - Receiver returns 401: command exits 1, prints status.
 - `http://` URL to a non-local host: exits 1, nothing sent.
@@ -226,7 +233,7 @@ in the request's `prepareForValidation`, 413). Real payloads are ~5 KB.
 
 **voight** (`tests/Feature/SystemDetailsEndpointTest.php`):
 - No token / user token instead of project token: 401.
-- Valid push stores the snapshot, indexed versions and `received_at` on the token's
+- Valid push stores the snapshot, indexed PHP version and `received_at` on the token's
   project environment.
 - Second push overwrites the first.
 - Unknown environment name creates the environment and dispatches
@@ -235,9 +242,9 @@ in the request's `prepareForValidation`, 413). Real payloads are ~5 KB.
 
 **voight** Filament (`EnvironmentSystemDetailsTest`):
 - View page renders snapshot (stack summary, database/disk lines, extensions tab, unknown
-  groups in Other, `laravel` fieldsets) and the placeholder without a snapshot.
+  groups in Other, framework fieldsets, a non-Laravel framework tab title) and the placeholder without a snapshot.
 - Relation manager shows the PHP version.
-- Global list shows reported environments by default (newest first), all with the filter cleared, and filters by version.
+- Global list shows reported environments by default (newest first), all with the filter cleared, and filters by PHP version and environment name.
 
 ---
 
@@ -280,3 +287,10 @@ in the request's `prepareForValidation`, 413). Real payloads are ~5 KB.
 | 2026-10-06 | signed loopback for web-server values, richer server data, view restyled like the old system-details package with Copy as Markdown | CLI values misleading; keep familiar UI | Kristof |
 | 2026-10-06 | loopback route moved to /api/voight/system-details/collect in routes/api.php | keep all package routes under api/voight | Kristof |
 | 2026-10-06 | Environments list defaults to reported environments, newest report first | user request | Kristof |
+| 2026-10-15 | Dropped laravel/filament/livewire version columns, only php_version kept | already available from last lockfile scan | Kristof |
+| 2026-10-15 | PHP extensions sent as name => version map, shown as "name version" | user request | Kristof |
+| 2026-10-15 | Environments list: name shown as badge + name filter | user request | Kristof |
+| 2026-10-15 | Extension badges sorted by name, version only shown when it differs from PHP; non-identifier label keys (storage paths) shown verbatim, with explanatory text on the tab | badges unreadable; paths were title-cased | Kristof |
+| 2026-10-15 | "Laravel" tab renamed to "Framework" | other frameworks (e.g. Craft CMS) may push data later | Kristof |
+| 2026-10-15 | Server tab: Database section dropped (stat card shows it), PHP left, other groups stacked right, active tab persisted in query string | duplicate info, cleaner layout | Kristof |
+| 2026-10-15 | Payload made framework-agnostic: app {environment, debug_mode}, framework {name, version, groups}; versions block dropped, php_version from server.php.version; Framework tab titled by framework name + version | Craft CMS and other frameworks will push system details | Kristof |
