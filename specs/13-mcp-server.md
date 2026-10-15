@@ -1,7 +1,7 @@
 # MCP Server
 
 **Date:** 2026-09-30
-**Status:** approved design, not yet implemented
+**Status:** implemented (INTLAR-248)
 **Depends on:** `12-dependency-graph.md` (dependency paths for `get_upgrade_plan`)
 
 An MCP server so AI clients (Claude Code, Cursor, claude.ai, …) can query Voight:
@@ -243,6 +243,9 @@ Shared conventions:
 - Findings are mapped to installed nodes with
   `DependencyGraphService::nodesFor()` (package + `installed_version`); a
   version installed at several paths contributes every node's paths.
+- `unresolved[]`: findings that could not be filed under a direct dependency, with a
+  `reason`: `not_in_dependency_graph` (no installed node for the package version) or
+  `no_direct_dependency_found` (the graph walk hit its limits). Never dropped silently.
 - No registry lookups: the tool does not determine which version of the direct
   dependency pulls in a fixed transitive version. The constraints and fixed
   versions let the model reason about it (e.g. "`^0.0.8` excludes `1.2.6`, so a
@@ -292,8 +295,8 @@ when `write_tools` is off.
   `Project::DEFAULT_API_TOKEN_NAME`).
 - Never revokes existing tokens; revoking stays in Filament.
 - Out: the **plain-text token** (shown once), the sync endpoint URL
-  (`url('api/voight/lock-file')`), the uploader variables (`VOIGHT_API_URL`,
-  `VOIGHT_API_TOKEN`, `PROJECT_CODE`) and an explicit instruction: store the
+  (`url('api/voight/lock-file')`), the uploader variables (`VOIGHT_API_BASE_URL`,
+  `VOIGHT_API_TOKEN`, `PROJECT_CODE`; the script also needs `APP_ENV`) and an explicit instruction: store the
   token as a CI secret or in an untracked `.env`, never commit it.
 - Rationale for returning the secret: the token only allows pushing lockfiles
   for that project, and returning it is what makes agent-driven onboarding work.
@@ -307,7 +310,7 @@ when `write_tools` is off.
 |---|---|---|
 | `triage_project` | `project_code` | `get_project_vulnerabilities` → `get_upgrade_plan`; ask for a prioritized fix list (severity, reach, effort of the bump). |
 | `security_digest` | `team?` | `get_statistics` (by project and by vulnerability) + `list_projects(scanned_before: 7 days ago)`; a weekly summary including stale scans. |
-| `onboard_project` | — | Inspect the current repository (lockfiles, CI config), `create_project`, `create_project_token`, then add the uploader and its variables to CI, storing the token as a secret. |
+| `onboard_project` (hidden when `write_tools` is off) | — | Inspect the current repository (lockfiles, CI config), `create_project`, `create_project_token`, then add the uploader and its variables to CI, storing the token as a secret. |
 
 Prompt texts are written in English only (they are instructions to the model,
 not UI).

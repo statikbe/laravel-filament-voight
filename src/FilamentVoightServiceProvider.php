@@ -8,10 +8,14 @@ use Filament\Support\Facades\FilamentIcon;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Filesystem\Filesystem;
+use Laravel\Mcp\Facades\Mcp;
 use Spatie\LaravelPackageTools\Commands\InstallCommand;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
 use Statikbe\FilamentVoight\Facades\FilamentVoight;
+use Statikbe\FilamentVoight\FilamentVoight as FilamentVoightManager;
+use Statikbe\FilamentVoight\Mcp\VoightLocalServer;
+use Statikbe\FilamentVoight\Mcp\VoightServer;
 
 class FilamentVoightServiceProvider extends PackageServiceProvider
 {
@@ -50,6 +54,12 @@ class FilamentVoightServiceProvider extends PackageServiceProvider
         }
     }
 
+    public function packageRegistered(): void
+    {
+        // A singleton, so the MCP visibility hooks registered by the host survive.
+        $this->app->singleton(FilamentVoightManager::class);
+    }
+
     public function packageBooted(): void
     {
         Relation::morphMap(FilamentVoight::config()->getMorphMap());
@@ -66,6 +76,8 @@ class FilamentVoightServiceProvider extends PackageServiceProvider
         );
 
         FilamentIcon::register($this->getIcons());
+
+        $this->registerMcpServers();
 
         if (app()->runningInConsole()) {
             foreach (app(Filesystem::class)->files(__DIR__ . '/../stubs/') as $file) {
@@ -93,6 +105,21 @@ class FilamentVoightServiceProvider extends PackageServiceProvider
 
             $schedule->command('voight:run-osv-scan --nightly')->cron($cron)->withoutOverlapping();
         });
+    }
+
+    /**
+     * The local server runs as the machine's operator; the web server requires an authenticated user.
+     */
+    public function registerMcpServers(): void
+    {
+        $config = FilamentVoight::config();
+
+        if (! $config->mcpEnabled()) {
+            return;
+        }
+
+        Mcp::local('voight', VoightLocalServer::class);
+        Mcp::web($config->getMcpPath(), VoightServer::class)->middleware($config->getMcpMiddleware());
     }
 
     protected function getAssetPackageName(): ?string

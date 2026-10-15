@@ -2,6 +2,16 @@
 
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Testing\Fluent\AssertableJson;
+use Laravel\Mcp\Server\Testing\TestResponse;
+use Statikbe\FilamentVoight\Models\AuditFinding;
+use Statikbe\FilamentVoight\Models\AuditRun;
+use Statikbe\FilamentVoight\Models\Environment;
+use Statikbe\FilamentVoight\Models\EnvironmentPackage;
+use Statikbe\FilamentVoight\Models\Package;
+use Statikbe\FilamentVoight\Models\Team;
+use Statikbe\FilamentVoight\Models\Vulnerability;
+use Statikbe\FilamentVoight\Tests\Support\User;
 use Statikbe\FilamentVoight\Tests\TestCase;
 
 uses(TestCase::class)->in(__DIR__);
@@ -84,4 +94,61 @@ function fakeScanner(array $result = ['findings' => [], 'vulnerabilities' => [],
 
         return Http::response('unexpected request ' . $request->method() . ' ' . $url, 500);
     });
+}
+
+/**
+ * A persisted user, member of the given teams.
+ */
+function mcpUser(Team ...$teams): User
+{
+    $user = User::forceCreate([
+        'name' => 'MCP user',
+        'email' => fake()->unique()->safeEmail(),
+        'password' => 'secret',
+    ]);
+
+    foreach ($teams as $team) {
+        $team->users()->attach($user->id);
+    }
+
+    return $user;
+}
+
+/**
+ * Records a finding in the environment's latest audit run (created when missing), and
+ * installs the package version in the environment unless $installed is false.
+ *
+ * @param  array<string, mixed>  $node  attributes of the installed copy (is_direct, is_dev)
+ */
+function mcpFinding(Environment $environment, Vulnerability $vulnerability, string $package = 'lodash', string $version = '1.0.0', ?string $fixedVersion = '2.0.0', array $node = ['is_direct' => true], string $type = 'npm', bool $installed = true): AuditFinding
+{
+    $run = AuditRun::query()->where('environment_id', $environment->id)->orderByDesc('started_at')->first()
+        ?? AuditRun::factory()->for($environment)->create();
+    $packageModel = Package::query()->firstOrCreate(['name' => $package, 'type' => $type]);
+
+    if ($installed && ! EnvironmentPackage::query()->where(['environment_id' => $environment->id, 'package_id' => $packageModel->id, 'version' => $version])->exists()) {
+        EnvironmentPackage::factory()->for($environment)->for($packageModel)->create(['version' => $version, ...$node]);
+    }
+
+    return AuditFinding::factory()->for($run)->for($packageModel)->for($vulnerability)->create([
+        'installed_version' => $version,
+        'fixed_version' => $fixedVersion,
+    ]);
+}
+
+/**
+ * The structured content of an MCP tool response.
+ *
+ * @return array<string, mixed>
+ */
+function structuredContent(TestResponse $response): array
+{
+    $content = [];
+
+    $response->assertHasNoErrors()->assertStructuredContent(function (AssertableJson $json) use (&$content) {
+        $content = $json->toArray();
+        $json->etc();
+    });
+
+    return $content;
 }

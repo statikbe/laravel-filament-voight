@@ -15,6 +15,7 @@ use Illuminate\Support\Js;
 use Statikbe\FilamentVoight\Models\Project;
 use Statikbe\FilamentVoight\Resources\CustomerResource;
 use Statikbe\FilamentVoight\Resources\TeamResource;
+use Statikbe\FilamentVoight\Services\ProjectOnboardingService;
 
 class ProjectInfoListSchema
 {
@@ -63,6 +64,7 @@ class ProjectInfoListSchema
                         ])
                         ->extraAttributes(['class' => 'h-full [&>.fi-section]:h-full']),
                     Section::make(voightTrans('models.project.sections.api_token'))
+                        ->key('api_token')
                         ->description(voightTrans('models.project.sections.api_token_description'))
                         ->visible(fn (?Project $record): bool => $record !== null)
                         ->components([
@@ -87,7 +89,7 @@ class ProjectInfoListSchema
                                 ->label(voightTrans('models.project.actions.generate_token'))
                                 ->requiresConfirmation()
                                 ->action(function (Project $record) {
-                                    $token = $record->createToken(Project::DEFAULT_API_TOKEN_NAME);
+                                    $token = app(ProjectOnboardingService::class)->createToken($record);
 
                                     Notification::make()
                                         ->title(voightTrans('models.project.actions.token_generated'))

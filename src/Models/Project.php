@@ -2,6 +2,8 @@
 
 namespace Statikbe\FilamentVoight\Models;
 
+use Illuminate\Contracts\Auth\Authenticatable;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -9,6 +11,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Support\Carbon;
 use Laravel\Sanctum\HasApiTokens;
+use Statikbe\FilamentVoight\Facades\FilamentVoight;
 use Staudenmeir\EloquentHasManyDeep\HasManyDeep;
 use Staudenmeir\EloquentHasManyDeep\HasRelationships;
 
@@ -97,6 +100,30 @@ class Project extends Model
             ['project_id', 'environment_id', 'audit_run_id'],
             ['id', 'id', 'id'],
         );
+    }
+
+    /**
+     * The projects a user may see over MCP. Null means the local (operator) server: no constraint.
+     * Otherwise MCP admins see everything, and other users see the projects of their teams, or
+     * whatever the host registered with FilamentVoight::resolveMcpVisibleProjectsUsing().
+     * Projects without a team are only visible to admins.
+     *
+     * @param  Builder<static>  $query
+     * @return Builder<static>
+     */
+    public function scopeVisibleTo(Builder $query, ?Authenticatable $user): Builder
+    {
+        if ($user === null || FilamentVoight::isMcpAdmin($user)) {
+            return $query;
+        }
+
+        $resolver = FilamentVoight::getMcpVisibleProjectsResolver();
+
+        if ($resolver !== null) {
+            return $resolver($query, $user);
+        }
+
+        return $query->whereHas('team.users', fn (Builder $users): Builder => $users->whereKey($user->getAuthIdentifier()));
     }
 
     public function getRouteKeyName()

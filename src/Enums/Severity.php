@@ -90,6 +90,14 @@ enum Severity: string implements HasColor, HasIcon, HasLabel
     }
 
     /**
+     * The lowest score of this severity, for "at least this severe" filters.
+     */
+    public function minimumScore(): float
+    {
+        return $this->scoreRange()[0];
+    }
+
+    /**
      * @return array{0: float, 1: float}
      */
     public function scoreRange(): array

@@ -4,6 +4,7 @@ namespace Statikbe\FilamentVoight\Commands;
 
 use Illuminate\Console\Command;
 use Statikbe\FilamentVoight\Facades\FilamentVoight;
+use Statikbe\FilamentVoight\Services\ProjectOnboardingService;
 
 class CreateProjectTokenCommand extends Command
 {
@@ -15,7 +16,7 @@ class CreateProjectTokenCommand extends Command
 
     public $description = 'Generate an API token for a project';
 
-    public function handle(): int
+    public function handle(ProjectOnboardingService $onboarding): int
     {
         $this->displayBanner();
 
@@ -32,7 +33,7 @@ class CreateProjectTokenCommand extends Command
 
         $tokenName = $this->option('name') ?? $this->ask('Token name', $projectModel::DEFAULT_API_TOKEN_NAME);
 
-        $token = $project->createToken($tokenName);
+        $token = $onboarding->createToken($project, $tokenName);
 
         $this->info('Token created successfully!');
         $this->newLine();
