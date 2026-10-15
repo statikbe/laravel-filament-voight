@@ -44,6 +44,23 @@ it('rejects avatars larger than 2 MB', function () {
         ->assertHasFormErrors(['avatar_path']);
 });
 
+it('rejects svg avatars', function () {
+    $svg = UploadedFile::fake()->createWithContent(
+        'avatar.svg',
+        '<svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script></svg>',
+    );
+
+    Livewire::test(CreateTeam::class)
+        ->fillForm([
+            'name' => 'Backend',
+            'avatar_path' => $svg,
+        ])
+        ->call('create')
+        ->assertHasFormErrors(['avatar_path']);
+
+    expect(Team::query()->where('name', 'Backend')->exists())->toBeFalse();
+});
+
 it('creates a team without an avatar', function () {
     Livewire::test(CreateTeam::class)
         ->fillForm(['name' => 'Backend'])

@@ -18,6 +18,8 @@ class TeamFormSchema
                     FileUpload::make('avatar_path')
                         ->label(voightTrans('models.team.fields.avatar'))
                         ->avatar()
+                        // Raster images only: an SVG can carry script and is served from the app's own domain.
+                        ->acceptedFileTypes(['image/png', 'image/jpeg', 'image/webp'])
                         ->automaticallyResizeImagesToWidth('256')
                         ->automaticallyResizeImagesToHeight('256')
                         ->maxSize(2048)
