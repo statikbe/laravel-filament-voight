@@ -15,6 +15,7 @@ use Filament\Schemas\Schema;
 use Statikbe\FilamentVoight\Models\Project;
 use Statikbe\FilamentVoight\Models\Team;
 use Statikbe\FilamentVoight\Resources\CustomerResource\Schemas\CustomerFormSchema;
+use Statikbe\FilamentVoight\Services\ProjectOnboardingService;
 
 class ProjectFormSchema
 {
@@ -97,7 +98,7 @@ class ProjectFormSchema
                             ->label(voightTrans('models.project.actions.generate_token'))
                             ->requiresConfirmation()
                             ->action(function (Project $record) {
-                                $token = $record->createToken(Project::DEFAULT_API_TOKEN_NAME);
+                                $token = app(ProjectOnboardingService::class)->createToken($record);
 
                                 Notification::make()
                                     ->title(voightTrans('models.project.actions.token_generated'))
