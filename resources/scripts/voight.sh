@@ -126,6 +126,33 @@ function opcache_enabled(): ?bool
     }
 }
 
+function opcache_details(): ?array
+{
+    if (! function_exists('opcache_get_status')) {
+        return null;
+    }
+
+    try {
+        $status = @opcache_get_status(false);
+    } catch (Throwable) {
+        return null;
+    }
+
+    if (! is_array($status) || ! ($status['opcache_enabled'] ?? false)) {
+        return null;
+    }
+
+    return [
+        'memory_used_bytes' => $status['memory_usage']['used_memory'] ?? null,
+        'memory_free_bytes' => $status['memory_usage']['free_memory'] ?? null,
+        'memory_wasted_bytes' => $status['memory_usage']['wasted_memory'] ?? null,
+        'hit_rate' => isset($status['opcache_statistics']['opcache_hit_rate']) ? round((float) $status['opcache_statistics']['opcache_hit_rate'], 2) : null,
+        'cached_scripts' => $status['opcache_statistics']['num_cached_scripts'] ?? null,
+        'max_cached_keys' => $status['opcache_statistics']['max_cached_keys'] ?? null,
+        'jit' => isset($status['jit']['enabled']) ? (bool) $status['jit']['enabled'] : null,
+    ];
+}
+
 $extensions = [];
 foreach (get_loaded_extensions() as $name) {
     $extensions[$name] = phpversion($name) ?: null;
@@ -153,6 +180,7 @@ echo json_encode([
             : filter_var($validateTimestamps, FILTER_VALIDATE_BOOLEAN),
         'extensions' => $extensions,
     ],
+    'opcache' => opcache_details(),
     'server_software' => $_SERVER['SERVER_SOFTWARE'] ?? null,
 ], JSON_UNESCAPED_SLASHES);
 PHP
@@ -173,7 +201,7 @@ fi
 echo ""
 echo "Collecting system details..."
 
-if PAYLOAD=$(VOIGHT_PROBE_JSON="$PROBE_JSON" php -d display_errors=stderr <<'PHP'
+if PAYLOAD=$(VOIGHT_PROBE_JSON="$PROBE_JSON" VOIGHT_PROBE_URL="$PROBE_URL" php -d display_errors=stderr <<'PHP'
 <?php
 $env = getenv('APP_ENV');
 $cwd = getcwd();
@@ -239,6 +267,56 @@ function opcache_enabled(): ?bool
     }
 }
 
+function cgroup_limits(): array
+{
+    $memory = trim((string) @file_get_contents('/sys/fs/cgroup/memory.max'));
+    [$quota, $period] = array_pad(explode(' ', trim((string) @file_get_contents('/sys/fs/cgroup/cpu.max'))), 2, null);
+
+    return [
+        'cgroup_memory_limit_bytes' => ctype_digit($memory) ? (int) $memory : null,
+        'cgroup_cpu_limit' => ctype_digit((string) $quota) && ctype_digit((string) $period) && (int) $period > 0
+            ? round((int) $quota / (int) $period, 2)
+            : null,
+    ];
+}
+
+function ssl_certificate(?string $url): ?array
+{
+    $parts = $url === null ? false : parse_url($url);
+
+    if (! is_array($parts) || ($parts['scheme'] ?? null) !== 'https' || ! isset($parts['host']) || ! function_exists('openssl_x509_parse')) {
+        return null;
+    }
+
+    $context = stream_context_create(['ssl' => [
+        'capture_peer_cert' => true,
+        'verify_peer' => false,
+        'verify_peer_name' => false,
+        'SNI_enabled' => true,
+        'peer_name' => $parts['host'],
+    ]]);
+    $stream = @stream_socket_client('ssl://' . $parts['host'] . ':' . ($parts['port'] ?? 443), $errno, $error, 5, STREAM_CLIENT_CONNECT, $context);
+
+    if ($stream === false) {
+        return null;
+    }
+
+    $certificate = stream_context_get_params($stream)['options']['ssl']['peer_certificate'] ?? null;
+    fclose($stream);
+    $cert = $certificate === null ? false : openssl_x509_parse($certificate);
+
+    if (! is_array($cert)) {
+        return null;
+    }
+
+    return [
+        'issuer' => $cert['issuer']['O'] ?? $cert['issuer']['CN'] ?? null,
+        'issuer_cn' => $cert['issuer']['CN'] ?? null,
+        'subject' => $cert['subject']['CN'] ?? null,
+        'expires_at' => isset($cert['validTo_time_t']) ? date('Y-m-d H:i:s T', $cert['validTo_time_t']) : null,
+    ];
+}
+
 function commit(string $cwd): ?string
 {
     // Deployer writes REVISION into the release directory; checkouts have .git instead.
@@ -270,7 +348,7 @@ function process_user(): ?string
 }
 
 $framework = null;
-$database = ['driver' => null, 'version' => null];
+$database = ['driver' => null, 'version' => null, 'size_bytes' => null];
 
 if (is_file('artisan')) {
     $framework = safe(fn (): array => [
@@ -283,6 +361,7 @@ if (is_file('artisan')) {
     $database = [
         'driver' => $db['platform']['config']['driver'] ?? null,
         'version' => $db['platform']['version'] ?? null,
+        'size_bytes' => is_array($db['tables'] ?? null) ? (array_sum(array_column($db['tables'], 'size')) ?: null) : null,
     ];
 } elseif (is_file('craft')) {
     $framework = safe(fn (): array => ['name' => 'craft', 'version' => package_version('craftcms/cms'), 'groups' => null]);
@@ -313,6 +392,7 @@ $phpBlock = safe(fn (): array => [
     'extensions' => $extensions,
 ]);
 $serverSoftware = null;
+$opcache = null;
 
 // Web-server values replace the CLI ones when the probe answered with a valid payload.
 $probeJson = getenv('VOIGHT_PROBE_JSON');
@@ -321,6 +401,8 @@ $probe = $probeJson === false || $probeJson === '' ? null : json_decode($probeJs
 if (is_array($probe) && is_array($probe['php'] ?? null) && is_string($probe['php']['version'] ?? null)) {
     $phpBlock = $probe['php'];
     $serverSoftware = is_string($probe['server_software'] ?? null) ? $probe['server_software'] : null;
+    // CLI opcache is usually off, so its numbers would mislead: only the web probe reports them.
+    $opcache = is_array($probe['opcache'] ?? null) ? $probe['opcache'] : null;
 } elseif ($probeJson !== false && $probeJson !== '') {
     fwrite(STDERR, "Warning: Web probe failed, using CLI PHP values\n");
 }
@@ -344,7 +426,7 @@ echo json_encode([
             'load_average' => is_array($load) ? array_map(fn (float $v): float => round($v, 2), array_values($load)) : null,
             'cpu_cores' => $cpuInfo === false ? null : (preg_match_all('/^processor\s*:/m', $cpuInfo) ?: null),
             'hostname' => gethostname() ?: null,
-        ]),
+        ] + cgroup_limits()),
         'deployment' => safe(fn (): array => [
             'release_path' => $cwd,
             'commit' => commit($cwd),
@@ -356,7 +438,11 @@ echo json_encode([
             'free_bytes' => @disk_free_space($cwd) ?: null,
             'total_bytes' => @disk_total_space($cwd) ?: null,
         ]),
-    ],
+    ] + array_filter([
+        // Groups without data are left out so the UI shows no empty section.
+        'opcache' => $opcache,
+        'ssl' => safe(fn (): ?array => ssl_certificate(getenv('VOIGHT_PROBE_URL') ?: null)),
+    ]),
 ], JSON_UNESCAPED_SLASHES | JSON_INVALID_UTF8_SUBSTITUTE | JSON_PARTIAL_OUTPUT_ON_ERROR);
 PHP
 ); then

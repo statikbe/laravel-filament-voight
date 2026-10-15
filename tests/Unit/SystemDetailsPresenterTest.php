@@ -82,3 +82,38 @@ it('sorts extension labels by name and only shows versions that differ from PHP'
     expect(SystemDetailsPresenter::extensionLabels($environment->fresh('systemDetails')))
         ->toBe(['curl', 'FFI', 'gd', 'imagick 3.8.1', 'mysqlnd', 'PDO', 'Zend OPcache']);
 });
+
+it('orders the new server groups and formats their byte values', function () {
+    $environment = Environment::factory()->create();
+    EnvironmentSystemDetail::factory()->for($environment)->create(['payload' => [
+        'server' => [
+            'disk' => ['free_bytes' => 1024 ** 3],
+            'ssl' => ['issuer' => "Let's Encrypt", 'issuer_cn' => 'R11'],
+            'system' => ['cgroup_memory_limit_bytes' => 4 * 1024 ** 3, 'cgroup_cpu_limit' => 1.0],
+            'opcache' => ['memory_used_bytes' => 1024 ** 2, 'jit' => false],
+            'php' => ['version' => '8.4.24'],
+        ],
+    ]]);
+
+    $server = SystemDetailsPresenter::server($environment->fresh('systemDetails'));
+
+    expect(array_keys($server))->toBe(['php', 'opcache', 'system', 'ssl', 'disk'])
+        ->and($server['opcache']['title'])->toBe('OPcache')
+        ->and($server['opcache']['rows'][0])->toMatchArray(['label' => 'Memory used', 'value' => '1 MB'])
+        ->and($server['system']['rows'][0])->toMatchArray(['label' => 'Container memory limit', 'value' => '4 GB'])
+        ->and($server['ssl']['rows'][1])->toMatchArray(['label' => 'Issuer CN', 'value' => 'R11']);
+});
+
+it('hides noisy package groups from the framework details', function () {
+    $environment = Environment::factory()->create();
+    EnvironmentSystemDetail::factory()->for($environment)->create(['payload' => [
+        'framework' => ['groups' => [
+            'environment' => ['debug_mode' => false],
+            'livewire' => ['livewire' => '4.0.0'],
+            'spatie_permissions' => ['features_teams' => 'Disabled'],
+            'filament_shield' => ['auth_provider' => 'Configured'],
+        ]],
+    ]]);
+
+    expect(array_keys(SystemDetailsPresenter::framework($environment->fresh('systemDetails'))))->toBe(['environment']);
+});

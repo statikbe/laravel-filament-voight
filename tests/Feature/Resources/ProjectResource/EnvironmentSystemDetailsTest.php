@@ -90,15 +90,15 @@ it('stacks the laravel groups in two balanced columns', function () {
                 'storage' => ['public' => 'storage-marker'],
                 'drivers' => ['queue' => 'drivers-marker', 'mail' => 'smtp', 'session' => 'file'],
                 'environment' => ['environment' => 'environment-marker', 'debug_mode' => false],
-                'livewire' => ['version' => 'livewire-marker'],
+                'octane' => ['version' => 'octane-marker'],
             ]],
         ],
     ]);
 
-    // Left stack (environment, drivers) renders before the right stack (cache, storage); livewire goes to the shorter right stack.
+    // Left stack (environment, drivers) renders before the right stack (cache, storage); octane goes to the shorter right stack.
     $this->get(viewEnvironmentUrl($environment))
         ->assertSuccessful()
-        ->assertSeeInOrder(['environment-marker', 'drivers-marker', 'cache-marker', 'storage-marker', 'livewire-marker']);
+        ->assertSeeInOrder(['environment-marker', 'drivers-marker', 'cache-marker', 'storage-marker', 'octane-marker']);
 });
 
 it('renders a non-Laravel framework tab with its own groups', function () {

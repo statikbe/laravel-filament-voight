@@ -14,14 +14,20 @@ use Statikbe\FilamentVoight\Models\Environment;
 class SystemDetailsPresenter
 {
     /** Known server groups come first, in this order; unknown groups follow. */
-    private const array SERVER_ORDER = ['php', 'system', 'deployment', 'database', 'disk'];
+    private const array SERVER_ORDER = ['php', 'opcache', 'system', 'deployment', 'database', 'ssl', 'disk'];
+
+    /** Package sections from `about` that add noise, not insight. */
+    private const array HIDDEN_FRAMEWORK_GROUPS = ['livewire', 'spatie_permissions', 'filament_shield'];
 
     /**
      * @return array<string, array{title: string, rows: array<int, array{key: string, label: string, value: string|bool|null}>}>
      */
     public static function framework(Environment $environment): array
     {
-        return self::groups((array) data_get($environment->systemDetails?->payload, 'framework.groups'));
+        return self::groups(array_diff_key(
+            (array) data_get($environment->systemDetails?->payload, 'framework.groups'),
+            array_flip(self::HIDDEN_FRAMEWORK_GROUPS),
+        ));
     }
 
     /**

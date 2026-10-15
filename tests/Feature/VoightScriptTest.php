@@ -78,7 +78,11 @@ it('posts framework-neutral system details and never fails the script on an endp
         ->and($payload['server']['php']['version'])->toBe(PHP_VERSION)
         // The web server runs with a different memory_limit than the CLI; without a docroot the CLI value is posted.
         ->and($payload['server']['php']['memory_limit'] === '345M')->toBe($docroot === 'public')
-        ->and($payload['server'])->toHaveKeys(['php', 'system', 'deployment', 'database', 'disk']);
+        ->and($payload['server'])->toHaveKeys(['php', 'system', 'deployment', 'database', 'disk'])
+        ->and($payload['server']['system'])->toHaveKeys(['cgroup_memory_limit_bytes', 'cgroup_cpu_limit'])
+        ->and($payload['server']['database'])->toHaveKey('size_bytes')
+        // APP_URL is plain http, so no certificate is probed (and no network call is made).
+        ->and($payload['server'])->not->toHaveKey('ssl');
 })->with([
     'accepted' => [204, 'public'],
     'server error' => [500, 'public'],
