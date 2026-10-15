@@ -8,6 +8,10 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (Schema::hasTable('voight_nightly_sweeps')) {
+            return;
+        }
+
         Schema::create('voight_nightly_sweeps', function (Blueprint $table) {
             $table->ulid('id')->primary();
             $table->string('status');
