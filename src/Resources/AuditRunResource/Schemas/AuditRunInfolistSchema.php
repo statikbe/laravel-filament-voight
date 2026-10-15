@@ -8,6 +8,7 @@ use Filament\Schemas\Schema;
 use Filament\Support\Enums\IconPosition;
 use Filament\Support\Icons\Heroicon;
 use Statikbe\FilamentVoight\Models\AuditRun;
+use Statikbe\FilamentVoight\Resources\Components\EnvironmentNameEntry;
 use Statikbe\FilamentVoight\Resources\ProjectResource;
 
 class AuditRunInfolistSchema
@@ -22,7 +23,9 @@ class AuditRunInfolistSchema
                     self::projectLink('environment.project.name', voightTrans('models.audit_run.fields.project')),
                     // Environments have no resource of their own, so this links to the
                     // project page that lists them rather than to the environment itself.
-                    self::projectLink('environment.name', voightTrans('models.audit_run.fields.environment')),
+                    EnvironmentNameEntry::make('environment.name')
+                        ->label(voightTrans('models.audit_run.fields.environment'))
+                        ->url(fn (AuditRun $record): string => self::projectUrl($record)),
                     TextEntry::make('trigger')
                         ->label(voightTrans('models.audit_run.fields.trigger'))
                         ->badge(),
@@ -50,13 +53,15 @@ class AuditRunInfolistSchema
     {
         return TextEntry::make($name)
             ->label($label)
-            ->url(fn (AuditRun $record): string => ProjectResource::getUrl(
-                'view',
-                ['record' => $record->environment->project],
-            ))
+            ->url(fn (AuditRun $record): string => self::projectUrl($record))
             ->color('primary')
             ->icon(Heroicon::OutlinedArrowRight)
             ->iconPosition(IconPosition::After)
             ->extraAttributes(['class' => 'underline']);
+    }
+
+    private static function projectUrl(AuditRun $record): string
+    {
+        return ProjectResource::getUrl('view', ['record' => $record->environment->project]);
     }
 }

@@ -11,6 +11,7 @@ use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Schemas\Schema;
+use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
@@ -20,10 +21,13 @@ use Statikbe\FilamentVoight\Enums\AlertFrequency;
 use Statikbe\FilamentVoight\Facades\FilamentVoight;
 use Statikbe\FilamentVoight\Models\AlertSetting;
 use Statikbe\FilamentVoight\Models\Team;
+use Statikbe\FilamentVoight\Resources\Components\TeamOption;
 
 class AlertSettingsRelationManager extends RelationManager
 {
     protected static string $relationship = 'alertSettings';
+
+    protected static string | \BackedEnum | null $icon = Heroicon::OutlinedBellAlert;
 
     public static function getTitle(Model $ownerRecord, string $pageClass): string
     {
@@ -74,10 +78,8 @@ class AlertSettingsRelationManager extends RelationManager
                     }),
                 Select::make('recipient_teams')
                     ->label(voightTrans('models.alert_setting.fields.recipient_teams'))
-                    ->options(fn (): array => Team::query()
-                        ->orderBy('name')
-                        ->pluck('name', 'id')
-                        ->all())
+                    ->options(fn (): array => TeamOption::options())
+                    ->allowHtml()
                     ->multiple()
                     ->searchable()
                     ->dehydrated(false)

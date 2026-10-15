@@ -81,3 +81,7 @@ it('creates the async scan tables', function () {
             'trigger', 'meta', 'resubmits', 'input_path', 'error_message', 'created_at', 'updated_at',
         ]))->toBeTrue();
 });
+
+it('adds an avatar_path column to voight_teams', function () {
+    expect(Schema::hasColumn('voight_teams', 'avatar_path'))->toBeTrue();
+});

@@ -14,6 +14,7 @@ use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Statikbe\FilamentVoight\Models\Project;
 use Statikbe\FilamentVoight\Models\Team;
+use Statikbe\FilamentVoight\Resources\Components\TeamOption;
 use Statikbe\FilamentVoight\Resources\CustomerResource\Schemas\CustomerFormSchema;
 
 class ProjectFormSchema
@@ -55,6 +56,8 @@ class ProjectFormSchema
                         Select::make('team_id')
                             ->label(voightTrans('models.project.fields.team'))
                             ->relationship('team', 'name')
+                            ->getOptionLabelFromRecordUsing(fn (Team $record): string => TeamOption::label($record))
+                            ->allowHtml()
                             ->default(
                                 Team::whereHas('users', function ($query) {
                                     return $query->where('user_id', auth()->id());

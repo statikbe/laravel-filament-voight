@@ -12,6 +12,7 @@ use Statikbe\FilamentVoight\Enums\PackageType;
 use Statikbe\FilamentVoight\Enums\Severity;
 use Statikbe\FilamentVoight\Facades\FilamentVoight;
 use Statikbe\FilamentVoight\Models\AuditFinding;
+use Statikbe\FilamentVoight\Resources\Components\EnvironmentNameColumn;
 
 class ActiveFindingsWidget extends TableWidget
 {
@@ -68,7 +69,7 @@ class ActiveFindingsWidget extends TableWidget
                     ->formatStateUsing(fn (PackageType $state): string => $state->label()),
                 TextColumn::make('auditRun.environment.project.name')
                     ->label(voightTrans('models.package.view.columns.project')),
-                TextColumn::make('auditRun.environment.name')
+                EnvironmentNameColumn::make('auditRun.environment.name')
                     ->label(voightTrans('models.package.view.columns.environment')),
                 TextColumn::make('auditRun.started_at')
                     ->label(voightTrans('widgets.active_findings.columns.observed'))

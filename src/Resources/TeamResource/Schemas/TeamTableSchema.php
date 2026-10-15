@@ -5,8 +5,10 @@ namespace Statikbe\FilamentVoight\Resources\TeamResource\Schemas;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
+use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
+use Statikbe\FilamentVoight\Models\Team;
 
 class TeamTableSchema
 {
@@ -14,6 +16,11 @@ class TeamTableSchema
     {
         return $table
             ->columns([
+                ImageColumn::make('avatar')
+                    ->label('')
+                    ->state(fn (Team $record): string => $record->getAvatarUrl())
+                    ->imageHeight(32)
+                    ->circular(),
                 TextColumn::make('name')
                     ->label(voightTrans('models.team.fields.name'))
                     ->searchable()

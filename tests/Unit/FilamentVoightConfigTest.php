@@ -185,3 +185,9 @@ it('turns callbacks off with a warning when no callback secret is configured', f
     expect(FilamentVoight::config()->getScannerCallbackUrl())->toBeNull();
     Log::shouldHaveReceived('warning')->once()->withArgs(fn (string $message) => str_contains($message, 'callbacks are disabled') && str_contains($message, 'VOIGHT_SCANNER_CALLBACK_SECRET'));
 });
+
+it('stores team avatars on the public disk by default', function () {
+    config()->set('filament-voight.teams', null);
+
+    expect(FilamentVoight::config()->getTeamAvatarDisk())->toBe('public');
+});

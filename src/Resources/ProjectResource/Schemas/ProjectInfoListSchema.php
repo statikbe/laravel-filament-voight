@@ -12,6 +12,7 @@ use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Support\Enums\IconPosition;
 use Filament\Support\Icons\Heroicon;
+use Illuminate\Contracts\View\View;
 use Statikbe\FilamentVoight\Models\Project;
 use Statikbe\FilamentVoight\Resources\CustomerResource;
 use Statikbe\FilamentVoight\Resources\TeamResource;
@@ -25,6 +26,7 @@ class ProjectInfoListSchema
             Grid::make(2)
                 ->components([
                     Section::make(voightTrans('models.project.sections.general'))
+                        ->icon(Heroicon::OutlinedInformationCircle)
                         ->components([
                             TextEntry::make('project_code')
                                 ->label(voightTrans('models.project.fields.project_code')),
@@ -42,6 +44,7 @@ class ProjectInfoListSchema
                         ])
                         ->extraAttributes(['class' => 'h-full [&>.fi-section]:h-full']),
                     Section::make(voightTrans('models.project.sections.assignment'))
+                        ->icon(Heroicon::OutlinedUserGroup)
                         ->components([
                             TextEntry::make('customer.name')
                                 ->label(voightTrans('models.project.fields.customer'))
@@ -49,11 +52,12 @@ class ProjectInfoListSchema
                                 ->badge(),
                             TextEntry::make('team.name')
                                 ->label(voightTrans('models.project.fields.team'))
-                                ->url(fn ($record) => TeamResource::getUrl('view', ['record' => $record->team]))
-                                ->badge(),
+                                ->formatStateUsing(fn (Project $record): View => view('filament-voight::team.avatar-name', ['team' => $record->team]))
+                                ->url(fn ($record) => TeamResource::getUrl('view', ['record' => $record->team])),
                         ])
                         ->extraAttributes(['class' => 'h-full [&>.fi-section]:h-full']),
                     Section::make(voightTrans('models.project.sections.settings'))
+                        ->icon(Heroicon::OutlinedCog6Tooth)
                         ->components([
                             TextEntry::make('is_muted')
                                 ->badge()
@@ -63,6 +67,7 @@ class ProjectInfoListSchema
                         ])
                         ->extraAttributes(['class' => 'h-full [&>.fi-section]:h-full']),
                     Section::make(voightTrans('models.project.sections.api_token'))
+                        ->icon(Heroicon::OutlinedKey)
                         ->description(voightTrans('models.project.sections.api_token_description'))
                         ->visible(fn (?Project $record): bool => $record !== null)
                         ->components([
