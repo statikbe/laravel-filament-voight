@@ -206,6 +206,8 @@ return [
             'plural' => 'Environments',
             'fields' => [
                 'name' => 'Name',
+                'url' => 'URL',
+                'url_help' => 'Public site URL, used to fetch the project favicon. Sent automatically by voight.sh.',
                 'scan_nightly' => 'Nightly scan',
                 'scanned_at' => 'Last Scanned',
                 'health' => 'Health',

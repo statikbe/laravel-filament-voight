@@ -153,6 +153,29 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Favicons
+    |--------------------------------------------------------------------------
+    |
+    | Projects show their website's favicon in the panel tables. The site URL
+    | is sent along with each lockfile sync (APP_URL in voight.sh), and the
+    | icon is fetched from a production-stage environment (see
+    | `environments.stages`) when one has a URL.
+    |
+    | `fallback_drivers` are favicon-fetcher drivers tried when the site
+    | itself yields nothing (e.g. 'duck-duck-go', 'google-shared-stuff').
+    | These send the domain to a third party, so they are off by default.
+    |
+    */
+    'favicons' => [
+        'enabled' => env('VOIGHT_FAVICONS_ENABLED', true),
+        'disk' => env('VOIGHT_FAVICONS_DISK', 'public'),
+        'directory' => 'voight/favicons',
+        'refresh_after_days' => 30,
+        'fallback_drivers' => [],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Models
     |--------------------------------------------------------------------------
     |

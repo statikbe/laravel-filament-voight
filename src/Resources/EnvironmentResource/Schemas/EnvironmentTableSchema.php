@@ -17,11 +17,13 @@ use Statikbe\FilamentVoight\Enums\DependencySyncStatus;
 use Statikbe\FilamentVoight\Facades\FilamentVoight;
 use Statikbe\FilamentVoight\Models\Environment;
 use Statikbe\FilamentVoight\Models\EnvironmentSystemDetail;
+use Statikbe\FilamentVoight\Models\Project;
 use Statikbe\FilamentVoight\Resources\Components\EnvironmentNameColumn;
 use Statikbe\FilamentVoight\Resources\Components\EnvironmentStageConstraint;
 use Statikbe\FilamentVoight\Resources\Components\ProjectConstraint;
 use Statikbe\FilamentVoight\Resources\EnvironmentResource;
 use Statikbe\FilamentVoight\Resources\ProjectResource;
+use Statikbe\FilamentVoight\Support\ProjectFaviconColumn;
 
 class EnvironmentTableSchema
 {
@@ -44,6 +46,7 @@ class EnvironmentTableSchema
         return $table
             ->modifyQueryUsing(fn (Builder $query): Builder => $query->with(['project', 'systemDetails']))
             ->columns([
+                ProjectFaviconColumn::make(fn (Environment $record): Project => $record->project),
                 TextColumn::make('project.name')
                     ->label(voightTrans('models.environment.fields.project'))
                     ->searchable()
@@ -52,6 +55,11 @@ class EnvironmentTableSchema
                     ->label(voightTrans('models.environment.fields.name'))
                     ->searchable()
                     ->sortable(),
+                TextColumn::make('url')
+                    ->label(voightTrans('models.environment.fields.url'))
+                    ->url(fn (Environment $record): ?string => $record->url, shouldOpenInNewTab: true)
+                    ->placeholder('—')
+                    ->toggleable(),
                 TextColumn::make('systemDetails.php_version')
                     ->label(voightTrans('models.environment.fields.php_version'))
                     ->placeholder('—')

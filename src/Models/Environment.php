@@ -19,6 +19,7 @@ use Statikbe\FilamentVoight\Facades\FilamentVoight;
  * @property string $id
  * @property int $project_id
  * @property string $name
+ * @property string|null $url
  * @property bool $scan_nightly
  * @property Carbon|null $scanned_at
  * @property Carbon|null $created_at

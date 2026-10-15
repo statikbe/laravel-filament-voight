@@ -215,6 +215,7 @@ Authenticated via the project bearer token.
 |---|---|---|
 | `project_code` | string | required |
 | `environment` | string | required (`production`, `staging`, …) |
+| `url` | string | optional, public site URL of the environment (used for the project favicon) |
 | `lockfiles[filename]` | file | required, one or more |
 
 Response `202 Accepted`:
@@ -258,6 +259,7 @@ Response `204 No Content`. Voight keeps only the latest snapshot per environment
 | `voight:create-token --project= --name=` | Generate an API token for a project |
 | `voight:sync-lockfile` | Push lockfiles from the command line |
 | `voight:run-osv-scan` | Dispatch OSV scan jobs (all or filtered) |
+| `voight:fetch-favicons [--project=] [--force]` | Fetch project favicons from their environment URLs |
 
 ### `voight:run-osv-scan`
 
@@ -266,6 +268,22 @@ php artisan voight:run-osv-scan --nightly                                     # 
 php artisan voight:run-osv-scan                                               # all environments (per-environment scans)
 php artisan voight:run-osv-scan --project=my-project                          # one project
 php artisan voight:run-osv-scan --project=my-project --environment=production # one environment
+```
+
+## Project favicons
+
+The projects and environments tables show each project's favicon so projects are easy to tell apart. Projects without one get a coloured initial.
+
+1. `voight.sh` sends the environment's public URL (`VOIGHT_SITE_URL`, else `APP_URL`, else Craft's `PRIMARY_SITE_URL`) with every sync.
+2. When an environment URL changes, or the stored favicon is older than `favicons.refresh_after_days`, `FetchProjectFaviconJob` is queued.
+3. The job reads `<link rel="icon">` / `apple-touch-icon` tags from a production-stage environment (see `environments.stages`) that has a URL, falling back to `/favicon.ico`, and stores the largest icon on the `favicons.disk` disk (default `public`, so run `php artisan storage:link`).
+
+Only production-like environments are preferred because test and acceptance sites are usually behind basic auth. Third-party lookups (`duck-duck-go`, `google-shared-stuff`, …) are off by default; enable them via `favicons.fallback_drivers`. Disable the feature with `VOIGHT_FAVICONS_ENABLED=false`.
+
+Backfill existing projects once their environments have a URL (set it in the environment form, or wait for the next deploy):
+
+```bash
+php artisan voight:fetch-favicons
 ```
 
 ## Scheduling

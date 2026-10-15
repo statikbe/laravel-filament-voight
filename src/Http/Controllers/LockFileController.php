@@ -16,6 +16,7 @@ class LockFileController extends Controller
             environmentName: $request->validated('environment'),
             lockfiles: $request->file('lockfiles'),
             project: $request->attributes->get('voight_project'),
+            url: $request->validated('url'),
         );
 
         return response()->json([

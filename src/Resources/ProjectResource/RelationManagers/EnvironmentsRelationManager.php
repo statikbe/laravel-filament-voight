@@ -46,6 +46,11 @@ class EnvironmentsRelationManager extends RelationManager
                     ->label(voightTrans('models.environment.fields.name'))
                     ->required()
                     ->maxLength(255),
+                TextInput::make('url')
+                    ->label(voightTrans('models.environment.fields.url'))
+                    ->helperText(voightTrans('models.environment.fields.url_help'))
+                    ->url()
+                    ->maxLength(2048),
                 Toggle::make('scan_nightly')
                     ->label(voightTrans('models.environment.fields.scan_nightly'))
                     ->default(true),

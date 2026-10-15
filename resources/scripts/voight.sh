@@ -51,6 +51,13 @@ set -- \
   -F "project_code=$PROJECT_CODE" \
   -F "environment=$APP_ENV"
 
+# Public site URL, used by Voight to fetch the project favicon. Laravel sets
+# APP_URL, Craft PRIMARY_SITE_URL; VOIGHT_SITE_URL overrides both.
+SITE_URL="${VOIGHT_SITE_URL:-${APP_URL:-${PRIMARY_SITE_URL:-}}}"
+case "$SITE_URL" in
+  http://*|https://*) set -- "$@" -F "url=$SITE_URL" ;;
+esac
+
 for lock in $FOUND_LOCKS; do
   set -- "$@" -F "lockfiles[${lock}]=@${lock};filename=${lock}"
 done

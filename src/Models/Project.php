@@ -21,6 +21,8 @@ use Staudenmeir\EloquentHasManyDeep\HasRelationships;
  * @property string|null $name
  * @property string|null $description
  * @property string|null $repo_url
+ * @property string|null $favicon_path
+ * @property Carbon|null $favicon_fetched_at
  * @property string|null $customer_id
  * @property string|null $team_id
  * @property bool $is_muted
@@ -46,7 +48,27 @@ class Project extends Model
     {
         return [
             'is_muted' => 'boolean',
+            'favicon_fetched_at' => 'datetime',
         ];
+    }
+
+    /**
+     * Inline SVG with the project's initial on a colour derived from its
+     * code, shown when no favicon has been fetched yet.
+     */
+    public function getFaviconPlaceholderUrl(): string
+    {
+        $label = $this->name ?: $this->project_code;
+        $initial = htmlspecialchars(mb_strtoupper(mb_substr(trim($label), 0, 1)), ENT_XML1);
+        $hue = crc32($this->project_code) % 360;
+
+        $svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">'
+            . "<rect width=\"32\" height=\"32\" rx=\"6\" fill=\"hsl({$hue}, 55%, 45%)\"/>"
+            . '<text x="16" y="16" dy=".35em" text-anchor="middle" font-family="system-ui, sans-serif" font-size="17" font-weight="600" fill="#fff">'
+            . $initial
+            . '</text></svg>';
+
+        return 'data:image/svg+xml;base64,' . base64_encode($svg);
     }
 
     /**

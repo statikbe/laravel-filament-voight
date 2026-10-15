@@ -143,6 +143,36 @@ class FilamentVoightConfig
         return $this->packageConfig('teams.avatar_disk', 'public');
     }
 
+    // -- Favicons --
+
+    public function isFaviconFetchingEnabled(): bool
+    {
+        return (bool) $this->packageConfig('favicons.enabled', true);
+    }
+
+    public function getFaviconsDisk(): string
+    {
+        return $this->packageConfig('favicons.disk', 'public');
+    }
+
+    public function getFaviconsDirectory(): string
+    {
+        return $this->packageConfig('favicons.directory', 'voight/favicons');
+    }
+
+    public function getFaviconRefreshAfterDays(): int
+    {
+        return (int) $this->packageConfig('favicons.refresh_after_days', 30);
+    }
+
+    /**
+     * @return array<string>
+     */
+    public function getFaviconFallbackDrivers(): array
+    {
+        return $this->packageConfig('favicons.fallback_drivers', []);
+    }
+
     // -- API --
 
     /**
