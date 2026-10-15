@@ -85,10 +85,6 @@ class FilamentVoightServiceProvider extends PackageServiceProvider
             $schedule->command('voight:send-alert-digests')->hourly();
             $schedule->command('voight:reap-stranded-scans')->hourly()->withoutOverlapping();
 
-            if (filled(FilamentVoight::config()->getPushBaseUrl())) {
-                $schedule->command('voight:push-system-details')->daily();
-            }
-
             $cron = FilamentVoight::config()->getScannerNightlyCron();
 
             if ($cron === '') {
@@ -124,7 +120,6 @@ class FilamentVoightServiceProvider extends PackageServiceProvider
             Commands\ReapStrandedScansCommand::class,
             Commands\SendAlertDigestsCommand::class,
             Commands\ReprocessLockfilesCommand::class,
-            Commands\PushSystemDetailsCommand::class,
         ];
     }
 

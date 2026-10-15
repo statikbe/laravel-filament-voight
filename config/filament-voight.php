@@ -50,25 +50,6 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Push (client apps)
-    |--------------------------------------------------------------------------
-    |
-    | Used by `voight:push-system-details` on the app being monitored. Same
-    | variables as voight.sh. Leave base_url empty to disable pushing. The
-    | environment name must match the one voight.sh sends; null = APP_ENV.
-    |
-    */
-    'push' => [
-        'base_url' => env('VOIGHT_API_BASE_URL'),
-        'token' => env('VOIGHT_API_TOKEN'),
-        'environment' => env('VOIGHT_PUSH_ENVIRONMENT'),
-        // Base URL this app uses to call itself through the web server, so PHP ini values are the real web ones.
-        // Null = app.url. In DDEV use http://localhost (the container does not trust the local certificate).
-        'loopback_url' => env('VOIGHT_PUSH_LOOPBACK_URL'),
-    ],
-
-    /*
-    |--------------------------------------------------------------------------
     | OSV Scanner Lambda
     |--------------------------------------------------------------------------
     |

@@ -119,6 +119,22 @@ it('renders a non-Laravel framework tab with its own groups', function () {
         ->assertSeeInOrder(['Edition', 'pro-marker', 'Plugins', 'plugin-marker']);
 });
 
+it('renders the view page with a sparse snapshot where sections failed', function () {
+    $environment = Environment::factory()->create();
+    EnvironmentSystemDetail::factory()->for($environment)->create([
+        'php_version' => null,
+        'payload' => [
+            'app' => null,
+            'framework' => null,
+            'server' => ['php' => null, 'system' => null, 'deployment' => null, 'database' => ['driver' => null, 'version' => null], 'disk' => null],
+        ],
+    ]);
+
+    $this->get(viewEnvironmentUrl($environment))
+        ->assertSuccessful()
+        ->assertSee('Copy as Markdown');
+});
+
 it('renders the view page without a snapshot', function () {
     $environment = Environment::factory()->create();
 

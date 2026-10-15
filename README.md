@@ -21,9 +21,7 @@ CI/CD project  →  POST /api/voight/lock-file  →  Voight app  →  ProcessLoc
 2. `ProcessLockFilesJob` parses `composer.lock` / `package-lock.json` and syncs the full dependency tree into the database.
 3. `RunOsvScanJob` dispatches immediately after every successful sync, submitting that environment's stored lockfiles as an asynchronous scan (`POST /scans`, upload, then callback or polling) and persisting results as `AuditRun`, `AuditFinding`, and `Vulnerability` records.
 4. `RunNightlyOsvScanJob` runs on a daily cron. Instead of re-scanning every environment's lockfiles, it collects the **distinct** `(ecosystem, name, version)` set across all environments flagged `scan_nightly`, scans it as a few asynchronous `packages` batches, and fans the merged results back out to per-environment `AuditRun`s. Environments containing commit-pinned (`dev-*`) dependencies fall back to per-environment scans. See [specs/15-async-osv-scans.md](specs/15-async-osv-scans.md).
-3. `RunOsvScanJob` dispatches immediately after every successful sync, sending that environment's stored lockfiles to the OSV Scanner Lambda's `/locks` endpoint and persisting results as `AuditRun`, `AuditFinding`, and `Vulnerability` records.
-4. `RunNightlyOsvScanJob` runs on a daily cron. Instead of re-scanning every environment's lockfiles, it collects the **distinct** `(ecosystem, name, version)` set across all environments flagged `scan_nightly`, scans it in a few batched calls to the Lambda's `/packages` endpoint, and fans the results back out to per-environment `AuditRun`s. Environments containing commit-pinned (`dev-*`) dependencies fall back to the per-environment `/locks` path.
-5. `voight:push-system-details` runs on each monitored server (after deploy and daily) and POSTs a server snapshot (PHP, OS, database, deployment, framework details; for Laravel the `about` output) to `/api/voight/system-details`. Voight keeps the latest snapshot per environment.
+5. `voight.sh` also sends a server snapshot (PHP, OS, database, deployment, framework details; for Laravel the `about` output) to `/api/voight/system-details` after the lockfiles, on deploy. Voight keeps the latest snapshot per environment.
 
 ## Installation
 
@@ -163,6 +161,8 @@ sh voight.sh
 
 The script auto-discovers `composer.lock`, `package-lock.json`, `yarn.lock`, `pnpm-lock.yaml`, and `bun.lock` in the current directory and POSTs them as `multipart/form-data`.
 
+After the lockfiles, the script also POSTs a system-details snapshot (PHP, OS, disk, database, and framework info for Laravel or Craft CMS). It needs only `php` on the server, not `jq`. PHP values come from the web server: the script briefly writes a random `voight-probe-*.php` file into `public/` (or `web/` for Craft) and fetches it at `APP_URL` (or `PRIMARY_SITE_URL`), then deletes it. If that fails it warns and falls back to the CLI PHP values (`sapi` is `cli`). The site must therefore be reachable at that URL, so on Deployer run the script after `deploy:symlink`. A failure never changes the exit code.
+
 ### Option B — artisan command
 
 Useful for local testing or one-off syncs:
@@ -222,32 +222,12 @@ The contract is framework-neutral: any client (for example a Craft CMS plugin) c
 
 Response `204 No Content`. Voight keeps only the latest snapshot per environment (overwritten on each push); bodies over 256 KB get `413`. The snapshot is stored in `voight_environment_system_details` and shown on the environment page (click an environment in the project's Environments tab): stat cards for PHP, database, environment and debug mode, then Framework / Server / Extensions tabs, plus a **Copy as Markdown** action. The global **Environments** list shows all environments with their PHP version and filters on it.
 
-Pushing is done by the monitored app itself, with the `voight:push-system-details` command from this package and the same project token as the lockfile sync:
-
-```dotenv
-VOIGHT_API_BASE_URL=https://your-voight-app.example.com
-VOIGHT_API_TOKEN=1|your-project-token
-# Optional: environment name to file the snapshot under (default: APP_ENV)
-VOIGHT_PUSH_ENVIRONMENT=
-# Optional: base URL the app uses to call itself so PHP values come from the web server, not the CLI (default: APP_URL)
-VOIGHT_PUSH_LOOPBACK_URL=
-```
-
-These are the same variables `voight.sh` already uses, so there is nothing extra to set. The environment name must match the one `voight.sh` sends, or the snapshot lands on a second environment.
-
-```bash
-php artisan voight:push-system-details
-```
-
-The command does nothing (exit 0) when `VOIGHT_API_BASE_URL` is empty and refuses a non-`https` URL (except `localhost` / `127.0.0.1`). `--url`, `--token` and `--environment` override the config. The command fetches PHP/server values from the app's own web server through a one-minute signed URL (`GET /api/voight/system-details/collect`); if that fails it warns and falls back to CLI values (`sapi` then shows `cli`). In DDEV set `VOIGHT_PUSH_LOOPBACK_URL=http://localhost`, because the container does not trust the local certificate. When a base URL is configured the command is also scheduled daily; to push after each deploy, add a Deployer task running `artisan:voight:push-system-details` after `deploy:symlink`.
-
 ## Artisan commands
 
 | Command | Description |
 |---|---|
 | `voight:create-token --project= --name=` | Generate an API token for a project |
 | `voight:sync-lockfile` | Push lockfiles from the command line |
-| `voight:push-system-details` | Push a server snapshot (PHP, OS, database, Laravel `about`) to Voight |
 | `voight:run-osv-scan` | Dispatch OSV scan jobs (all or filtered) |
 
 ### `voight:run-osv-scan`

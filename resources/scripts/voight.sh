@@ -6,7 +6,7 @@ if [ -f ".env" ]; then
   . ./.env
 fi
 
-export VOIGHT_API_BASE_URL VOIGHT_API_TOKEN PROJECT_CODE APP_ENV
+export VOIGHT_API_BASE_URL VOIGHT_API_TOKEN PROJECT_CODE APP_ENV APP_DEBUG APP_URL PRIMARY_SITE_URL
 
 # Required env vars
 : "${VOIGHT_API_BASE_URL:?VOIGHT_API_BASE_URL is not set}"
@@ -32,12 +32,13 @@ if [ -f "package.json" ] && echo "$FOUND_LOCKS" | grep -q "yarn.lock"; then
   echo "  Found: package.json"
 fi
 
-if [ -z "$FOUND_LOCKS" ]; then
-  echo "No lock files found. Exiting."
-  exit 0
-fi
+LOCK_STATUS=0
 
-# ── Send to API ───────────────────────────────────────────────────────────────
+if [ -z "$FOUND_LOCKS" ]; then
+  echo "No lock files found. Skipping lock file upload."
+else
+
+# ── Send lock files to API ────────────────────────────────────────────────────
 
 echo ""
 echo "Sending lock files to API..."
@@ -54,7 +55,9 @@ for lock in $FOUND_LOCKS; do
   set -- "$@" -F "lockfiles[${lock}]=@${lock};filename=${lock}"
 done
 
-RESPONSE=$(curl "$@")
+# A failure must not abort the script: system details are still attempted below.
+RESPONSE=$(curl "$@") || RESPONSE="
+000"
 HTTP_STATUS=$(printf '%s' "$RESPONSE" | tail -n1)
 BODY=$(printf '%s' "$RESPONSE" | sed '$d')
 
@@ -69,5 +72,331 @@ if [ "$HTTP_STATUS" -ge 200 ] && [ "$HTTP_STATUS" -lt 300 ]; then
 else
   echo ""
   echo "Error: API returned status $HTTP_STATUS" >&2
-  exit 1
+  LOCK_STATUS=1
 fi
+
+fi
+
+# ── Send system details to API ────────────────────────────────────────────────
+# Runs after the lock file upload, which creates the project environment.
+# PHP values come from the web server through a temporary probe file, with the
+# CLI PHP as fallback. Failures only warn.
+
+# ── Web probe ─────────────────────────────────────────────────────────────────
+# CLI PHP ini values differ from the web server's, so ask the web server.
+
+PROBE_JSON=""
+PROBE_FILE=""
+PROBE_DIR=""
+PROBE_URL="${APP_URL:-${PRIMARY_SITE_URL:-}}"
+
+if [ -d public ]; then
+  PROBE_DIR="public"
+elif [ -d web ]; then
+  PROBE_DIR="web"
+fi
+
+if [ -n "$PROBE_DIR" ] && [ -n "$PROBE_URL" ]; then
+  PROBE_FILE="$PROBE_DIR/voight-probe-$(od -An -N16 -tx1 /dev/urandom | tr -d ' \n').php"
+  trap 'rm -f "$PROBE_FILE"' EXIT
+  trap 'exit 1' INT TERM
+
+  # Mirrors the php block of the CLI collector below (without exec: it is often disabled under FPM).
+  if cat > "$PROBE_FILE" <<'PHP'
+<?php
+function ini(string $key): ?string
+{
+    $value = ini_get($key);
+
+    return $value === false || $value === '' ? null : $value;
+}
+
+function opcache_enabled(): ?bool
+{
+    if (! function_exists('opcache_get_status')) {
+        return false;
+    }
+
+    try {
+        $status = @opcache_get_status(false);
+
+        return is_array($status) ? (bool) ($status['opcache_enabled'] ?? false) : false;
+    } catch (Throwable) {
+        return null;
+    }
+}
+
+$extensions = [];
+foreach (get_loaded_extensions() as $name) {
+    $extensions[$name] = phpversion($name) ?: null;
+}
+ksort($extensions, SORT_NATURAL | SORT_FLAG_CASE);
+
+$validateTimestamps = ini('opcache.validate_timestamps');
+
+header('Content-Type: application/json');
+echo json_encode([
+    'php' => [
+        'version' => PHP_VERSION,
+        'sapi' => PHP_SAPI,
+        'memory_limit' => ini('memory_limit'),
+        'max_execution_time' => ini('max_execution_time'),
+        'upload_max_filesize' => ini('upload_max_filesize'),
+        'post_max_size' => ini('post_max_size'),
+        'max_input_vars' => ini('max_input_vars'),
+        'timezone' => ini('date.timezone') ?? date_default_timezone_get(),
+        'ini_path' => php_ini_loaded_file() ?: null,
+        'xdebug' => extension_loaded('xdebug'),
+        'opcache' => opcache_enabled(),
+        'opcache_validate_timestamps' => $validateTimestamps === null
+            ? null
+            : filter_var($validateTimestamps, FILTER_VALIDATE_BOOLEAN),
+        'extensions' => $extensions,
+    ],
+    'server_software' => $_SERVER['SERVER_SOFTWARE'] ?? null,
+], JSON_UNESCAPED_SLASHES);
+PHP
+  then
+    if PROBE_RESPONSE=$(curl -s --max-time 5 -w "\n%{http_code}" "${PROBE_URL%/}/${PROBE_FILE##*/}") \
+      && [ "$(printf '%s' "$PROBE_RESPONSE" | tail -n1)" = "200" ]; then
+      PROBE_JSON=$(printf '%s' "$PROBE_RESPONSE" | sed '$d')
+    fi
+  fi
+
+  rm -f "$PROBE_FILE"
+
+  if [ -z "$PROBE_JSON" ]; then
+    echo "Warning: Web probe failed, using CLI PHP values" >&2
+  fi
+fi
+
+echo ""
+echo "Collecting system details..."
+
+if PAYLOAD=$(VOIGHT_PROBE_JSON="$PROBE_JSON" php -d display_errors=stderr <<'PHP'
+<?php
+$env = getenv('APP_ENV');
+$cwd = getcwd();
+
+// One failing section must not cost the whole payload: a Throwable gives null for that section only.
+function safe(callable $callback): mixed
+{
+    try {
+        return $callback();
+    } catch (Throwable) {
+        return null;
+    }
+}
+
+function ini(string $key): ?string
+{
+    $value = ini_get($key);
+
+    return $value === false || $value === '' ? null : $value;
+}
+
+function package_version(string $package): ?string
+{
+    $file = 'vendor/composer/installed.json';
+    $installed = is_file($file) ? json_decode((string) file_get_contents($file), true) : null;
+    // Composer 2 wraps the list in "packages"; Composer 1 is the bare list.
+    $packages = is_array($installed) ? ($installed['packages'] ?? $installed) : [];
+
+    foreach ($packages as $entry) {
+        if (($entry['name'] ?? null) === $package) {
+            return ltrim((string) ($entry['version'] ?? ''), 'v') ?: null;
+        }
+    }
+
+    return null;
+}
+
+function artisan_json(string $command): ?array
+{
+    // `about` output is translated; the receiver expects stable English values.
+    if (! function_exists('exec')) {
+        return null;
+    }
+
+    putenv('APP_LOCALE=en');
+    exec(escapeshellarg(PHP_BINARY) . ' -d display_errors=stderr artisan ' . $command . ' --json 2>/dev/null', $lines, $code);
+
+    return $code === 0 && is_array($data = json_decode(implode("\n", $lines), true)) ? $data : null;
+}
+
+function opcache_enabled(): ?bool
+{
+    if (! function_exists('opcache_get_status')) {
+        return false;
+    }
+
+    try {
+        $status = @opcache_get_status(false);
+
+        return is_array($status) ? (bool) ($status['opcache_enabled'] ?? false) : false;
+    } catch (Throwable) {
+        return null;
+    }
+}
+
+function commit(string $cwd): ?string
+{
+    // Deployer writes REVISION into the release directory; checkouts have .git instead.
+    $revision = @file_get_contents($cwd . '/REVISION');
+
+    if ($revision === false) {
+        $head = trim((string) @file_get_contents($cwd . '/.git/HEAD'));
+        $revision = str_starts_with($head, 'ref: ')
+            ? @file_get_contents($cwd . '/.git/' . substr($head, 5))
+            : $head;
+    }
+
+    $revision = trim((string) $revision);
+
+    return preg_match('/^[0-9a-f]{7,40}$/i', $revision) === 1 ? substr($revision, 0, 7) : null;
+}
+
+function process_user(): ?string
+{
+    if (function_exists('posix_getpwuid') && function_exists('posix_geteuid')) {
+        $user = @posix_getpwuid(posix_geteuid());
+
+        if (is_array($user)) {
+            return $user['name'];
+        }
+    }
+
+    return get_current_user() ?: null;
+}
+
+$framework = null;
+$database = ['driver' => null, 'version' => null];
+
+if (is_file('artisan')) {
+    $framework = safe(fn (): array => [
+        'name' => 'laravel',
+        'version' => package_version('laravel/framework'),
+        'groups' => artisan_json('about'),
+    ]);
+
+    $db = safe(fn (): ?array => artisan_json('db:show'));
+    $database = [
+        'driver' => $db['platform']['config']['driver'] ?? null,
+        'version' => $db['platform']['version'] ?? null,
+    ];
+} elseif (is_file('craft')) {
+    $framework = safe(fn (): array => ['name' => 'craft', 'version' => package_version('craftcms/cms'), 'groups' => null]);
+}
+
+$extensions = [];
+foreach (get_loaded_extensions() as $name) {
+    $extensions[$name] = phpversion($name) ?: null;
+}
+ksort($extensions, SORT_NATURAL | SORT_FLAG_CASE);
+
+$validateTimestamps = ini('opcache.validate_timestamps');
+$phpBlock = safe(fn (): array => [
+    'version' => PHP_VERSION,
+    'sapi' => PHP_SAPI,
+    'memory_limit' => ini('memory_limit'),
+    'max_execution_time' => ini('max_execution_time'),
+    'upload_max_filesize' => ini('upload_max_filesize'),
+    'post_max_size' => ini('post_max_size'),
+    'max_input_vars' => ini('max_input_vars'),
+    'timezone' => ini('date.timezone') ?? date_default_timezone_get(),
+    'ini_path' => php_ini_loaded_file() ?: null,
+    'xdebug' => extension_loaded('xdebug'),
+    'opcache' => opcache_enabled(),
+    'opcache_validate_timestamps' => $validateTimestamps === null
+        ? null
+        : filter_var($validateTimestamps, FILTER_VALIDATE_BOOLEAN),
+    'extensions' => $extensions,
+]);
+$serverSoftware = null;
+
+// Web-server values replace the CLI ones when the probe answered with a valid payload.
+$probeJson = getenv('VOIGHT_PROBE_JSON');
+$probe = $probeJson === false || $probeJson === '' ? null : json_decode($probeJson, true);
+
+if (is_array($probe) && is_array($probe['php'] ?? null) && is_string($probe['php']['version'] ?? null)) {
+    $phpBlock = $probe['php'];
+    $serverSoftware = is_string($probe['server_software'] ?? null) ? $probe['server_software'] : null;
+} elseif ($probeJson !== false && $probeJson !== '') {
+    fwrite(STDERR, "Warning: Web probe failed, using CLI PHP values\n");
+}
+
+$load = function_exists('sys_getloadavg') ? @sys_getloadavg() : null;
+$cpuInfo = @file_get_contents('/proc/cpuinfo');
+
+echo json_encode([
+    'environment' => $env,
+    'collected_at' => date('c'),
+    'app' => [
+        'environment' => $env,
+        'debug_mode' => filter_var(getenv('APP_DEBUG'), FILTER_VALIDATE_BOOLEAN),
+    ],
+    'framework' => $framework,
+    'server' => [
+        'php' => $phpBlock,
+        'system' => safe(fn (): array => [
+            'os' => PHP_OS_FAMILY . ' ' . php_uname('r'),
+            'server_software' => $serverSoftware,
+            'load_average' => is_array($load) ? array_map(fn (float $v): float => round($v, 2), array_values($load)) : null,
+            'cpu_cores' => $cpuInfo === false ? null : (preg_match_all('/^processor\s*:/m', $cpuInfo) ?: null),
+            'hostname' => gethostname() ?: null,
+        ]),
+        'deployment' => safe(fn (): array => [
+            'release_path' => $cwd,
+            'commit' => commit($cwd),
+            'php_user' => process_user(),
+            'server_time' => date('Y-m-d H:i:s T'),
+        ]),
+        'database' => $database,
+        'disk' => safe(fn (): array => [
+            'free_bytes' => @disk_free_space($cwd) ?: null,
+            'total_bytes' => @disk_total_space($cwd) ?: null,
+        ]),
+    ],
+], JSON_UNESCAPED_SLASHES | JSON_INVALID_UTF8_SUBSTITUTE | JSON_PARTIAL_OUTPUT_ON_ERROR);
+PHP
+); then
+  case "$PAYLOAD" in
+    "{"*) SD_VALID=1 ;;
+    *) SD_VALID=0 ;;
+  esac
+else
+  SD_VALID=0
+fi
+
+if [ "$SD_VALID" = 1 ]; then
+  echo ""
+  echo "Sending system details to API..."
+
+  if SD_RESPONSE=$(printf '%s' "$PAYLOAD" | curl -s --max-time 15 -w "\n%{http_code}" \
+    -X POST "$VOIGHT_API_BASE_URL/api/voight/system-details" \
+    -H "Authorization: Bearer $VOIGHT_API_TOKEN" \
+    -H "Content-Type: application/json" \
+    -H "Accept: application/json" \
+    --data-binary @-); then
+    SD_STATUS=$(printf '%s' "$SD_RESPONSE" | tail -n1)
+    SD_BODY=$(printf '%s' "$SD_RESPONSE" | sed '$d')
+
+    echo "  HTTP status: $SD_STATUS"
+    if [ -n "$SD_BODY" ]; then
+      echo "  Response: $SD_BODY"
+    fi
+
+    if [ "$SD_STATUS" -ge 200 ] && [ "$SD_STATUS" -lt 300 ]; then
+      echo ""
+      echo "Done. System details sent successfully."
+    else
+      echo "Warning: system details API returned status $SD_STATUS" >&2
+    fi
+  else
+    echo "Warning: could not reach the API to send system details" >&2
+  fi
+else
+  echo "Warning: could not collect system details (PHP failed)" >&2
+fi
+
+exit "$LOCK_STATUS"

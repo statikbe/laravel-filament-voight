@@ -99,6 +99,18 @@ it('creates an unknown environment and dispatches the event', function () {
     Event::assertDispatched(EnvironmentCreatedViaApi::class);
 });
 
+it('stores a snapshot without a php version as null', function () {
+    $project = Project::factory()->create();
+    $token = $project->createToken('ci')->plainTextToken;
+
+    $this->withToken($token)->postJson('/api/voight/system-details', systemDetailsPayload([
+        'framework' => null,
+        'server' => ['php' => null, 'system' => null, 'database' => ['driver' => null, 'version' => null]],
+    ]))->assertNoContent();
+
+    expect(Environment::where('project_id', $project->id)->firstOrFail()->systemDetails->php_version)->toBeNull();
+});
+
 it('requires the server section', function () {
     $token = Project::factory()->create()->createToken('ci')->plainTextToken;
 
