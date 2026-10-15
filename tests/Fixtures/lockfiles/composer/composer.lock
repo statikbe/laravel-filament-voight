@@ -1,0 +1,109 @@
+{
+    "_readme": [
+        "This file locks the dependencies of your project to a known state",
+        "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
+        "This file is @generated automatically"
+    ],
+    "content-hash": "3f1c2b7e9a5d4c8b6e0f1a2b3c4d5e6f",
+    "packages": [
+        {
+            "name": "laravel/framework",
+            "version": "v12.69.3",
+            "require": {
+                "php": "^8.2",
+                "ext-mbstring": "*",
+                "monolog/monolog": "^3.0",
+                "nesbot/carbon": "^3.8.4",
+                "psr/log": "^1.0|^2.0|^3.0"
+            },
+            "replace": {
+                "illuminate/collections": "self.version",
+                "illuminate/contracts": "self.version",
+                "illuminate/support": "self.version"
+            },
+            "provide": {
+                "psr/log-implementation": "1.0|2.0|3.0"
+            },
+            "type": "library"
+        },
+        {
+            "name": "monolog/monolog",
+            "version": "3.9.0",
+            "require": {
+                "php": ">=8.1",
+                "psr/log": "^2.0 || ^3.0"
+            },
+            "provide": {
+                "psr/log-implementation": "3.0.0"
+            },
+            "type": "library"
+        },
+        {
+            "name": "nesbot/carbon",
+            "version": "3.10.1",
+            "require": {
+                "php": "^8.1",
+                "psr/log": "^1.0 || ^2.0 || ^3.0",
+                "symfony/polyfill-mbstring": "^1.0"
+            },
+            "type": "library"
+        },
+        {
+            "name": "psr/log",
+            "version": "3.0.2",
+            "require": {
+                "php": ">=8.0.0"
+            },
+            "type": "library"
+        },
+        {
+            "name": "spatie/laravel-package-tools",
+            "version": "1.93.3",
+            "require": {
+                "php": "^8.1",
+                "illuminate/contracts": "^10.0|^11.0|^12.0|^13.0"
+            },
+            "type": "library"
+        },
+        {
+            "name": "symfony/polyfill-mbstring",
+            "version": "v1.33.0",
+            "require": {
+                "php": ">=7.2"
+            },
+            "provide": {
+                "ext-mbstring": "*"
+            },
+            "type": "library"
+        }
+    ],
+    "packages-dev": [
+        {
+            "name": "nunomaduro/collision",
+            "version": "v8.8.2",
+            "require": {
+                "php": "^8.2.0"
+            },
+            "type": "library"
+        },
+        {
+            "name": "pestphp/pest",
+            "version": "v4.1.0",
+            "require": {
+                "php": "^8.3.0",
+                "nunomaduro/collision": "^8.8.2"
+            },
+            "type": "library"
+        }
+    ],
+    "aliases": [],
+    "minimum-stability": "stable",
+    "stability-flags": {},
+    "prefer-stable": true,
+    "prefer-lowest": false,
+    "platform": {
+        "php": "^8.4"
+    },
+    "platform-dev": {},
+    "plugin-api-version": "2.6.0"
+}
