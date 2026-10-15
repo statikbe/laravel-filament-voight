@@ -176,6 +176,35 @@ php artisan voight:sync-lockfile \
   --token=1|your-project-token
 ```
 
+## MCP server
+
+AI clients such as Claude Code or Cursor can query Voight over MCP: vulnerabilities per project, which direct dependency to bump, where a package is used, and statistics. They can also onboard a project (create it and issue its sync token). Enable it in `.env`:
+
+```dotenv
+VOIGHT_MCP_ENABLED=true
+# Hide the tools that create projects and project tokens:
+# VOIGHT_MCP_WRITE_TOOLS=false
+```
+
+**Local** (sees every project, runs as the machine's operator):
+
+```bash
+claude mcp add voight -- php artisan mcp:start voight
+```
+
+**Remote** at `/mcp/voight`, authenticated with a personal token. Add `Laravel\Sanctum\HasApiTokens` to your user model, then create a token on the **MCP access** page of the Voight panel; it shows the `claude mcp add` command to run.
+
+Remote users only see the projects of their teams. Grant some users everything, or replace the team rule, in a service provider:
+
+```php
+use Statikbe\FilamentVoight\Facades\FilamentVoight;
+
+FilamentVoight::resolveMcpAdminUsing(fn ($user): bool => $user->is_admin);
+FilamentVoight::resolveMcpVisibleProjectsUsing(fn ($query, $user) => $query->where(/* your rules */));
+```
+
+When your app registers a policy for the project model, the MCP tools respect it (`viewAny`, `view`, `create`, `update`). See `specs/13-mcp-server.md` for the full design.
+
 ## API reference
 
 ### `POST /api/voight/lock-file`

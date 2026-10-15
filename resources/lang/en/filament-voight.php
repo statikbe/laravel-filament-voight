@@ -11,6 +11,7 @@ return [
         'management' => 'Management',
         'dependencies' => 'Dependencies',
         'security' => 'Security',
+        'settings' => 'Settings',
     ],
 
     // Common fields
@@ -412,6 +413,31 @@ return [
             'view_audit_run' => 'View Audit Run',
             'environments' => 'Environments: :environments',
             'fixed_in' => 'fixed in :version',
+        ],
+    ],
+
+    // Pages
+    'pages' => [
+        'mcp_access' => [
+            'title' => 'MCP access',
+            'description' => 'Personal tokens that let AI clients such as Claude Code or Cursor query Voight on your behalf. They see the same projects as you.',
+            'missing_tokens_heading' => 'Personal tokens are not available',
+            'missing_tokens_body' => 'Add the Laravel\\Sanctum\\HasApiTokens trait to :model to create MCP tokens.',
+            'no_tokens' => 'No MCP tokens yet',
+            'token_created_body' => 'Copy this token now: it will not be shown again.',
+            'claude_code_snippet' => 'To add Voight to Claude Code, run:',
+            'fields' => [
+                'name' => 'Name',
+                'last_used' => 'Last used',
+                'never_used' => 'Never',
+            ],
+            'actions' => [
+                'create' => 'Create token',
+                'created' => 'MCP token created',
+                'copy' => 'Copy token',
+                'revoke' => 'Revoke',
+                'revoked' => 'Token revoked',
+            ],
         ],
     ],
 

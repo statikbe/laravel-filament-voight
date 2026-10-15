@@ -4,6 +4,7 @@ namespace Statikbe\FilamentVoight;
 
 use Filament\Contracts\Plugin;
 use Filament\Panel;
+use Statikbe\FilamentVoight\Pages\McpAccess;
 use Statikbe\FilamentVoight\Resources\AuditRunResource;
 use Statikbe\FilamentVoight\Resources\CustomerResource;
 use Statikbe\FilamentVoight\Resources\EnvironmentResource;
@@ -36,6 +37,7 @@ class FilamentVoightPlugin implements Plugin
 
         $panel->pages([
             ListEnvironments::class,
+            McpAccess::class,
         ]);
 
         $panel->widgets([

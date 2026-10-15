@@ -15,6 +15,8 @@ use Filament\Tables\TablesServiceProvider;
 use Filament\Widgets\WidgetsServiceProvider;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Laravel\Mcp\Server\McpServiceProvider;
+use Laravel\Sanctum\SanctumServiceProvider;
 use Livewire\LivewireServiceProvider;
 use Orchestra\Testbench\Concerns\WithWorkbench;
 use Orchestra\Testbench\TestCase as Orchestra;
@@ -46,7 +48,9 @@ class TestCase extends Orchestra
             FormsServiceProvider::class,
             InfolistsServiceProvider::class,
             LivewireServiceProvider::class,
+            McpServiceProvider::class,
             NotificationsServiceProvider::class,
+            SanctumServiceProvider::class,
             SchemasServiceProvider::class,
             SupportServiceProvider::class,
             TablesServiceProvider::class,
@@ -75,6 +79,7 @@ class TestCase extends Orchestra
 
         $app['config']->set('filament-voight.lockfiles.disk', 'voight-lockfiles');
         $app['config']->set('filament-voight.api.middleware', ['auth']);
+        $app['config']->set('filament-voight.mcp.enabled', true);
 
         $app['config']->set('filament-voight.models.user', User::class);
         $app['config']->set('auth.providers.users.model', User::class);

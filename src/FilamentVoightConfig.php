@@ -5,6 +5,7 @@ namespace Statikbe\FilamentVoight;
 use Illuminate\Foundation\Auth\User;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Route;
+use Statikbe\FilamentVoight\Http\Middleware\EnsureMcpUserToken;
 use Statikbe\FilamentVoight\Models\AlertRecipient;
 use Statikbe\FilamentVoight\Models\AlertSetting;
 use Statikbe\FilamentVoight\Models\AuditFinding;
@@ -133,6 +134,31 @@ class FilamentVoightConfig
     public function getApiMiddleware(): array
     {
         return $this->packageConfig('api.middleware', ['auth:sanctum']);
+    }
+
+    // -- MCP --
+
+    public function mcpEnabled(): bool
+    {
+        return (bool) $this->packageConfig('mcp.enabled', false);
+    }
+
+    public function getMcpPath(): string
+    {
+        return $this->packageConfig('mcp.path', 'mcp/voight');
+    }
+
+    /**
+     * @return array<string>
+     */
+    public function getMcpMiddleware(): array
+    {
+        return $this->packageConfig('mcp.middleware', ['auth:sanctum', EnsureMcpUserToken::class]);
+    }
+
+    public function mcpWriteToolsEnabled(): bool
+    {
+        return (bool) $this->packageConfig('mcp.write_tools', true);
     }
 
     // -- Models --

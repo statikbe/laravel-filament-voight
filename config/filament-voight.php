@@ -1,6 +1,7 @@
 <?php
 
 use Statikbe\FilamentVoight\Http\Middleware\AuthenticateProjectToken;
+use Statikbe\FilamentVoight\Http\Middleware\EnsureMcpUserToken;
 use Statikbe\FilamentVoight\Models\AlertRecipient;
 use Statikbe\FilamentVoight\Models\AlertSetting;
 use Statikbe\FilamentVoight\Models\AuditFinding;
@@ -46,6 +47,25 @@ return [
 
     'api' => [
         'middleware' => [AuthenticateProjectToken::class],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | MCP server
+    |--------------------------------------------------------------------------
+    |
+    | Lets AI clients (Claude Code, Cursor, ...) query Voight. When enabled, a
+    | local server is available through `php artisan mcp:start voight` and a
+    | remote one at `path`. Remote users authenticate with a personal access
+    | token from the "MCP access" page; the user model needs HasApiTokens.
+    | `write_tools` exposes the tools that create projects and project tokens.
+    |
+    */
+    'mcp' => [
+        'enabled' => (bool) env('VOIGHT_MCP_ENABLED', false),
+        'path' => 'mcp/voight',
+        'middleware' => ['auth:sanctum', EnsureMcpUserToken::class],
+        'write_tools' => (bool) env('VOIGHT_MCP_WRITE_TOOLS', true),
     ],
 
     /*
