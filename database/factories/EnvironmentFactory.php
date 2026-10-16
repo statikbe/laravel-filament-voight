@@ -17,7 +17,8 @@ class EnvironmentFactory extends Factory
     {
         return [
             'project_id' => Project::factory(),
-            'name' => fake()->randomElement(['production', 'staging', 'development']),
+            // The suffix keeps names unique per project (unique index); the stage detection only looks at the prefix.
+            'name' => fake()->randomElement(['production', 'staging', 'development']) . '-' . fake()->unique()->numberBetween(1, 999999),
             'scan_nightly' => true,
             'scanned_at' => null,
         ];
