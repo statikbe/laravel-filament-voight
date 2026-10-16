@@ -3,6 +3,7 @@
 namespace Statikbe\FilamentVoight;
 
 use Filament\Contracts\Plugin;
+use Filament\Navigation\NavigationGroup;
 use Filament\Panel;
 use Statikbe\FilamentVoight\Pages\McpAccess;
 use Statikbe\FilamentVoight\Resources\AuditRunResource;
@@ -47,6 +48,12 @@ class FilamentVoightPlugin implements Plugin
         $panel->pages([
             ListEnvironments::class,
             McpAccess::class,
+        ]);
+
+        // Merged into whatever groups the host panel registers; ungrouped top-level items always sort first.
+        $panel->navigationGroups([
+            NavigationGroup::make(fn (): string => voightTrans('navigation.management')),
+            NavigationGroup::make(fn (): string => voightTrans('navigation.settings')),
         ]);
 
         $panel->widgets([

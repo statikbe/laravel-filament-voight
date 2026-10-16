@@ -8,6 +8,7 @@ use Filament\Tables\Table;
 use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Statikbe\FilamentVoight\Enums\AuditRunStatus;
 use Statikbe\FilamentVoight\Facades\FilamentVoight;
 use Statikbe\FilamentVoight\FilamentVoightPlugin;
 use Statikbe\FilamentVoight\Models\AuditRun;
@@ -22,7 +23,31 @@ class AuditRunResource extends Resource
 
     protected static string | \BackedEnum | null $navigationIcon = Heroicon::OutlinedClipboardDocumentCheck;
 
-    protected static ?int $navigationSort = 5;
+    protected static ?int $navigationSort = 3;
+
+    public static function getNavigationGroup(): ?string
+    {
+        return voightTrans('navigation.management');
+    }
+
+    public static function getNavigationBadge(): ?string
+    {
+        $active = static::getEloquentQuery()
+            ->whereIn('status', [AuditRunStatus::Pending, AuditRunStatus::Running])
+            ->count();
+
+        return $active > 0 ? (string) $active : null;
+    }
+
+    public static function getNavigationBadgeColor(): ?string
+    {
+        return AuditRunStatus::Running->color();
+    }
+
+    public static function getNavigationBadgeTooltip(): ?string
+    {
+        return voightTrans('navigation.badges.active_audit_runs');
+    }
 
     public static function getModelLabel(): string
     {

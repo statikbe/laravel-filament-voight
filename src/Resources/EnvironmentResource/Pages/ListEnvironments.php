@@ -32,7 +32,7 @@ class ListEnvironments extends Page implements HasTable
 
     protected static string | \BackedEnum | null $navigationIcon = Heroicon::OutlinedServerStack;
 
-    protected static ?int $navigationSort = 4;
+    protected static ?int $navigationSort = 1;
 
     protected static ?string $slug = 'environments';
 

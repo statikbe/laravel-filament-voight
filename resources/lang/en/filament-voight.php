@@ -8,10 +8,12 @@ return [
 
     // Navigation
     'navigation' => [
-        'management' => 'Management',
-        'dependencies' => 'Dependencies',
-        'security' => 'Security',
+        'management' => 'Manage',
         'settings' => 'Settings',
+        'badges' => [
+            'open_severe_vulnerabilities' => 'Open critical and high vulnerabilities',
+            'active_audit_runs' => 'Pending or running audit runs',
+        ],
     ],
 
     // Common fields
