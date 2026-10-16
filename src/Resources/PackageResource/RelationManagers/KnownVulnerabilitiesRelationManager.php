@@ -3,6 +3,7 @@
 namespace Statikbe\FilamentVoight\Resources\PackageResource\RelationManagers;
 
 use Filament\Resources\RelationManagers\RelationManager;
+use Filament\Support\Enums\FontFamily;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
@@ -11,6 +12,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Statikbe\FilamentVoight\Enums\Severity;
 use Statikbe\FilamentVoight\Enums\VulnerabilitySource;
+use Statikbe\FilamentVoight\Resources\Components\FindingColumns;
 use Statikbe\FilamentVoight\Resources\VulnerabilityResource;
 
 class KnownVulnerabilitiesRelationManager extends RelationManager
@@ -24,6 +26,23 @@ class KnownVulnerabilitiesRelationManager extends RelationManager
         return voightTrans('models.package.view.known_vulnerabilities_title');
     }
 
+    public static function getBadge(Model $ownerRecord, string $pageClass): ?string
+    {
+        $count = $ownerRecord->vulnerablePackageRanges()->count();
+
+        return $count > 0 ? (string) $count : null;
+    }
+
+    public static function getBadgeTooltip(Model $ownerRecord, string $pageClass): ?string
+    {
+        return voightTrans('hints.badges.package_known_vulnerabilities');
+    }
+
+    public static function getBadgeColor(Model $ownerRecord, string $pageClass): ?string
+    {
+        return 'gray';
+    }
+
     public function table(Table $table): Table
     {
         return $table
@@ -31,40 +50,23 @@ class KnownVulnerabilitiesRelationManager extends RelationManager
             ->recordUrl(fn ($record): ?string => $record->vulnerability_id
                 ? VulnerabilityResource::getUrl('view', ['record' => $record->vulnerability_id])
                 : null)
+            ->striped()
             ->columns([
-                TextColumn::make('vulnerability.severity')
-                    ->label(voightTrans('models.package.view.columns.severity'))
-                    ->badge()
-                    ->formatStateUsing(fn (Severity $state): string => $state->label())
-                    ->color(fn (Severity $state): string => $state->color()),
-                TextColumn::make('vulnerability.vulnerability_score')
-                    ->label(voightTrans('models.package.view.columns.cvss'))
-                    ->sortable(),
+                FindingColumns::severity(),
+                FindingColumns::cvss(),
+                FindingColumns::vulnerabilityId(),
                 TextColumn::make('vulnerability.source')
                     ->label(voightTrans('models.package.view.columns.source'))
-                    ->formatStateUsing(fn (VulnerabilitySource $state): string => $state->label()),
-                TextColumn::make('vulnerability.source_id')
-                    ->label(voightTrans('models.package.view.columns.source_id'))
-                    ->searchable()
-                    ->copyable(),
-                TextColumn::make('vulnerability.summary')
-                    ->label(voightTrans('models.package.view.columns.summary'))
-                    ->limit(80)
-                    ->tooltip(fn ($record): ?string => $record->vulnerability?->summary)
-                    ->searchable(),
+                    ->formatStateUsing(fn (VulnerabilitySource $state): string => $state->label())
+                    ->toggleable(isToggledHiddenByDefault: true),
+                FindingColumns::summary(),
                 TextColumn::make('affected_range')
-                    ->label(voightTrans('models.package.view.columns.affected_range')),
-                TextColumn::make('fixed_version')
-                    ->label(voightTrans('models.package.view.columns.fixed_version'))
-                    ->placeholder('—'),
-                TextColumn::make('vulnerability.published_at')
-                    ->label(voightTrans('models.package.view.columns.published'))
-                    ->dateTime()
-                    ->sortable()
+                    ->label(voightTrans('models.package.view.columns.affected_range'))
+                    ->fontFamily(FontFamily::Mono),
+                FindingColumns::fixedVersion(),
+                FindingColumns::since('vulnerability.published_at', voightTrans('models.package.view.columns.published'))
                     ->toggleable(),
-                TextColumn::make('vulnerability.modified_at')
-                    ->label(voightTrans('models.package.view.columns.modified'))
-                    ->dateTime()
+                FindingColumns::since('vulnerability.modified_at', voightTrans('models.package.view.columns.modified'))
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([

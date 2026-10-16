@@ -6,14 +6,16 @@ use Filament\Actions\Action;
 use Filament\Infolists\Components\RepeatableEntry;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Notifications\Notification;
-use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
+use Filament\Support\Enums\FontFamily;
 use Filament\Support\Enums\IconPosition;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Js;
 use Statikbe\FilamentVoight\Models\Project;
+use Statikbe\FilamentVoight\Resources\Components\InfolistLayout;
+use Statikbe\FilamentVoight\Resources\Components\InfolistStat;
 use Statikbe\FilamentVoight\Resources\CustomerResource;
 use Statikbe\FilamentVoight\Resources\TeamResource;
 use Statikbe\FilamentVoight\Services\ProjectOnboardingService;
@@ -24,49 +26,50 @@ class ProjectInfoListSchema
     {
         return $schema->components([
             EnvironmentHealthCallouts::make(),
-            Grid::make(2)
-                ->components([
+            InfolistStat::strip([
+                InfolistStat::make(
+                    TextEntry::make('stat_environments')
+                        ->label(voightTrans('models.environment.plural'))
+                        ->icon(Heroicon::OutlinedServerStack)
+                        ->state(fn (Project $record): int => $record->environments()->count()),
+                ),
+                InfolistStat::openFindings(voightTrans('models.project.fields.open_findings')),
+                InfolistStat::make(
+                    TextEntry::make('stat_last_audit')
+                        ->label(voightTrans('models.project.fields.last_audit'))
+                        ->hintIcon(Heroicon::OutlinedInformationCircle, tooltip: voightTrans('hints.last_audit'))
+                        ->icon(Heroicon::OutlinedClipboardDocumentCheck)
+                        ->state(fn (Project $record): ?string => $record->auditRuns()->max('voight_audit_runs.started_at'))
+                        ->since()
+                        ->dateTimeTooltip()
+                        ->placeholder('—'),
+                ),
+                InfolistStat::make(
+                    TextEntry::make('is_muted')
+                        ->label(voightTrans('models.project.fields.alerts'))
+                        ->hintIcon(Heroicon::OutlinedInformationCircle, tooltip: voightTrans('models.project.fields.is_muted_help'))
+                        ->icon(fn (bool $state): Heroicon => $state ? Heroicon::OutlinedBellSlash : Heroicon::OutlinedBell)
+                        ->badge()
+                        ->color(fn (bool $state): string => $state ? 'warning' : 'success')
+                        ->formatStateUsing(fn (bool $state): string => voightTrans('models.project.fields.' . ($state ? 'is_muted' : 'alerts_on'))),
+                ),
+            ]),
+            InfolistLayout::withSidebar(
+                main: [
                     Section::make(voightTrans('models.project.sections.general'))
                         ->icon(Heroicon::OutlinedInformationCircle)
                         ->components([
-                            TextEntry::make('project_code')
-                                ->label(voightTrans('models.project.fields.project_code')),
-                            TextEntry::make('name')
-                                ->label(voightTrans('models.project.fields.name')),
                             TextEntry::make('description')
-                                ->label(voightTrans('models.project.fields.description')),
+                                ->label(voightTrans('models.project.fields.description'))
+                                ->placeholder('—'),
                             TextEntry::make('repo_url')
                                 ->label(voightTrans('models.project.fields.repo_url'))
-                                ->url(fn ($state) => $state, shouldOpenInNewTab: true)
+                                ->url(fn (?string $state): ?string => $state, shouldOpenInNewTab: true)
                                 ->icon(Heroicon::OutlinedArrowTopRightOnSquare)
                                 ->iconPosition(IconPosition::After)
                                 ->extraAttributes(['class' => 'underline'])
-                                ->iconPosition(IconPosition::After),
-                        ])
-                        ->extraAttributes(['class' => 'h-full [&>.fi-section]:h-full']),
-                    Section::make(voightTrans('models.project.sections.assignment'))
-                        ->icon(Heroicon::OutlinedUserGroup)
-                        ->components([
-                            TextEntry::make('customer.name')
-                                ->label(voightTrans('models.project.fields.customer'))
-                                ->url(fn ($record) => CustomerResource::getUrl('view', ['record' => $record->customer]))
-                                ->badge(),
-                            TextEntry::make('team.name')
-                                ->label(voightTrans('models.project.fields.team'))
-                                ->formatStateUsing(fn (Project $record): View => view('filament-voight::team.avatar-name', ['team' => $record->team]))
-                                ->url(fn ($record) => TeamResource::getUrl('view', ['record' => $record->team])),
-                        ])
-                        ->extraAttributes(['class' => 'h-full [&>.fi-section]:h-full']),
-                    Section::make(voightTrans('models.project.sections.settings'))
-                        ->icon(Heroicon::OutlinedCog6Tooth)
-                        ->components([
-                            TextEntry::make('is_muted')
-                                ->badge()
-                                ->formatStateUsing(fn ($state) => $state ? voightTrans('models.project.fields.is_muted') : voightTrans('models.project.fields.is_unmuted'))
-                                ->label(voightTrans('models.project.fields.is_muted'))
-                                ->helperText(voightTrans('models.project.fields.is_muted_help')),
-                        ])
-                        ->extraAttributes(['class' => 'h-full [&>.fi-section]:h-full']),
+                                ->placeholder('—'),
+                        ]),
                     Section::make(voightTrans('models.project.sections.api_token'))
                         ->key('api_token')
                         ->icon(Heroicon::OutlinedKey)
@@ -81,10 +84,12 @@ class ProjectInfoListSchema
                                     TextEntry::make('last_used_at')
                                         ->label(voightTrans('models.project.fields.token_last_used'))
                                         ->since()
+                                        ->dateTimeTooltip()
                                         ->placeholder(voightTrans('models.project.fields.never_used')),
                                     TextEntry::make('created_at')
                                         ->label(voightTrans('fields.created_at'))
-                                        ->since(),
+                                        ->since()
+                                        ->dateTimeTooltip(),
                                 ])
                                 ->columns(3)
                                 ->placeholder(voightTrans('models.project.fields.no_tokens')),
@@ -127,8 +132,37 @@ class ProjectInfoListSchema
                                         ->send();
                                 }),
                         ])
-                        ->extraAttributes(['class' => 'h-full [&>.fi-section]:h-full']),
-                ])->columnSpanFull(),
+                        ->collapsible(),
+                ],
+                sidebar: [
+                    Section::make(voightTrans('models.project.sections.details'))
+                        ->icon(Heroicon::OutlinedUserGroup)
+                        ->components([
+                            TextEntry::make('project_code')
+                                ->label(voightTrans('models.project.fields.project_code'))
+                                ->fontFamily(FontFamily::Mono)
+                                ->copyable(),
+                            TextEntry::make('customer.name')
+                                ->label(voightTrans('models.project.fields.customer'))
+                                ->url(fn (Project $record): ?string => $record->customer ? CustomerResource::getUrl('view', ['record' => $record->customer]) : null)
+                                ->badge()
+                                ->placeholder('—'),
+                            TextEntry::make('team.name')
+                                ->label(voightTrans('models.project.fields.team'))
+                                ->formatStateUsing(fn (Project $record): View => view('filament-voight::team.avatar-name', ['team' => $record->team]))
+                                ->url(fn (Project $record): ?string => $record->team ? TeamResource::getUrl('view', ['record' => $record->team]) : null)
+                                ->placeholder('—'),
+                            TextEntry::make('created_at')
+                                ->label(voightTrans('fields.created_at'))
+                                ->since()
+                                ->dateTimeTooltip(),
+                            TextEntry::make('updated_at')
+                                ->label(voightTrans('fields.updated_at'))
+                                ->since()
+                                ->dateTimeTooltip(),
+                        ]),
+                ],
+            ),
         ]);
     }
 }

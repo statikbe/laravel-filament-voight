@@ -87,8 +87,8 @@ class PackageResource extends Resource
     public static function getRelations(): array
     {
         return [
-            InstallationsRelationManager::class,
             ActiveFindingsRelationManager::class,
+            InstallationsRelationManager::class,
             KnownVulnerabilitiesRelationManager::class,
         ];
     }

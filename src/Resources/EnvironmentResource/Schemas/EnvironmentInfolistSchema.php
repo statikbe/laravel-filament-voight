@@ -16,21 +16,22 @@ use Filament\Support\Enums\TextSize;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Support\Arr;
 use Statikbe\FilamentVoight\Models\Environment;
+use Statikbe\FilamentVoight\Resources\Components\InfolistStat;
 use Statikbe\FilamentVoight\Support\SystemDetailsPresenter;
 
 class EnvironmentInfolistSchema
 {
     /** @var array<string, Heroicon> */
     private const array GROUP_ICONS = [
-        'environment' => Heroicon::Cog6Tooth,
-        'cache' => Heroicon::Bolt,
-        'drivers' => Heroicon::CpuChip,
-        'php' => Heroicon::CodeBracket,
-        'system' => Heroicon::ComputerDesktop,
-        'deployment' => Heroicon::RocketLaunch,
-        'database' => Heroicon::CircleStack,
-        'opcache' => Heroicon::Bolt,
-        'ssl' => Heroicon::LockClosed,
+        'environment' => Heroicon::OutlinedCog6Tooth,
+        'cache' => Heroicon::OutlinedBolt,
+        'drivers' => Heroicon::OutlinedCpuChip,
+        'php' => Heroicon::OutlinedCodeBracket,
+        'system' => Heroicon::OutlinedComputerDesktop,
+        'deployment' => Heroicon::OutlinedRocketLaunch,
+        'database' => Heroicon::OutlinedCircleStack,
+        'opcache' => Heroicon::OutlinedBolt,
+        'ssl' => Heroicon::OutlinedLockClosed,
     ];
 
     public static function configure(Schema $schema): Schema
@@ -38,29 +39,24 @@ class EnvironmentInfolistSchema
         $hasSnapshot = fn (Environment $record): bool => $record->systemDetails !== null;
 
         return $schema->components([
-            Grid::make(['default' => 2, 'md' => 3, 'xl' => 4])
-                ->columnSpanFull()
-                ->visible($hasSnapshot)
-                ->components([
-                    self::stat('php', Heroicon::CodeBracket, fn (Environment $record): ?string => $record->systemDetails?->php_version),
-                    self::stat('database', Heroicon::CircleStack, fn (Environment $record): ?string => SystemDetailsPresenter::database($record)),
-                    self::stat('environment', Heroicon::GlobeAlt, fn (Environment $record): string => (string) (SystemDetailsPresenter::appValue($record, 'environment') ?? $record->name)),
-                    Section::make()
-                        ->compact()
-                        ->components([
-                            TextEntry::make('stat_debug_mode')
-                                ->label(voightTrans('models.environment.system_details.stats.debug_mode'))
-                                ->icon(Heroicon::BugAnt)
-                                ->state(fn (Environment $record): ?bool => is_bool($debug = SystemDetailsPresenter::appValue($record, 'debug_mode')) ? $debug : null)
-                                ->formatStateUsing(fn (?bool $state): string => $state === null ? '—' : voightTrans('models.environment.system_details.' . ($state ? 'yes' : 'no')))
-                                ->badge()
-                                ->color(fn (?bool $state): string => match ($state) {
-                                    true => 'warning',
-                                    false => 'success',
-                                    null => 'gray',
-                                }),
-                        ]),
-                ]),
+            InfolistStat::strip([
+                self::stat('php', Heroicon::OutlinedCodeBracket, fn (Environment $record): ?string => $record->systemDetails?->php_version),
+                self::stat('database', Heroicon::OutlinedCircleStack, fn (Environment $record): ?string => SystemDetailsPresenter::database($record)),
+                self::stat('environment', Heroicon::OutlinedGlobeAlt, fn (Environment $record): string => (string) (SystemDetailsPresenter::appValue($record, 'environment') ?? $record->name)),
+                InfolistStat::make(
+                    TextEntry::make('stat_debug_mode')
+                        ->label(voightTrans('models.environment.system_details.stats.debug_mode'))
+                        ->icon(Heroicon::OutlinedBugAnt)
+                        ->state(fn (Environment $record): ?bool => is_bool($debug = SystemDetailsPresenter::appValue($record, 'debug_mode')) ? $debug : null)
+                        ->formatStateUsing(fn (?bool $state): string => $state === null ? '—' : voightTrans('models.environment.system_details.' . ($state ? 'yes' : 'no')))
+                        ->badge()
+                        ->color(fn (?bool $state): string => match ($state) {
+                            true => 'warning',
+                            false => 'success',
+                            null => 'gray',
+                        }),
+                ),
+            ])->visible($hasSnapshot),
             Text::make(voightTrans('models.environment.system_details.empty'))
                 ->columnSpanFull()
                 ->visible(fn (Environment $record): bool => ! $hasSnapshot($record)),
@@ -73,16 +69,14 @@ class EnvironmentInfolistSchema
 
     private static function stat(string $name, BackedEnum $icon, \Closure $state): Section
     {
-        return Section::make()
-            ->compact()
-            ->components([
-                TextEntry::make("stat_{$name}")
-                    ->label(voightTrans("models.environment.system_details.stats.{$name}"))
-                    ->icon($icon)
-                    ->fontFamily(FontFamily::Mono)
-                    ->state($state)
-                    ->placeholder('—'),
-            ]);
+        return InfolistStat::make(
+            TextEntry::make("stat_{$name}")
+                ->label(voightTrans("models.environment.system_details.stats.{$name}"))
+                ->icon($icon)
+                ->fontFamily(FontFamily::Mono)
+                ->state($state)
+                ->placeholder('—'),
+        );
     }
 
     private static function tabs(Environment $record): Tabs
@@ -94,19 +88,19 @@ class EnvironmentInfolistSchema
         if ($framework !== []) {
             $tabs[] = Tab::make(SystemDetailsPresenter::frameworkTitle($record))
                 ->id('framework')
-                ->icon(Heroicon::Cube)
+                ->icon(Heroicon::OutlinedCube)
                 ->components([self::frameworkColumns($framework)]);
         }
 
         $tabs[] = Tab::make(voightTrans('models.environment.system_details.tabs.server'))
             ->id('server')
-            ->icon(Heroicon::ServerStack)
+            ->icon(Heroicon::OutlinedServerStack)
             ->components([self::serverColumns(SystemDetailsPresenter::server($record))]);
 
         if ($extensions !== []) {
             $tabs[] = Tab::make(voightTrans('models.environment.system_details.tabs.extensions'))
                 ->id('extensions')
-                ->icon(Heroicon::PuzzlePiece)
+                ->icon(Heroicon::OutlinedPuzzlePiece)
                 ->badge(count($extensions))
                 ->components([
                     Text::make(voightTrans('models.environment.system_details.extensions_description', [
@@ -185,7 +179,7 @@ class EnvironmentInfolistSchema
 
         foreach ($groups as $group => $data) {
             $sections[] = Section::make($data['title'])
-                ->icon(self::GROUP_ICONS[$group] ?? Heroicon::Squares2x2)
+                ->icon(self::GROUP_ICONS[$group] ?? Heroicon::OutlinedSquares2x2)
                 ->compact()
                 ->components(array_map(
                     fn (array $row): TextEntry => self::entry("{$prefix}.{$group}.{$row['key']}", $row),
@@ -219,7 +213,7 @@ class EnvironmentInfolistSchema
                     ->state($row['label'])
                     ->fontFamily(FontFamily::Mono)
                     ->color($color)
-                    ->icon($row['value'] ? Heroicon::CheckCircle : Heroicon::ExclamationTriangle)
+                    ->icon($row['value'] ? Heroicon::OutlinedCheckCircle : Heroicon::OutlinedExclamationTriangle)
                     ->iconColor($color)
                     ->tooltip($answer)
                     ->wrap();
@@ -236,7 +230,7 @@ class EnvironmentInfolistSchema
         if (is_string($row['value']) && str_starts_with($row['value'], '/')) {
             return $entry
                 ->color('gray')
-                ->icon(pathinfo($row['value'], PATHINFO_EXTENSION) !== '' ? Heroicon::DocumentText : Heroicon::Folder)
+                ->icon(pathinfo($row['value'], PATHINFO_EXTENSION) !== '' ? Heroicon::OutlinedDocumentText : Heroicon::OutlinedFolder)
                 ->copyable()
                 ->wrap();
         }

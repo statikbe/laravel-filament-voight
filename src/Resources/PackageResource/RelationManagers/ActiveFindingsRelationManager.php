@@ -14,10 +14,13 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Statikbe\FilamentVoight\Enums\PackageType;
-use Statikbe\FilamentVoight\Enums\Severity;
 use Statikbe\FilamentVoight\Facades\FilamentVoight;
+use Statikbe\FilamentVoight\Models\AuditFinding;
+use Statikbe\FilamentVoight\Models\Package;
 use Statikbe\FilamentVoight\Resources\Components\EnvironmentNameColumn;
+use Statikbe\FilamentVoight\Resources\Components\FindingColumns;
 use Statikbe\FilamentVoight\Resources\PackageResource\Actions\WhyInstalledAction;
+use Statikbe\FilamentVoight\Resources\VulnerabilityResource;
 
 class ActiveFindingsRelationManager extends RelationManager
 {
@@ -30,6 +33,25 @@ class ActiveFindingsRelationManager extends RelationManager
         return voightTrans('models.package.view.active_findings_title');
     }
 
+    public static function getBadge(Model $ownerRecord, string $pageClass): ?string
+    {
+        /** @var Package $ownerRecord */
+        $count = $ownerRecord->openFindingsSummary()['count'];
+
+        return $count > 0 ? (string) $count : null;
+    }
+
+    public static function getBadgeTooltip(Model $ownerRecord, string $pageClass): ?string
+    {
+        return voightTrans('hints.badges.package_active_findings');
+    }
+
+    public static function getBadgeColor(Model $ownerRecord, string $pageClass): ?string
+    {
+        /** @var Package $ownerRecord */
+        return $ownerRecord->openFindingsSummary()['severity']?->color();
+    }
+
     public function table(Table $table): Table
     {
         return $table
@@ -37,33 +59,15 @@ class ActiveFindingsRelationManager extends RelationManager
                 'vulnerability',
                 'auditRun.environment.project',
             ]))
+            ->recordUrl(fn (AuditFinding $record): string => VulnerabilityResource::getUrl('view', ['record' => $record->vulnerability_id]))
+            ->striped()
             ->columns([
-                TextColumn::make('vulnerability.severity')
-                    ->label(voightTrans('models.package.view.columns.severity'))
-                    ->badge()
-                    ->formatStateUsing(fn (Severity $state): string => $state->label())
-                    ->color(fn (Severity $state): string => $state->color()),
-                TextColumn::make('vulnerability.vulnerability_score')
-                    ->label(voightTrans('models.package.view.columns.cvss'))
-                    ->sortable()
-                    ->toggleable(),
-                TextColumn::make('vulnerability.source_id')
-                    ->label(voightTrans('models.package.view.columns.source_id'))
-                    ->searchable()
-                    ->copyable()
-                    ->toggleable(),
-                TextColumn::make('vulnerability.summary')
-                    ->label(voightTrans('models.package.view.columns.summary'))
-                    ->limit(80)
-                    ->tooltip(fn ($record): ?string => $record->vulnerability?->summary)
-                    ->searchable(),
-                TextColumn::make('installed_version')
-                    ->label(voightTrans('models.package.view.columns.installed_version'))
-                    ->toggleable(),
-                TextColumn::make('fixed_version')
-                    ->label(voightTrans('models.package.view.columns.fixed_version'))
-                    ->placeholder('—')
-                    ->toggleable(),
+                FindingColumns::severity(),
+                FindingColumns::cvss(),
+                FindingColumns::vulnerabilityId(),
+                FindingColumns::summary(),
+                FindingColumns::installedVersion(),
+                FindingColumns::fixedVersion(),
                 TextColumn::make('auditRun.environment.project.name')
                     ->label(voightTrans('models.package.view.columns.project'))
                     ->sortable()
@@ -73,10 +77,7 @@ class ActiveFindingsRelationManager extends RelationManager
                     ->label(voightTrans('models.package.view.columns.environment'))
                     ->sortable()
                     ->toggleable(),
-                TextColumn::make('auditRun.started_at')
-                    ->label(voightTrans('models.package.view.columns.observed'))
-                    ->dateTime()
-                    ->sortable()
+                FindingColumns::since('auditRun.started_at', voightTrans('models.package.view.columns.observed'))
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([

@@ -2,7 +2,6 @@
 
 namespace Statikbe\FilamentVoight\Resources;
 
-use Filament\Pages\Enums\SubNavigationPosition;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
@@ -31,8 +30,6 @@ class ProjectResource extends Resource
     protected static ?string $recordTitleAttribute = 'name';
 
     protected static ?int $navigationSort = 1;
-
-    protected static ?SubNavigationPosition $subNavigationPosition = SubNavigationPosition::Top;
 
     public static function getModelLabel(): string
     {
@@ -81,17 +78,16 @@ class ProjectResource extends Resource
 
     public static function infolist(Schema $schema): Schema
     {
-        // return $schema;
         return ProjectInfoListSchema::configure($schema);
     }
 
     public static function getRelations(): array
     {
         return [
-            'environment' => EnvironmentsRelationManager::class,
-            'alert' => AlertSettingsRelationManager::class,
             'vulnerability' => VulnerabilitiesRelationManager::class,
+            'environment' => EnvironmentsRelationManager::class,
             'auditRun' => AuditRunsRelationManager::class,
+            'alert' => AlertSettingsRelationManager::class,
         ];
     }
 

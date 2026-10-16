@@ -7,6 +7,8 @@ use Filament\Actions\DetachAction;
 use Filament\Actions\DetachBulkAction;
 use Filament\Forms\Components\Select;
 use Filament\Resources\RelationManagers\RelationManager;
+use Filament\Support\Enums\FontWeight;
+use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Model;
@@ -19,15 +21,25 @@ class UsersRelationManager extends RelationManager
 
     public static function getTitle(Model $ownerRecord, string $pageClass): string
     {
-        return voightTrans('models.team.fields.users');
+        return voightTrans('models.team.fields.members_tab');
+    }
+
+    /**
+     * Team members are managed from the team view page as well as the edit page.
+     */
+    public function isReadOnly(): bool
+    {
+        return false;
     }
 
     public function table(Table $table): Table
     {
         return $table
+            ->striped()
             ->columns([
                 TextColumn::make('name')
                     ->label(voightTrans('models.customer.fields.name'))
+                    ->weight(FontWeight::Medium)
                     ->searchable()
                     ->sortable(),
                 TextColumn::make('email')
@@ -61,6 +73,9 @@ class UsersRelationManager extends RelationManager
             ])
             ->toolbarActions([
                 DetachBulkAction::make(),
-            ]);
+            ])
+            ->emptyStateIcon(Heroicon::OutlinedUsers)
+            ->emptyStateHeading(voightTrans('models.team.empty.heading'))
+            ->emptyStateDescription(voightTrans('models.team.empty.description'));
     }
 }

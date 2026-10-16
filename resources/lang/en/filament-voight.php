@@ -117,6 +117,15 @@ return [
             'fields' => [
                 'name' => 'Name',
                 'slug' => 'Slug',
+                'open_findings' => 'Open findings',
+            ],
+            'sections' => [
+                'general' => 'General',
+                'general_description' => 'The name customers and teammates know this customer by.',
+            ],
+            'empty' => [
+                'heading' => 'No projects yet',
+                'description' => 'Projects belonging to this customer will show up here.',
             ],
         ],
         'team' => [
@@ -133,8 +142,19 @@ return [
                 'name' => 'Name',
                 'avatar' => 'Avatar',
                 'users' => 'Users',
+                'members_tab' => 'Members',
                 'email' => 'Email',
                 'select_user' => 'Select a user',
+                'members' => 'Members',
+                'open_findings' => 'Open findings',
+            ],
+            'sections' => [
+                'general' => 'General',
+                'general_description' => 'A team groups users and decides which projects they can see.',
+            ],
+            'empty' => [
+                'heading' => 'No members yet',
+                'description' => 'Attach users to give them access to this team\'s projects.',
             ],
         ],
         'project' => [
@@ -153,7 +173,8 @@ return [
                 'customer' => 'Customer',
                 'team' => 'Team',
                 'is_muted' => 'Muted',
-                'is_unmuted' => 'Notification enabled',
+                'alerts' => 'Alerts',
+                'alerts_on' => 'On',
                 'is_muted_help' => 'Muted projects will not send alert notifications.',
                 'active_tokens' => 'Active Tokens',
                 'active_tokens_count' => 'token(s) active',
@@ -176,6 +197,7 @@ return [
                 'settings' => 'Settings',
                 'api_token' => 'API Token',
                 'api_token_description' => 'Generate tokens for CI/CD pipelines to sync lockfiles.',
+                'details' => 'Details',
             ],
             'actions' => [
                 'generate_token' => 'Generate',
@@ -200,6 +222,10 @@ return [
                 'system_details_received_at' => 'Server reported',
                 'project' => 'Project',
                 'php_version' => 'PHP',
+            ],
+            'empty' => [
+                'heading' => 'No environments yet',
+                'description' => 'Create an environment to start scanning this project.',
             ],
             'never_scanned' => 'Never scanned',
             'never_reported' => 'Never',
@@ -295,6 +321,7 @@ return [
                 'latest_version' => 'Latest Version',
                 'latest_version_updated_at' => 'Latest Version Updated',
                 'installations' => 'Installations',
+                'website' => 'Website',
             ],
             'actions' => [
                 'open_website' => 'Open Website',
@@ -306,12 +333,16 @@ return [
                 'truncated' => 'More paths exist than are shown.',
                 'no_longer_installed' => 'This version is no longer installed in the environment\'s latest sync.',
             ],
+            'sections' => [
+                'details' => 'Details',
+            ],
             'view' => [
+                'overview_tab' => 'Overview',
                 'installations_title' => 'Installations',
                 'active_findings_title' => 'Active Findings',
                 'known_vulnerabilities_title' => 'Known Vulnerabilities',
-                'installed_summary' => ':environments environment(s) across :projects project(s)',
-                'no_active_findings' => 'None',
+                'installed_environments' => ':count environment|:count environments',
+                'installed_projects' => ':count project|:count projects',
                 'filters' => [
                     'latest_only' => 'Latest scan only',
                     'latest_only_true' => 'Latest scan only',
@@ -348,6 +379,8 @@ return [
                     'no_active_findings_description' => 'No vulnerabilities were found in the latest audit runs across any environment using this package.',
                     'no_known_vulnerabilities_heading' => 'No known vulnerabilities',
                     'no_known_vulnerabilities_description' => 'There are no recorded vulnerabilities affecting this package.',
+                    'no_installations_heading' => 'Not installed anywhere',
+                    'no_installations_description' => 'No environment has reported this package yet.',
                 ],
             ],
         ],
@@ -396,6 +429,9 @@ return [
             'actions' => [
                 'open_source' => 'View on source',
             ],
+            'sections' => [
+                'details' => 'Details',
+            ],
             'view' => [
                 'description_tab' => 'Description',
                 'affected_projects_title' => 'Affected Projects',
@@ -407,6 +443,7 @@ return [
                     'no_affected_projects_heading' => 'No project is affected',
                     'no_affected_projects_description' => 'No environment had this vulnerability in its latest audit run.',
                     'no_affected_packages_heading' => 'No affected packages recorded',
+                    'no_affected_packages_description' => 'No package versions are linked to this advisory yet.',
                 ],
             ],
         ],
@@ -468,6 +505,10 @@ return [
                 'recipient_teams' => 'Recipient Teams',
                 'recipients' => 'Recipients',
                 'is_enabled' => 'Enabled',
+            ],
+            'empty' => [
+                'heading' => 'No alert settings',
+                'description' => 'Add an alert setting to get notified about new vulnerabilities.',
             ],
         ],
     ],

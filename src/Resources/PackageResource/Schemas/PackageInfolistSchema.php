@@ -5,87 +5,67 @@ namespace Statikbe\FilamentVoight\Resources\PackageResource\Schemas;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
-use Illuminate\Database\Eloquent\Relations\HasMany;
+use Filament\Support\Enums\FontFamily;
+use Filament\Support\Enums\IconPosition;
+use Filament\Support\Icons\Heroicon;
 use Statikbe\FilamentVoight\Enums\PackageType;
-use Statikbe\FilamentVoight\Enums\Severity;
-use Statikbe\FilamentVoight\Facades\FilamentVoight;
-use Statikbe\FilamentVoight\Models\AuditFinding;
 use Statikbe\FilamentVoight\Models\Package;
+use Statikbe\FilamentVoight\Resources\Components\InfolistStat;
+use Statikbe\FilamentVoight\Resources\PackageResource\Actions\OpenPackageWebsiteAction;
 
 class PackageInfolistSchema
 {
     public static function configure(Schema $schema): Schema
     {
-        return $schema
-            ->columns(1)
-            ->components([
-                Section::make()
-                    ->schema([
-                        TextEntry::make('name')
-                            ->label(voightTrans('models.package.fields.name'))
-                            ->copyable()
-                            ->weight('bold'),
-                        TextEntry::make('type')
-                            ->label(voightTrans('models.package.fields.type'))
-                            ->badge()
-                            ->formatStateUsing(fn (PackageType $state): string => $state->label()),
-                        TextEntry::make('installed_summary')
-                            ->label(voightTrans('models.package.view.header.installed_in'))
-                            ->state(fn ($record): string => self::installedSummary($record)),
-                        TextEntry::make('latest_version')
-                            ->label(voightTrans('models.package.fields.latest_version'))
-                            ->placeholder('—'),
-                        TextEntry::make('latest_version_updated_at')
-                            ->label(voightTrans('models.package.fields.latest_version_updated_at'))
-                            ->since()
-                            ->placeholder('—'),
-                        TextEntry::make('active_findings')
-                            ->label(voightTrans('models.package.view.header.active_findings'))
-                            ->badge()
-                            ->state(fn ($record): string => self::activeFindingsLabel($record))
-                            ->color(fn ($record): string => self::activeFindingsColor($record)),
-                    ])
-                    ->columns(3)
-                    ->columnSpanFull(),
-            ]);
+        return $schema->components([
+            InfolistStat::strip([
+                InfolistStat::make(
+                    TextEntry::make('type')
+                        ->label(voightTrans('models.package.fields.type'))
+                        ->icon(Heroicon::OutlinedCube)
+                        ->badge()
+                        ->formatStateUsing(fn (PackageType $state): string => $state->label()),
+                ),
+                InfolistStat::make(
+                    TextEntry::make('stat_installed')
+                        ->label(voightTrans('models.package.view.header.installed_in'))
+                        ->hintIcon(Heroicon::OutlinedInformationCircle, tooltip: voightTrans('hints.installed_summary'))
+                        ->icon(Heroicon::OutlinedServerStack)
+                        ->state(fn (Package $record): string => self::installedSummary($record)),
+                ),
+                InfolistStat::make(
+                    TextEntry::make('latest_version')
+                        ->label(voightTrans('models.package.fields.latest_version'))
+                        ->icon(Heroicon::OutlinedTag)
+                        ->fontFamily(FontFamily::Mono)
+                        ->placeholder('—')
+                        ->belowContent(fn (Package $record): ?string => $record->latest_version_updated_at?->diffForHumans()),
+                ),
+                InfolistStat::openFindings(voightTrans('models.package.view.header.active_findings')),
+            ]),
+            Section::make(voightTrans('models.package.sections.details'))
+                ->icon(Heroicon::OutlinedCube)
+                ->columnSpanFull()
+                ->components([
+                    TextEntry::make('name')
+                        ->label(voightTrans('models.package.fields.name'))
+                        ->fontFamily(FontFamily::Mono)
+                        ->copyable(),
+                    TextEntry::make('website')
+                        ->label(voightTrans('models.package.fields.website'))
+                        ->state(fn (Package $record): string => OpenPackageWebsiteAction::urlFor($record))
+                        ->url(fn (string $state): string => $state, shouldOpenInNewTab: true)
+                        ->icon(Heroicon::OutlinedArrowTopRightOnSquare)
+                        ->iconPosition(IconPosition::After)
+                        ->extraAttributes(['class' => 'underline']),
+                ]),
+        ]);
     }
 
     private static function installedSummary(Package $package): string
     {
-        return voightTrans('models.package.view.installed_summary', [
-            'environments' => $package->environmentPackages()->distinct()->count('environment_id'),
-            'projects' => $package->projects()->count(),
-        ]);
-    }
-
-    private static function activeFindingsLabel(Package $package): string
-    {
-        $count = self::latestFindingsQuery($package)->count();
-
-        return $count === 0
-            ? voightTrans('models.package.view.no_active_findings')
-            : (string) $count;
-    }
-
-    private static function activeFindingsColor(Package $package): string
-    {
-        $maxScore = self::latestFindingsQuery($package)
-            ->join('voight_vulnerabilities', 'voight_vulnerabilities.id', '=', 'voight_audit_findings.vulnerability_id')
-            ->max('voight_vulnerabilities.vulnerability_score');
-
-        if ($maxScore === null) {
-            return 'gray';
-        }
-
-        return Severity::fromScore((float) $maxScore)->color();
-    }
-
-    /**
-     * @return HasMany<AuditFinding, Package>
-     */
-    private static function latestFindingsQuery(Package $package): HasMany
-    {
-        return $package->findings()
-            ->whereIn('audit_run_id', (FilamentVoight::config()->getAuditRunModel())::latestIdsPerEnvironment());
+        return voightTransChoice('models.package.view.installed_environments', $package->environmentPackages()->distinct()->count('environment_id'))
+            . ' · '
+            . voightTransChoice('models.package.view.installed_projects', $package->projects()->count());
     }
 }

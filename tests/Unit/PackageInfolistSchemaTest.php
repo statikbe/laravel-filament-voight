@@ -1,5 +1,7 @@
 <?php
 
+use Illuminate\Foundation\Auth\User;
+use Livewire\Livewire;
 use Statikbe\FilamentVoight\Models\AuditFinding;
 use Statikbe\FilamentVoight\Models\AuditRun;
 use Statikbe\FilamentVoight\Models\Environment;
@@ -7,28 +9,18 @@ use Statikbe\FilamentVoight\Models\EnvironmentPackage;
 use Statikbe\FilamentVoight\Models\Package;
 use Statikbe\FilamentVoight\Models\Project;
 use Statikbe\FilamentVoight\Models\Vulnerability;
-use Statikbe\FilamentVoight\Resources\PackageResource\Schemas\PackageInfolistSchema;
+use Statikbe\FilamentVoight\Resources\PackageResource\Pages\ViewPackage;
 
-/**
- * Unit tests for the infolist header helpers.
- *
- * These exercise the counting and severity-badge logic without rendering
- * the full Filament infolist (which requires the panel + translation
- * namespace resolution to work in the test environment).
- */
-$invokeHelper = function (string $method, Package $package): mixed {
-    $reflection = new ReflectionClass(PackageInfolistSchema::class);
-    $m = $reflection->getMethod($method);
-    $m->setAccessible(true);
+beforeEach(function () {
+    $this->actingAs(new User);
+});
 
-    return $m->invoke(null, $package);
-};
+function packagePage(Package $package): mixed
+{
+    return Livewire::test(ViewPackage::class, ['record' => $package->getRouteKey()]);
+}
 
-it('produces a non-empty installed summary string', function () use ($invokeHelper) {
-    // The helper's output is a translated string with environment and project
-    // counts interpolated. The test environment does not resolve the plugin's
-    // translation namespace, so we verify the helper at least returns a string
-    // that depends on the package's environments/projects (and doesn't throw).
+it('summarises where the package is installed with plurals', function () {
     $package = Package::factory()->create();
     $project = Project::factory()->create();
     $env1 = Environment::factory()->for($project)->create(['name' => 'production']);
@@ -36,23 +28,29 @@ it('produces a non-empty installed summary string', function () use ($invokeHelp
     EnvironmentPackage::factory()->for($env1)->for($package)->create();
     EnvironmentPackage::factory()->for($env2)->for($package)->create();
 
-    // Sanity check the underlying counts powering the summary.
-    expect($package->environmentPackages()->count())->toBe(2)
-        ->and($package->projects()->count())->toBe(1)
-        ->and($invokeHelper('installedSummary', $package))->toBeString();
+    expect(entryState(packagePage($package), 'stat_installed'))->toBe('2 environments · 1 project');
 });
 
-it('reports no active findings when there are none', function () use ($invokeHelper) {
+it('uses the singular for a single environment and project', function () {
     $package = Package::factory()->create();
+    EnvironmentPackage::factory()->for(Environment::factory())->for($package)->create();
 
-    expect($invokeHelper('activeFindingsLabel', $package))
-        ->not->toBe('0')
-        ->toBeString(); // Either "None" or the translation key if untranslated in test env.
-
-    expect($invokeHelper('activeFindingsColor', $package))->toBe('gray');
+    expect(entryState(packagePage($package), 'stat_installed'))->toBe('1 environment · 1 project');
 });
 
-it('counts only findings from the latest audit run per environment', function () use ($invokeHelper) {
+it('labels the website entry without repeating the header button', function () {
+    $page = packagePage(Package::factory()->create());
+
+    expect($page->instance()->getSchema('infolist')->getComponent('website')->getLabel())->toBe('Website');
+});
+
+it('reads None instead of a zero badge when there are no active findings', function () {
+    $page = packagePage(Package::factory()->create());
+
+    expect(entryState($page, 'stat_open_findings'))->toBe(voightTrans('fields.none'));
+});
+
+it('counts only findings from the latest audit run per environment', function () {
     $package = Package::factory()->create();
     $env = Environment::factory()->create();
     $vuln = Vulnerability::factory()->critical()->create(['vulnerability_score' => 9.5]);
@@ -63,25 +61,15 @@ it('counts only findings from the latest audit run per environment', function ()
     AuditFinding::factory()->for($oldRun, 'auditRun')->for($package)->for($vuln)->create();
     AuditFinding::factory()->for($newRun, 'auditRun')->for($package)->for($vuln)->create();
 
-    expect($invokeHelper('activeFindingsLabel', $package))->toBe('1');
+    expect(entryState(packagePage($package), 'stat_open_findings'))->toBe('1');
 });
 
-it('returns danger color when worst active finding is critical', function () use ($invokeHelper) {
+it('colours the findings tile by the worst active finding', function (float $score, string $color) {
     $package = Package::factory()->create();
-    $env = Environment::factory()->create();
-    $vuln = Vulnerability::factory()->create(['vulnerability_score' => 9.5]);
-    $run = AuditRun::factory()->for($env)->create(['started_at' => now()]);
-    AuditFinding::factory()->for($run, 'auditRun')->for($package)->for($vuln)->create();
+    $run = AuditRun::factory()->for(Environment::factory())->create(['started_at' => now()]);
+    AuditFinding::factory()->for($run, 'auditRun')->for($package)->for(Vulnerability::factory()->create(['vulnerability_score' => $score]))->create();
 
-    expect($invokeHelper('activeFindingsColor', $package))->toBe('danger');
-});
+    $entry = packagePage($package)->instance()->getSchema('infolist')->getComponent('stat_open_findings');
 
-it('returns warning color when worst active finding is medium', function () use ($invokeHelper) {
-    $package = Package::factory()->create();
-    $env = Environment::factory()->create();
-    $vuln = Vulnerability::factory()->create(['vulnerability_score' => 5.0]);
-    $run = AuditRun::factory()->for($env)->create(['started_at' => now()]);
-    AuditFinding::factory()->for($run, 'auditRun')->for($package)->for($vuln)->create();
-
-    expect($invokeHelper('activeFindingsColor', $package))->toBe('warning');
-});
+    expect($entry->getColor($entry->getState()))->toBe($color);
+})->with([[9.5, 'critical'], [5.0, 'warning']]);

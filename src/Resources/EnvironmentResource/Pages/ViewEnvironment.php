@@ -33,7 +33,7 @@ class ViewEnvironment extends ViewRecord
         return [
             Action::make('copyMarkdown')
                 ->label(voightTrans('models.environment.system_details.copy_markdown'))
-                ->icon(Heroicon::ClipboardDocument)
+                ->icon(Heroicon::OutlinedClipboardDocument)
                 ->color('gray')
                 ->visible(fn (Environment $record): bool => $record->systemDetails !== null)
                 ->alpineClickHandler(fn (Environment $record): string => 'window.navigator.clipboard.writeText(' . Js::from(SystemDetailsPresenter::markdown($record)) . ').then(() => new FilamentNotification().title(' . Js::from(voightTrans('models.environment.system_details.copied')) . ').success().send())'),

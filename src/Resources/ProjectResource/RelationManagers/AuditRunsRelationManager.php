@@ -30,6 +30,10 @@ class AuditRunsRelationManager extends RelationManager
     public function table(Table $table): Table
     {
         // The project is implied by the page, so its column is hidden here.
-        return AuditRunTableSchema::configure($table, showProject: false);
+        return AuditRunTableSchema::configure($table, showProject: false)
+            ->striped()
+            ->emptyStateIcon(Heroicon::OutlinedClipboardDocumentCheck)
+            ->emptyStateHeading(voightTrans('models.audit_run.empty.heading'))
+            ->emptyStateDescription(voightTrans('models.audit_run.empty.description'));
     }
 }

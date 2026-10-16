@@ -19,12 +19,12 @@ class OpenPackageWebsiteAction extends Action
         parent::setUp();
 
         $this->label(voightTrans('models.package.actions.open_website'));
-        $this->icon(Heroicon::ArrowTopRightOnSquare);
-        $this->url(fn (Package $record): string => self::buildUrl($record));
+        $this->icon(Heroicon::OutlinedArrowTopRightOnSquare);
+        $this->url(fn (Package $record): string => self::urlFor($record));
         $this->openUrlInNewTab();
     }
 
-    private static function buildUrl(Package $package): string
+    public static function urlFor(Package $package): string
     {
         return match ($package->type) {
             PackageType::Composer => 'https://packagist.org/packages/' . $package->name,

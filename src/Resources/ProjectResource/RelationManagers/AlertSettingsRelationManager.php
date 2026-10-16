@@ -11,6 +11,7 @@ use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Schemas\Schema;
+use Filament\Support\Enums\FontWeight;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
@@ -34,6 +35,14 @@ class AlertSettingsRelationManager extends RelationManager
         return voightTrans('models.alert_setting.plural');
     }
 
+    /**
+     * Alert settings are managed from the project view page as well as the edit page.
+     */
+    public function isReadOnly(): bool
+    {
+        return false;
+    }
+
     public function form(Schema $schema): Schema
     {
         return $schema
@@ -45,6 +54,7 @@ class AlertSettingsRelationManager extends RelationManager
                     ->live(),
                 TextInput::make('severity_threshold')
                     ->label(voightTrans('models.alert_setting.fields.severity_threshold'))
+                    ->helperText(voightTrans('hints.alert.severity_threshold'))
                     ->numeric()
                     ->minValue(0.0)
                     ->maxValue(10.0)
@@ -52,10 +62,12 @@ class AlertSettingsRelationManager extends RelationManager
                     ->required(),
                 Select::make('frequency')
                     ->label(voightTrans('models.alert_setting.fields.frequency'))
+                    ->helperText(voightTrans('hints.alert.frequency'))
                     ->options(AlertFrequency::options())
                     ->required(),
                 TextInput::make('slack_channel')
                     ->label(voightTrans('models.alert_setting.fields.slack_channel'))
+                    ->helperText(voightTrans('hints.alert.slack_channel'))
                     ->placeholder(fn (): ?string => FilamentVoight::config()->getSlackDefaultChannel()
                         ?? config('services.slack.notifications.channel'))
                     ->maxLength(255)
@@ -78,6 +90,7 @@ class AlertSettingsRelationManager extends RelationManager
                     }),
                 Select::make('recipient_teams')
                     ->label(voightTrans('models.alert_setting.fields.recipient_teams'))
+                    ->helperText(voightTrans('hints.alert.recipients'))
                     ->options(fn (): array => TeamOption::options())
                     ->allowHtml()
                     ->multiple()
@@ -99,9 +112,11 @@ class AlertSettingsRelationManager extends RelationManager
     public function table(Table $table): Table
     {
         return $table
+            ->striped()
             ->columns([
                 TextColumn::make('channel')
                     ->label(voightTrans('models.alert_setting.fields.channel'))
+                    ->weight(FontWeight::Medium)
                     ->formatStateUsing(fn (AlertChannel $state): string => $state->label()),
                 TextColumn::make('severity_threshold')
                     ->label(voightTrans('models.alert_setting.fields.severity_threshold'))
@@ -111,15 +126,18 @@ class AlertSettingsRelationManager extends RelationManager
                     ->formatStateUsing(fn (AlertFrequency $state): string => $state->label()),
                 TextColumn::make('slack_channel')
                     ->label(voightTrans('models.alert_setting.fields.slack_channel'))
-                    ->placeholder('—'),
+                    ->placeholder('—')
+                    ->toggleable(),
                 TextColumn::make('recipients_count')
                     ->label(voightTrans('models.alert_setting.fields.recipients'))
                     ->counts('recipients'),
                 TextColumn::make('last_sent_at')
                     ->label(voightTrans('models.alert_setting.fields.last_sent_at'))
-                    ->dateTime()
+                    ->since()
+                    ->dateTimeTooltip()
                     ->sortable()
-                    ->placeholder('—'),
+                    ->placeholder('—')
+                    ->toggleable(isToggledHiddenByDefault: true),
                 IconColumn::make('is_enabled')
                     ->label(voightTrans('models.alert_setting.fields.is_enabled'))
                     ->boolean(),
@@ -133,7 +151,10 @@ class AlertSettingsRelationManager extends RelationManager
             ])
             ->toolbarActions([
                 DeleteBulkAction::make(),
-            ]);
+            ])
+            ->emptyStateIcon(Heroicon::OutlinedBellAlert)
+            ->emptyStateHeading(voightTrans('models.alert_setting.empty.heading'))
+            ->emptyStateDescription(voightTrans('models.alert_setting.empty.description'));
     }
 
     private function fillRecipientState(Select $component, string $morphAlias): void

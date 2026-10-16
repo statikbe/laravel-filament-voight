@@ -7,6 +7,7 @@ use Statikbe\FilamentVoight\Models\Environment;
 use Statikbe\FilamentVoight\Models\EnvironmentPackage;
 use Statikbe\FilamentVoight\Models\Package;
 use Statikbe\FilamentVoight\Models\Project;
+use Statikbe\FilamentVoight\Resources\EnvironmentResource;
 use Statikbe\FilamentVoight\Resources\PackageResource\Pages\ViewPackage;
 use Statikbe\FilamentVoight\Resources\PackageResource\RelationManagers\InstallationsRelationManager;
 
@@ -65,4 +66,22 @@ it('shows which installed packages require the installation', function () {
     ])
         ->assertSee('express')
         ->assertSee('webpack-dev-server');
+});
+
+it('links an installation to its environment page', function () {
+    $package = Package::factory()->create();
+    $environment = Environment::factory()->create();
+    $installation = EnvironmentPackage::factory()->for($environment)->for($package)->create();
+
+    $table = Livewire::test(InstallationsRelationManager::class, [
+        'ownerRecord' => $package,
+        'pageClass' => ViewPackage::class,
+    ])->instance()->getTable();
+
+    expect($table->getRecordUrl($installation))->toBe(
+        EnvironmentResource::getUrl('view', [
+            'project' => $environment->project_id,
+            'record' => $environment->id,
+        ]),
+    );
 });
