@@ -12,6 +12,7 @@ use Filament\Infolists\Components\TextEntry;
 use Filament\Notifications\Notification;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
+use Filament\Support\Icons\Heroicon;
 use Statikbe\FilamentVoight\Models\Project;
 use Statikbe\FilamentVoight\Models\Team;
 use Statikbe\FilamentVoight\Resources\Components\TeamOption;
@@ -25,6 +26,10 @@ class ProjectFormSchema
         return $schema
             ->components([
                 Section::make(voightTrans('models.project.sections.general'))
+                    ->description(voightTrans('models.project.sections.general_description'))
+                    ->icon(Heroicon::OutlinedInformationCircle)
+                    ->columnSpanFull()
+                    ->columns(['md' => 2])
                     ->components([
                         TextInput::make('project_code')
                             ->label(voightTrans('models.project.fields.project_code'))
@@ -37,15 +42,18 @@ class ProjectFormSchema
                             ->maxLength(255),
                         Textarea::make('description')
                             ->label(voightTrans('models.project.fields.description'))
-                            ->rows(3),
+                            ->rows(3)
+                            ->columnSpanFull(),
                         TextInput::make('repo_url')
                             ->label(voightTrans('models.project.fields.repo_url'))
                             ->required()
                             ->url()
-                            ->maxLength(255),
-                    ])
-                    ->extraAttributes(['class' => 'h-full [&>.fi-section]:h-full']),
+                            ->maxLength(255)
+                            ->columnSpanFull(),
+                    ]),
                 Section::make(voightTrans('models.project.sections.assignment'))
+                    ->description(voightTrans('models.project.sections.assignment_description'))
+                    ->icon(Heroicon::OutlinedUserGroup)
                     ->components([
                         Select::make('customer_id')
                             ->label(voightTrans('models.project.fields.customer'))
@@ -70,6 +78,8 @@ class ProjectFormSchema
                     ])
                     ->extraAttributes(['class' => 'h-full [&>.fi-section]:h-full']),
                 Section::make(voightTrans('models.project.sections.settings'))
+                    ->description(voightTrans('models.project.sections.settings_description'))
+                    ->icon(Heroicon::OutlinedCog6Tooth)
                     ->components([
                         Toggle::make('is_muted')
                             ->label(voightTrans('models.project.fields.is_muted'))
@@ -78,6 +88,8 @@ class ProjectFormSchema
                     ->extraAttributes(['class' => 'h-full [&>.fi-section]:h-full']),
                 Section::make(voightTrans('models.project.sections.api_token'))
                     ->description(voightTrans('models.project.sections.api_token_description'))
+                    ->icon(Heroicon::OutlinedKey)
+                    ->columnSpanFull()
                     ->visible(fn (?Project $record): bool => $record !== null)
                     ->components([
                         RepeatableEntry::make('tokens')
@@ -88,10 +100,12 @@ class ProjectFormSchema
                                 TextEntry::make('last_used_at')
                                     ->label(voightTrans('models.project.fields.token_last_used'))
                                     ->since()
+                                    ->dateTimeTooltip()
                                     ->placeholder(voightTrans('models.project.fields.never_used')),
                                 TextEntry::make('created_at')
                                     ->label(voightTrans('fields.created_at'))
-                                    ->since(),
+                                    ->since()
+                                    ->dateTimeTooltip(),
                             ])
                             ->columns(3)
                             ->placeholder(voightTrans('models.project.fields.no_tokens')),
@@ -130,8 +144,7 @@ class ProjectFormSchema
                                     ->success()
                                     ->send();
                             }),
-                    ])
-                    ->extraAttributes(['class' => 'h-full [&>.fi-section]:h-full']),
+                    ]),
             ]);
     }
 }

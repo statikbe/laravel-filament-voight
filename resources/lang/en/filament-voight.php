@@ -193,8 +193,11 @@ return [
             ],
             'sections' => [
                 'general' => 'General',
+                'general_description' => 'Identify the project and where its code lives.',
                 'assignment' => 'Assignment',
+                'assignment_description' => 'The customer it belongs to and the team that can access it.',
                 'settings' => 'Settings',
+                'settings_description' => 'Control how this project behaves.',
                 'api_token' => 'API Token',
                 'api_token_description' => 'Generate tokens for CI/CD pipelines to sync lockfiles.',
                 'details' => 'Details',

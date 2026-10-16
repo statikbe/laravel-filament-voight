@@ -6,6 +6,7 @@ use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Components\Component;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
+use Filament\Support\Icons\Heroicon;
 
 class CustomerFormSchema
 {
@@ -26,7 +27,10 @@ class CustomerFormSchema
     {
         return $schema
             ->components([
-                Section::make(self::fields()),
+                Section::make(voightTrans('models.customer.sections.general'))
+                    ->description(voightTrans('models.customer.sections.general_description'))
+                    ->icon(Heroicon::OutlinedInformationCircle)
+                    ->components(self::fields()),
             ]);
     }
 }
