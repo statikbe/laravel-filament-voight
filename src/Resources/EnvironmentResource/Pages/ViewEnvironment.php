@@ -7,6 +7,7 @@ use Filament\Resources\Pages\ViewRecord;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Support\Js;
+use Statikbe\FilamentVoight\FilamentVoightPlugin;
 use Statikbe\FilamentVoight\Models\Environment;
 use Statikbe\FilamentVoight\Resources\EnvironmentResource;
 use Statikbe\FilamentVoight\Support\SystemDetailsPresenter;
@@ -24,7 +25,7 @@ class ViewEnvironment extends ViewRecord
             return voightTrans('models.environment.never_reported');
         }
 
-        return voightTrans('models.environment.system_details.last_reported') . ': ' . $receivedAt->diffForHumans() . ' (' . $receivedAt->format('Y-m-d H:i') . ')';
+        return voightTrans('models.environment.system_details.last_reported') . ': ' . $receivedAt->diffForHumans() . ' (' . $receivedAt->format(FilamentVoightPlugin::DATE_TIME_FORMAT) . ')';
     }
 
     protected function getHeaderActions(): array

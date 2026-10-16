@@ -18,6 +18,15 @@ class FilamentVoightPlugin implements Plugin
 {
     const string ID = 'filament-voight';
 
+    /**
+     * Display formats for the panel; the host registers them as Filament defaults, titles and strings read them directly.
+     */
+    const string DATE_FORMAT = 'd/m/Y';
+
+    const string DATE_TIME_FORMAT = 'd/m/Y H:i';
+
+    const string TIME_FORMAT = 'H:i';
+
     public function getId(): string
     {
         return static::ID;

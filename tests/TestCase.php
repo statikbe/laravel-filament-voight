@@ -9,8 +9,10 @@ use Filament\FilamentServiceProvider;
 use Filament\Forms\FormsServiceProvider;
 use Filament\Infolists\InfolistsServiceProvider;
 use Filament\Notifications\NotificationsServiceProvider;
+use Filament\Schemas\Schema;
 use Filament\Schemas\SchemasServiceProvider;
 use Filament\Support\SupportServiceProvider;
+use Filament\Tables\Table;
 use Filament\Tables\TablesServiceProvider;
 use Filament\Widgets\WidgetsServiceProvider;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -20,6 +22,7 @@ use Laravel\Sanctum\SanctumServiceProvider;
 use Livewire\LivewireServiceProvider;
 use Orchestra\Testbench\Concerns\WithWorkbench;
 use Orchestra\Testbench\TestCase as Orchestra;
+use Statikbe\FilamentVoight\FilamentVoightPlugin;
 use Statikbe\FilamentVoight\FilamentVoightServiceProvider;
 use Statikbe\FilamentVoight\Tests\Support\TestPanelProvider;
 use Statikbe\FilamentVoight\Tests\Support\User;
@@ -36,6 +39,17 @@ class TestCase extends Orchestra
         Factory::guessFactoryNamesUsing(
             fn (string $modelName) => 'Statikbe\\FilamentVoight\\Database\\Factories\\' . class_basename($modelName) . 'Factory'
         );
+
+        // Mirrors the defaults the host panel registers; Livewire tests never boot the panel.
+        Table::configureUsing(fn (Table $table): Table => $table
+            ->defaultDateDisplayFormat(FilamentVoightPlugin::DATE_FORMAT)
+            ->defaultDateTimeDisplayFormat(FilamentVoightPlugin::DATE_TIME_FORMAT)
+            ->defaultTimeDisplayFormat(FilamentVoightPlugin::TIME_FORMAT));
+
+        Schema::configureUsing(fn (Schema $schema): Schema => $schema
+            ->defaultDateDisplayFormat(FilamentVoightPlugin::DATE_FORMAT)
+            ->defaultDateTimeDisplayFormat(FilamentVoightPlugin::DATE_TIME_FORMAT)
+            ->defaultTimeDisplayFormat(FilamentVoightPlugin::TIME_FORMAT));
     }
 
     protected function getPackageProviders($app)

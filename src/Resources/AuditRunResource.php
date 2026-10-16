@@ -9,6 +9,7 @@ use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Statikbe\FilamentVoight\Facades\FilamentVoight;
+use Statikbe\FilamentVoight\FilamentVoightPlugin;
 use Statikbe\FilamentVoight\Models\AuditRun;
 use Statikbe\FilamentVoight\Resources\AuditRunResource\Pages\ListAuditRuns;
 use Statikbe\FilamentVoight\Resources\AuditRunResource\Pages\ViewAuditRun;
@@ -63,7 +64,7 @@ class AuditRunResource extends Resource
         /** @var AuditRun $record */
         return array_filter([
             voightTrans('models.audit_run.fields.status') => $record->status->label(),
-            voightTrans('models.audit_run.fields.started_at') => $record->started_at?->toDayDateTimeString(),
+            voightTrans('models.audit_run.fields.started_at') => $record->started_at?->format(FilamentVoightPlugin::DATE_TIME_FORMAT),
         ], fn (mixed $value): bool => $value !== null);
     }
 
