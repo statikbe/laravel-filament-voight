@@ -107,6 +107,13 @@ return [
         'customer' => [
             'label' => 'Customer',
             'plural' => 'Customers',
+            'list' => [
+                'empty_heading' => 'No customers yet',
+                'empty_description' => 'Customers group the projects you monitor.',
+                'has_projects' => 'Projects',
+                'has_projects_true' => 'With projects',
+                'has_projects_false' => 'Without projects',
+            ],
             'fields' => [
                 'name' => 'Name',
                 'slug' => 'Slug',
@@ -115,6 +122,13 @@ return [
         'team' => [
             'label' => 'Team',
             'plural' => 'Teams',
+            'list' => [
+                'empty_heading' => 'No teams yet',
+                'empty_description' => 'Teams decide which users can see which projects.',
+                'has_members' => 'Members',
+                'has_members_true' => 'With members',
+                'has_members_false' => 'Without members',
+            ],
             'fields' => [
                 'name' => 'Name',
                 'avatar' => 'Avatar',
@@ -126,6 +140,11 @@ return [
         'project' => [
             'label' => 'Project',
             'plural' => 'Projects',
+            'list' => [
+                'empty_heading' => 'No projects yet',
+                'empty_description' => 'A project is a codebase you monitor. Add environments to scan its dependencies.',
+                'worst_severity' => 'Worst open severity',
+            ],
             'fields' => [
                 'project_code' => 'Project Code',
                 'name' => 'Name',
@@ -145,6 +164,11 @@ return [
                 'relation_manager_environment' => 'Environment',
                 'relation_manager_alert' => 'Alert',
                 'relation_manager_vulnerability' => 'Vulnerability',
+                'open_findings' => 'Open findings',
+                'last_audit' => 'Last audit',
+            ],
+            'view' => [
+                'overview_tab' => 'Overview',
             ],
             'sections' => [
                 'general' => 'General',
@@ -164,6 +188,10 @@ return [
         'environment' => [
             'label' => 'Environment',
             'plural' => 'Environments',
+            'list' => [
+                'empty_heading' => 'No environments yet',
+                'empty_description' => 'Environments appear here once they are added to a project.',
+            ],
             'fields' => [
                 'name' => 'Name',
                 'scan_nightly' => 'Nightly scan',
@@ -256,6 +284,11 @@ return [
         'package' => [
             'label' => 'Package',
             'plural' => 'Packages',
+            'list' => [
+                'empty_heading' => 'No packages yet',
+                'empty_description' => 'Packages appear here once an environment has synced its dependencies.',
+                'open_findings' => 'Open findings',
+            ],
             'fields' => [
                 'name' => 'Name',
                 'type' => 'Type',
@@ -342,6 +375,13 @@ return [
         'vulnerability' => [
             'label' => 'Vulnerability',
             'plural' => 'Vulnerabilities',
+            'list' => [
+                'empty_heading' => 'No vulnerabilities found',
+                'empty_description' => 'Advisories show up here when an audit matches one to an installed package.',
+                'status' => 'Status',
+                'status_open' => 'Currently open',
+                'status_not_open' => 'Not open',
+            ],
             'fields' => [
                 'source' => 'Source',
                 'source_id' => 'Source ID',
@@ -391,6 +431,19 @@ return [
                 'max_severity' => 'Max severity',
                 'findings_count' => 'Findings',
                 'duration' => 'Duration',
+            ],
+            'sections' => [
+                'details' => 'Details',
+            ],
+            'view' => [
+                'title' => 'Audit run · :environment · :started',
+                'no_findings' => 'None',
+                'error' => 'Error',
+                'empty_findings' => 'This audit run found no vulnerabilities.',
+            ],
+            'empty' => [
+                'heading' => 'No audit runs yet',
+                'description' => 'Audit runs appear here once an environment has been scanned.',
             ],
         ],
         'audit_finding' => [

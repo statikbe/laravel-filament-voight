@@ -4,6 +4,7 @@ namespace Statikbe\FilamentVoight\Resources\ProjectResource\Pages;
 
 use Filament\Actions\CreateAction;
 use Filament\Resources\Pages\ListRecords;
+use Filament\Tables\Table;
 use Statikbe\FilamentVoight\Resources\ProjectResource;
 
 class ListProjects extends ListRecords
@@ -15,5 +16,12 @@ class ListProjects extends ListRecords
         return [
             CreateAction::make(),
         ];
+    }
+
+    public function table(Table $table): Table
+    {
+        return $table->emptyStateActions([
+            CreateAction::make(),
+        ]);
     }
 }

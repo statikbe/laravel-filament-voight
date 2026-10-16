@@ -90,10 +90,12 @@ class McpAccess extends Page implements HasTable
                 TextColumn::make('last_used_at')
                     ->label(voightTrans('pages.mcp_access.fields.last_used'))
                     ->since()
+                    ->dateTimeTooltip()
                     ->placeholder(voightTrans('pages.mcp_access.fields.never_used')),
                 TextColumn::make('created_at')
                     ->label(voightTrans('fields.created_at'))
-                    ->since(),
+                    ->since()
+                    ->dateTimeTooltip(),
             ])
             ->recordActions([
                 Action::make('revoke')

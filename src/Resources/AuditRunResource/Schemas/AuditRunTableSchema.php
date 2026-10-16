@@ -3,6 +3,8 @@
 namespace Statikbe\FilamentVoight\Resources\AuditRunResource\Schemas;
 
 use Filament\Actions\ViewAction;
+use Filament\Support\Enums\FontWeight;
+use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
@@ -49,18 +51,25 @@ class AuditRunTableSchema
                     ->sortable(['max_vulnerability_score']),
                 TextColumn::make('audit_findings_count')
                     ->label(voightTrans('models.audit_run.fields.findings_count'))
+                    ->numeric()
+                    ->alignEnd()
                     ->sortable(),
                 TextColumn::make('started_at')
                     ->label(voightTrans('models.audit_run.fields.started_at'))
-                    ->dateTime()
+                    ->since()
+                    ->dateTimeTooltip()
+                    ->weight(FontWeight::Medium)
                     ->sortable(),
                 TextColumn::make('completed_at')
                     ->label(voightTrans('models.audit_run.fields.completed_at'))
-                    ->dateTime()
-                    ->placeholder('—'),
+                    ->since()
+                    ->dateTimeTooltip()
+                    ->placeholder('—')
+                    ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('formatted_duration')
                     ->label(voightTrans('models.audit_run.fields.duration'))
-                    ->placeholder('—'),
+                    ->placeholder('—')
+                    ->toggleable(),
             ])
             ->filters([
                 SelectFilter::make('status')
@@ -75,7 +84,14 @@ class AuditRunTableSchema
                     ->searchable()
                     ->preload(),
             ])
+            ->striped()
             ->defaultSort('started_at', 'desc')
+            ->persistFiltersInSession()
+            ->persistSearchInSession()
+            ->persistSortInSession()
+            ->emptyStateIcon(Heroicon::OutlinedClipboardDocumentCheck)
+            ->emptyStateHeading(voightTrans('models.audit_run.empty.heading'))
+            ->emptyStateDescription(voightTrans('models.audit_run.empty.description'))
             ->recordActions([
                 ViewAction::make(),
             ]);

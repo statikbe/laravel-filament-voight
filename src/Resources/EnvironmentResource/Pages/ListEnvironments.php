@@ -6,6 +6,8 @@ use Closure;
 use Filament\Pages\Page;
 use Filament\Schemas\Components\EmbeddedTable;
 use Filament\Schemas\Schema;
+use Filament\Support\Enums\FontFamily;
+use Filament\Support\Enums\FontWeight;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Concerns\InteractsWithTable;
@@ -71,6 +73,7 @@ class ListEnvironments extends Page implements HasTable
         $columns = [
             TextColumn::make('project.name')
                 ->label(voightTrans('models.environment.fields.project'))
+                ->weight(FontWeight::Medium)
                 ->searchable(),
             EnvironmentNameColumn::make('name')
                 ->label(voightTrans('models.environment.fields.name'))
@@ -86,12 +89,14 @@ class ListEnvironments extends Page implements HasTable
 
         $columns[] = TextColumn::make('systemDetails.php_version')
             ->label(voightTrans('models.environment.fields.php_version'))
+            ->fontFamily(FontFamily::Mono)
             ->placeholder('—')
             ->sortable(query: $sortBy('php_version'));
 
         $columns[] = TextColumn::make('systemDetails.received_at')
             ->label(voightTrans('models.environment.fields.system_details_received_at'))
             ->since()
+            ->dateTimeTooltip()
             ->placeholder(voightTrans('models.environment.never_reported'))
             ->sortable(query: $sortBy('received_at'));
 
@@ -129,6 +134,13 @@ class ListEnvironments extends Page implements HasTable
                         fn (Builder $query): Builder => $query->whereHas('systemDetails', fn (Builder $query): Builder => $query->where('php_version', $data['value'])),
                     )),
             ])
+            ->striped()
+            ->persistFiltersInSession()
+            ->persistSearchInSession()
+            ->persistSortInSession()
+            ->emptyStateIcon(Heroicon::OutlinedServerStack)
+            ->emptyStateHeading(voightTrans('models.environment.list.empty_heading'))
+            ->emptyStateDescription(voightTrans('models.environment.list.empty_description'))
             ->recordUrl(fn (Environment $record): string => EnvironmentResource::getUrl('view', [
                 'project' => $record->project,
                 'record' => $record,
