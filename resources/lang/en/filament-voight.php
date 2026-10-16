@@ -18,6 +18,7 @@ return [
     'fields' => [
         'created_at' => 'Created',
         'updated_at' => 'Updated',
+        'none' => 'None',
     ],
 
     // Enums
@@ -461,6 +462,30 @@ return [
                 'revoke' => 'Revoke',
                 'revoked' => 'Token revoked',
             ],
+        ],
+    ],
+
+    // Explanations shown next to numbers
+    'hints' => [
+        'open_findings' => 'Found in the latest audit of each environment.',
+        'cvss' => 'Severity score from 0 to 10, set by the vulnerability source.',
+        'last_audit' => 'When the most recent audit of this project started.',
+        'installed_summary' => 'Where this package is installed.',
+        'max_severity' => 'The most severe finding in this audit.',
+        'badges' => [
+            'project_vulnerabilities' => 'Open findings: found in the latest audit of each environment.',
+            'project_environments' => 'Environments in this project.',
+            'package_active_findings' => 'Open findings: found in the latest audit of each environment.',
+            'package_installations' => 'Environments where this package is installed.',
+            'package_known_vulnerabilities' => 'Known vulnerable version ranges of this package.',
+            'vulnerability_affected_projects' => 'Open findings: found in the latest audit of each environment.',
+            'vulnerability_affected_packages' => 'Known vulnerable version ranges of the affected packages.',
+        ],
+        'alert' => [
+            'severity_threshold' => 'Only findings with a score at or above this (0 to 10) are sent. 7 and up is high, 9 and up is critical.',
+            'frequency' => 'Immediate: after every audit. Daily and weekly: one summary of everything still open.',
+            'slack_channel' => 'Leave empty to use the default channel.',
+            'recipients' => 'Everyone selected here gets the alert by email. A team means all of its members.',
         ],
     ],
 

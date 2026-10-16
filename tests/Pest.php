@@ -4,6 +4,7 @@ use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Testing\Fluent\AssertableJson;
 use Laravel\Mcp\Server\Testing\TestResponse;
+use Livewire\Features\SupportTesting\Testable;
 use Statikbe\FilamentVoight\Models\AuditFinding;
 use Statikbe\FilamentVoight\Models\AuditRun;
 use Statikbe\FilamentVoight\Models\Environment;
@@ -151,4 +152,12 @@ function structuredContent(TestResponse $response): array
     });
 
     return $content;
+}
+
+/**
+ * The state an infolist entry (a stat tile) resolves to on a mounted view page.
+ */
+function entryState(Testable $page, string $name): mixed
+{
+    return $page->instance()->getSchema('infolist')->getComponent($name)->getState();
 }
