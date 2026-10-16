@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Support\Carbon;
 use Laravel\Sanctum\HasApiTokens;
+use Statikbe\FilamentVoight\Enums\Severity;
 use Statikbe\FilamentVoight\Facades\FilamentVoight;
 use Staudenmeir\EloquentHasManyDeep\HasManyDeep;
 use Staudenmeir\EloquentHasManyDeep\HasRelationships;
@@ -100,6 +101,17 @@ class Project extends Model
             ['project_id', 'environment_id', 'audit_run_id'],
             ['id', 'id', 'id'],
         );
+    }
+
+    /**
+     * The findings of each environment's latest audit run (what the vulnerabilities tab lists by
+     * default) with the worst severity among them. One query.
+     *
+     * @return array{count: int, severity: Severity|null}
+     */
+    public function openFindingsSummary(): array
+    {
+        return AuditFinding::openSummary($this->findings());
     }
 
     /**

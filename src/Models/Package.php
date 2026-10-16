@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
 use Statikbe\FilamentVoight\Enums\PackageType;
+use Statikbe\FilamentVoight\Enums\Severity;
 use Staudenmeir\EloquentHasManyDeep\HasManyDeep;
 use Staudenmeir\EloquentHasManyDeep\HasRelationships;
 
@@ -63,6 +64,16 @@ class Package extends Model
     public function findings(): HasMany
     {
         return $this->hasMany(AuditFinding::class);
+    }
+
+    /**
+     * The open findings of this package with the worst severity among them. One query.
+     *
+     * @return array{count: int, severity: Severity|null}
+     */
+    public function openFindingsSummary(): array
+    {
+        return AuditFinding::openSummary($this->findings());
     }
 
     /**
