@@ -5,6 +5,7 @@ namespace Statikbe\FilamentVoight\Enums;
 use Filament\Support\Contracts\HasColor;
 use Filament\Support\Contracts\HasIcon;
 use Filament\Support\Contracts\HasLabel;
+use Filament\Support\Icons\Heroicon;
 
 enum PackageType: string implements HasColor, HasIcon, HasLabel
 {
@@ -25,9 +26,9 @@ enum PackageType: string implements HasColor, HasIcon, HasLabel
         };
     }
 
-    public function icon(): string
+    public function icon(): Heroicon
     {
-        return 'heroicon-o-cube';
+        return Heroicon::OutlinedCube;
     }
 
     public function getLabel(): string
@@ -40,7 +41,7 @@ enum PackageType: string implements HasColor, HasIcon, HasLabel
         return $this->color();
     }
 
-    public function getIcon(): string
+    public function getIcon(): Heroicon
     {
         return $this->icon();
     }

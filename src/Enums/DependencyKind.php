@@ -5,6 +5,7 @@ namespace Statikbe\FilamentVoight\Enums;
 use Filament\Support\Contracts\HasColor;
 use Filament\Support\Contracts\HasIcon;
 use Filament\Support\Contracts\HasLabel;
+use Filament\Support\Icons\Heroicon;
 
 /**
  * Why a parent requires a child. A peer parent does not bring its own copy of the
@@ -32,12 +33,12 @@ enum DependencyKind: string implements HasColor, HasIcon, HasLabel
         };
     }
 
-    public function icon(): string
+    public function icon(): Heroicon
     {
         return match ($this) {
-            self::Dependency => 'heroicon-o-arrow-down',
-            self::Optional => 'heroicon-o-question-mark-circle',
-            self::Peer => 'heroicon-o-link',
+            self::Dependency => Heroicon::OutlinedArrowDown,
+            self::Optional => Heroicon::OutlinedQuestionMarkCircle,
+            self::Peer => Heroicon::OutlinedLink,
         };
     }
 
@@ -51,7 +52,7 @@ enum DependencyKind: string implements HasColor, HasIcon, HasLabel
         return $this->color();
     }
 
-    public function getIcon(): string
+    public function getIcon(): Heroicon
     {
         return $this->icon();
     }

@@ -5,6 +5,7 @@ namespace Statikbe\FilamentVoight\Enums;
 use Filament\Support\Contracts\HasColor;
 use Filament\Support\Contracts\HasIcon;
 use Filament\Support\Contracts\HasLabel;
+use Filament\Support\Icons\Heroicon;
 
 enum AlertChannel: string implements HasColor, HasIcon, HasLabel
 {
@@ -25,11 +26,11 @@ enum AlertChannel: string implements HasColor, HasIcon, HasLabel
         };
     }
 
-    public function icon(): string
+    public function icon(): Heroicon
     {
         return match ($this) {
-            self::Email => 'heroicon-o-envelope',
-            self::Slack => 'heroicon-o-chat-bubble-left-right',
+            self::Email => Heroicon::OutlinedEnvelope,
+            self::Slack => Heroicon::OutlinedChatBubbleLeftRight,
         };
     }
 
@@ -43,7 +44,7 @@ enum AlertChannel: string implements HasColor, HasIcon, HasLabel
         return $this->color();
     }
 
-    public function getIcon(): string
+    public function getIcon(): Heroicon
     {
         return $this->icon();
     }

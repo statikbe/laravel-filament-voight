@@ -64,7 +64,7 @@ class EnvironmentsRelationManager extends RelationManager
                 IconColumn::make('health')
                     ->label(voightTrans('models.environment.fields.health'))
                     ->state(fn (Environment $record): string => $this->issues($record)->first()?->type->value ?? self::HEALTHY)
-                    ->icon(fn (string $state): string => EnvironmentIssueType::tryFrom($state)?->getIcon() ?? 'heroicon-o-check-circle')
+                    ->icon(fn (string $state): Heroicon => EnvironmentIssueType::tryFrom($state)?->getIcon() ?? Heroicon::OutlinedCheckCircle)
                     ->color(fn (string $state): string => EnvironmentIssueType::tryFrom($state)?->getColor() ?? 'success')
                     ->tooltip(fn (Environment $record): string => $this->issues($record)
                         ->map(fn (EnvironmentIssue $issue): string => $issue->message)

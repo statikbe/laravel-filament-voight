@@ -3,6 +3,7 @@
 use Filament\Support\Contracts\HasColor;
 use Filament\Support\Contracts\HasIcon;
 use Filament\Support\Contracts\HasLabel;
+use Filament\Support\Icons\Heroicon;
 use Statikbe\FilamentVoight\Enums\AlertChannel;
 use Statikbe\FilamentVoight\Enums\AlertFrequency;
 use Statikbe\FilamentVoight\Enums\AuditRunStatus;
@@ -41,6 +42,6 @@ it('implements the Filament contracts with exhaustive, well-formed color and ico
         // returned values are well-formed. Label copy comes from translations,
         // so it is not asserted here.
         expect($case->getColor())->toBeString()->not->toBe('');
-        expect($case->getIcon())->toStartWith('heroicon-');
+        expect($case->getIcon())->toBeInstanceOf(Heroicon::class);
     }
 })->with($enums);

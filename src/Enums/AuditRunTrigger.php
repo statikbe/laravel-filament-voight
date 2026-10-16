@@ -5,6 +5,7 @@ namespace Statikbe\FilamentVoight\Enums;
 use Filament\Support\Contracts\HasColor;
 use Filament\Support\Contracts\HasIcon;
 use Filament\Support\Contracts\HasLabel;
+use Filament\Support\Icons\Heroicon;
 
 enum AuditRunTrigger: string implements HasColor, HasIcon, HasLabel
 {
@@ -28,12 +29,12 @@ enum AuditRunTrigger: string implements HasColor, HasIcon, HasLabel
         };
     }
 
-    public function icon(): string
+    public function icon(): Heroicon
     {
         return match ($this) {
-            self::PostSync => 'heroicon-o-arrow-path',
-            self::Nightly => 'heroicon-o-moon',
-            self::Manual => 'heroicon-o-hand-raised',
+            self::PostSync => Heroicon::OutlinedArrowPath,
+            self::Nightly => Heroicon::OutlinedMoon,
+            self::Manual => Heroicon::OutlinedHandRaised,
         };
     }
 
@@ -47,7 +48,7 @@ enum AuditRunTrigger: string implements HasColor, HasIcon, HasLabel
         return $this->color();
     }
 
-    public function getIcon(): string
+    public function getIcon(): Heroicon
     {
         return $this->icon();
     }

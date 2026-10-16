@@ -41,7 +41,7 @@ enum EnvironmentStage: string implements HasColor
             self::Production => Color::Orange,
             self::Acceptance => Color::Yellow,
             self::Staging, self::Feature => Color::Green,
-            self::Local, self::Other => 'gray',
+            self::Local, self::Other => Color::Gray,
         };
     }
 }

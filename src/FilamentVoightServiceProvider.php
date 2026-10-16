@@ -3,7 +3,9 @@
 namespace Statikbe\FilamentVoight;
 
 use Filament\Support\Assets\Asset;
+use Filament\Support\Colors\Color;
 use Filament\Support\Facades\FilamentAsset;
+use Filament\Support\Facades\FilamentColor;
 use Filament\Support\Facades\FilamentIcon;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Database\Eloquent\Relations\Relation;
@@ -12,6 +14,7 @@ use Laravel\Mcp\Facades\Mcp;
 use Spatie\LaravelPackageTools\Commands\InstallCommand;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
+use Statikbe\FilamentVoight\Enums\Severity;
 use Statikbe\FilamentVoight\Facades\FilamentVoight;
 use Statikbe\FilamentVoight\FilamentVoight as FilamentVoightManager;
 use Statikbe\FilamentVoight\Mcp\VoightLocalServer;
@@ -76,6 +79,7 @@ class FilamentVoightServiceProvider extends PackageServiceProvider
         );
 
         FilamentIcon::register($this->getIcons());
+        FilamentColor::register([Severity::CRITICAL_COLOR => Color::Fuchsia]);
 
         $this->registerMcpServers();
 

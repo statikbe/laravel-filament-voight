@@ -25,7 +25,7 @@ it('renders environment names as badges coloured by stage', function () {
         ->and($column->getColor('feature/login'))->toBe(Color::Green)
         ->and($entry->isBadge())->toBeTrue()
         ->and($entry->getColor('acc'))->toBe(Color::Yellow)
-        ->and($entry->getColor('local'))->toBe('gray');
+        ->and($entry->getColor('local'))->toBe(Color::Gray);
 });
 
 it('shows the environment badges on the project environments tab', function () {

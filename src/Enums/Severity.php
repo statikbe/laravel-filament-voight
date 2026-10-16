@@ -5,10 +5,14 @@ namespace Statikbe\FilamentVoight\Enums;
 use Filament\Support\Contracts\HasColor;
 use Filament\Support\Contracts\HasIcon;
 use Filament\Support\Contracts\HasLabel;
+use Filament\Support\Icons\Heroicon;
 
 enum Severity: string implements HasColor, HasIcon, HasLabel
 {
     use Concerns\HasOptions;
+
+    public const string CRITICAL_COLOR = 'critical';
+
     case None = 'none';
     case Low = 'low';
     case Medium = 'medium';
@@ -59,18 +63,20 @@ enum Severity: string implements HasColor, HasIcon, HasLabel
             self::None => 'gray',
             self::Low => 'success',
             self::Medium => 'warning',
-            self::High, self::Critical => 'danger',
+            self::High => 'danger',
+            // Registered as a Filament colour by FilamentVoightServiceProvider (Color::Fuchsia).
+            self::Critical => self::CRITICAL_COLOR,
         };
     }
 
-    public function icon(): string
+    public function icon(): Heroicon
     {
         return match ($this) {
-            self::None => 'heroicon-o-shield-check',
-            self::Low => 'heroicon-o-information-circle',
-            self::Medium => 'heroicon-o-exclamation-triangle',
-            self::High => 'heroicon-o-exclamation-triangle',
-            self::Critical => 'heroicon-o-fire',
+            self::None => Heroicon::OutlinedShieldCheck,
+            self::Low => Heroicon::OutlinedInformationCircle,
+            self::Medium => Heroicon::OutlinedExclamationTriangle,
+            self::High => Heroicon::OutlinedExclamationTriangle,
+            self::Critical => Heroicon::OutlinedFire,
         };
     }
 
@@ -84,7 +90,7 @@ enum Severity: string implements HasColor, HasIcon, HasLabel
         return $this->color();
     }
 
-    public function getIcon(): string
+    public function getIcon(): Heroicon
     {
         return $this->icon();
     }

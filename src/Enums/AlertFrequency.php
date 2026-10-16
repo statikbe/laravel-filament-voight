@@ -5,6 +5,7 @@ namespace Statikbe\FilamentVoight\Enums;
 use Filament\Support\Contracts\HasColor;
 use Filament\Support\Contracts\HasIcon;
 use Filament\Support\Contracts\HasLabel;
+use Filament\Support\Icons\Heroicon;
 
 enum AlertFrequency: string implements HasColor, HasIcon, HasLabel
 {
@@ -27,12 +28,12 @@ enum AlertFrequency: string implements HasColor, HasIcon, HasLabel
         };
     }
 
-    public function icon(): string
+    public function icon(): Heroicon
     {
         return match ($this) {
-            self::Immediate => 'heroicon-o-bolt',
-            self::Daily => 'heroicon-o-calendar-days',
-            self::Weekly => 'heroicon-o-calendar',
+            self::Immediate => Heroicon::OutlinedBolt,
+            self::Daily => Heroicon::OutlinedCalendarDays,
+            self::Weekly => Heroicon::OutlinedCalendar,
         };
     }
 
@@ -46,7 +47,7 @@ enum AlertFrequency: string implements HasColor, HasIcon, HasLabel
         return $this->color();
     }
 
-    public function getIcon(): string
+    public function getIcon(): Heroicon
     {
         return $this->icon();
     }

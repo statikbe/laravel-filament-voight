@@ -52,6 +52,6 @@ it('colours each stage', function () {
         ->and(EnvironmentStage::Acceptance->getColor())->toBe(Color::Yellow)
         ->and(EnvironmentStage::Staging->getColor())->toBe(Color::Green)
         ->and(EnvironmentStage::Feature->getColor())->toBe(Color::Green)
-        ->and(EnvironmentStage::Local->getColor())->toBe('gray')
-        ->and(EnvironmentStage::Other->getColor())->toBe('gray');
+        ->and(EnvironmentStage::Local->getColor())->toBe(Color::Gray)
+        ->and(EnvironmentStage::Other->getColor())->toBe(Color::Gray);
 });

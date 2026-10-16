@@ -5,6 +5,7 @@ namespace Statikbe\FilamentVoight\Enums;
 use Filament\Support\Contracts\HasColor;
 use Filament\Support\Contracts\HasIcon;
 use Filament\Support\Contracts\HasLabel;
+use Filament\Support\Icons\Heroicon;
 
 enum EnvironmentIssueType: string implements HasColor, HasIcon, HasLabel
 {
@@ -42,12 +43,12 @@ enum EnvironmentIssueType: string implements HasColor, HasIcon, HasLabel
         };
     }
 
-    public function icon(): string
+    public function icon(): Heroicon
     {
         return match ($this) {
-            self::SyncFailed, self::ScanFailed => 'heroicon-o-x-circle',
-            self::SyncWarning => 'heroicon-o-exclamation-triangle',
-            self::NeverSynced => 'heroicon-o-information-circle',
+            self::SyncFailed, self::ScanFailed => Heroicon::OutlinedXCircle,
+            self::SyncWarning => Heroicon::OutlinedExclamationTriangle,
+            self::NeverSynced => Heroicon::OutlinedInformationCircle,
         };
     }
 
@@ -61,7 +62,7 @@ enum EnvironmentIssueType: string implements HasColor, HasIcon, HasLabel
         return $this->color();
     }
 
-    public function getIcon(): string
+    public function getIcon(): Heroicon
     {
         return $this->icon();
     }
