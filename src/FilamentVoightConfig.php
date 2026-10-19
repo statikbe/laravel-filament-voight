@@ -126,6 +126,23 @@ class FilamentVoightConfig
         return $this->packageConfig('lockfiles.disk', 'voight-lockfiles');
     }
 
+    // -- Environments --
+
+    /**
+     * @return array<string, array<int, string>>
+     */
+    public function getEnvironmentStagePrefixes(): array
+    {
+        return $this->packageConfig('environments.stages', []);
+    }
+
+    // -- Teams --
+
+    public function getTeamAvatarDisk(): string
+    {
+        return $this->packageConfig('teams.avatar_disk', 'public');
+    }
+
     // -- API --
 
     /**

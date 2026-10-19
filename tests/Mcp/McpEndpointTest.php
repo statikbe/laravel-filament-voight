@@ -35,6 +35,18 @@ it('rejects a user token without the voight:mcp ability', function () {
     callMcpEndpoint($token)->assertForbidden();
 });
 
+it('rejects a user token with every ability instead of voight:mcp', function () {
+    $token = mcpUser(Team::factory()->create())->createToken('everything')->plainTextToken;
+
+    callMcpEndpoint($token)->assertForbidden();
+});
+
+it('rejects a logged-in session without a token', function () {
+    $this->actingAs(mcpUser(Team::factory()->create()), 'web');
+
+    callMcpEndpoint(null)->assertForbidden();
+});
+
 it('rejects a project sync token', function () {
     $token = Project::factory()->create()->createToken(Project::DEFAULT_API_TOKEN_NAME)->plainTextToken;
 

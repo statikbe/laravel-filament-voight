@@ -18,13 +18,14 @@ use Illuminate\Database\Eloquent\Builder;
 use Statikbe\FilamentVoight\Facades\FilamentVoight;
 use Statikbe\FilamentVoight\Models\Environment;
 use Statikbe\FilamentVoight\Models\EnvironmentSystemDetail;
+use Statikbe\FilamentVoight\Resources\Components\EnvironmentNameColumn;
 use Statikbe\FilamentVoight\Resources\EnvironmentResource;
-use Statikbe\FilamentVoight\Resources\ProjectResource;
-
 /**
  * Cross-project overview. The nested EnvironmentResource cannot list without a parent project,
  * so this is a plain page that links its rows to the nested view page.
  */
+use Statikbe\FilamentVoight\Resources\ProjectResource;
+
 class ListEnvironments extends Page implements HasTable
 {
     use InteractsWithTable;
@@ -71,9 +72,8 @@ class ListEnvironments extends Page implements HasTable
             TextColumn::make('project.name')
                 ->label(voightTrans('models.environment.fields.project'))
                 ->searchable(),
-            TextColumn::make('name')
+            EnvironmentNameColumn::make('name')
                 ->label(voightTrans('models.environment.fields.name'))
-                ->badge()
                 ->searchable()
                 ->sortable(),
         ];

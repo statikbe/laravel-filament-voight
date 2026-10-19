@@ -9,6 +9,7 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Statikbe\FilamentVoight\Resources\Components\EnvironmentNameColumn;
 use Statikbe\FilamentVoight\Resources\PackageResource\Actions\WhyInstalledAction;
 
 class InstallationsRelationManager extends RelationManager
@@ -31,7 +32,7 @@ class InstallationsRelationManager extends RelationManager
                     ->label(voightTrans('models.package.view.columns.project'))
                     ->searchable()
                     ->sortable(),
-                TextColumn::make('environment.name')
+                EnvironmentNameColumn::make('environment.name')
                     ->label(voightTrans('models.package.view.columns.environment'))
                     ->searchable()
                     ->sortable(),

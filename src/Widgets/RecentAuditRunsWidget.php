@@ -10,6 +10,7 @@ use Statikbe\FilamentVoight\Enums\AuditRunStatus;
 use Statikbe\FilamentVoight\Facades\FilamentVoight;
 use Statikbe\FilamentVoight\Models\AuditRun;
 use Statikbe\FilamentVoight\Resources\AuditRunResource;
+use Statikbe\FilamentVoight\Resources\Components\EnvironmentNameColumn;
 
 class RecentAuditRunsWidget extends TableWidget
 {
@@ -42,7 +43,7 @@ class RecentAuditRunsWidget extends TableWidget
                 TextColumn::make('environment.project.name')
                     ->label(voightTrans('models.project.label'))
                     ->searchable(),
-                TextColumn::make('environment.name')
+                EnvironmentNameColumn::make('environment.name')
                     ->label(voightTrans('models.environment.label')),
                 TextColumn::make('started_at')
                     ->label(voightTrans('models.audit_run.fields.started_at'))

@@ -50,6 +50,28 @@ return [
     ],
 
     /*
+    | Environment names are matched case-insensitively against these prefixes
+    | to colour their badges; the first matching stage wins, anything else is
+    | grey. Stages: production, acceptance, staging, feature, local.
+    */
+    'environments' => [
+        'stages' => [
+            'production' => ['prod', 'prd', 'live'],
+            'acceptance' => ['acc', 'uat'],
+            'staging' => ['stag', 'test', 'qa'],
+            'feature' => ['feat'],
+            'local' => ['local', 'dev'],
+        ],
+    ],
+
+    /*
+    | Team avatars are stored on this disk; it must be publicly reachable.
+    */
+    'teams' => [
+        'avatar_disk' => env('VOIGHT_TEAM_AVATAR_DISK', 'public'),
+    ],
+
+    /*
     |--------------------------------------------------------------------------
     | MCP server
     |--------------------------------------------------------------------------

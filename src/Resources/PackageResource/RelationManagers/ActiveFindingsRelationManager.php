@@ -16,6 +16,7 @@ use Illuminate\Database\Eloquent\Model;
 use Statikbe\FilamentVoight\Enums\PackageType;
 use Statikbe\FilamentVoight\Enums\Severity;
 use Statikbe\FilamentVoight\Facades\FilamentVoight;
+use Statikbe\FilamentVoight\Resources\Components\EnvironmentNameColumn;
 use Statikbe\FilamentVoight\Resources\PackageResource\Actions\WhyInstalledAction;
 
 class ActiveFindingsRelationManager extends RelationManager
@@ -68,7 +69,7 @@ class ActiveFindingsRelationManager extends RelationManager
                     ->sortable()
                     ->searchable()
                     ->toggleable(),
-                TextColumn::make('auditRun.environment.name')
+                EnvironmentNameColumn::make('auditRun.environment.name')
                     ->label(voightTrans('models.package.view.columns.environment'))
                     ->sortable()
                     ->toggleable(),
