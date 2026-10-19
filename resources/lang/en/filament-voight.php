@@ -433,16 +433,15 @@ return [
         'common' => [
             'severity' => 'Severity',
             'count' => 'Count',
-            'top_findings' => 'Top Findings',
-            'top_issues' => 'Top issues',
+            'package_type_heading' => ':type (:count)',
             'view_project' => 'View Project',
             'view_audit_run' => 'View Audit Run',
             'environments' => 'Environments: :environments',
             'scanned' => 'scanned :time',
             'fixed_in' => 'fixed in :version',
             'fixable' => ':fixable of :total fixable by upgrade',
-            'no_fix' => 'no fix yet',
             'more' => '…and :count more',
+            'fixable_column' => 'Fixable',
         ],
     ],
 

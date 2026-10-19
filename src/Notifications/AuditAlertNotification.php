@@ -73,36 +73,14 @@ abstract class AuditAlertNotification extends Notification
                 ]);
 
                 $block->text($summary->environmentList() . ' · ' . $scanned)->markdown();
-            })
-            ->sectionBlock(function (SectionBlock $block): void {
-                $block->text($this->intro())->markdown();
             });
 
-        if ($summary->severityCounts !== []) {
-            $message->sectionBlock(function (SectionBlock $block) use ($summary): void {
-                foreach ($summary->severityCounts as $severityValue => $count) {
-                    $severity = Severity::from($severityValue);
+        if ($summary->sections !== []) {
+            $table = $this->buildSlackTable();
 
-                    $block->field("*{$severity->label()}*  {$count}")->markdown();
-                }
+            $message->sectionBlock(function (SectionBlock $block) use ($table): void {
+                $block->text("```\n{$table}\n```")->markdown();
             });
-        }
-
-        if ($summary->fixableCount > 0) {
-            $message->sectionBlock(function (SectionBlock $block) use ($summary): void {
-                $block->text(voightTrans('notifications.common.fixable', [
-                    'fixable' => $summary->fixableCount,
-                    'total' => $summary->totalFindings,
-                ]))->markdown();
-            });
-        }
-
-        if ($summary->topFindings !== []) {
-            $message
-                ->dividerBlock()
-                ->sectionBlock(function (SectionBlock $block): void {
-                    $block->text($this->buildSlackTopFindingsText())->markdown();
-                });
         }
 
         return $message
@@ -117,26 +95,38 @@ abstract class AuditAlertNotification extends Notification
             });
     }
 
-    private function buildSlackTopFindingsText(): string
+    /**
+     * Monospace table, one row per package type; severity columns only for severities present in some section.
+     */
+    private function buildSlackTable(): string
     {
-        $lines = collect($this->summary->topFindings)->map(function (array $finding): string {
-            $version = filled($finding['fixed_version'])
-                ? trim(($finding['installed_version'] ? "`{$finding['installed_version']}` → " : '') . "`{$finding['fixed_version']}`")
-                : voightTrans('notifications.common.no_fix');
+        $severities = collect([Severity::Critical, Severity::High, Severity::Medium, Severity::Low, Severity::None])
+            ->filter(fn (Severity $severity): bool => collect($this->summary->sections)->contains(fn (array $section): bool => ($section['severityCounts'][$severity->value] ?? 0) > 0));
 
-            $score = number_format($finding['score'], 1);
-            $summary = $this->escapeSlack(Str::limit((string) $finding['summary'], 140));
+        $rows = [[
+            '',
+            ...$severities->map(fn (Severity $severity): string => $severity->label())->all(),
+            voightTrans('notifications.common.fixable_column'),
+        ]];
 
-            return "*{$this->escapeSlack($finding['package'])}* {$version} · {$score}\n    {$summary}";
-        });
-
-        $hidden = $this->summary->totalFindings - count($this->summary->topFindings);
-
-        if ($hidden > 0) {
-            $lines->push(voightTrans('notifications.common.more', ['count' => $hidden]));
+        foreach ($this->summary->sections as $section) {
+            $rows[] = [
+                $section['label'],
+                ...$severities->map(fn (Severity $severity): string => (string) ($section['severityCounts'][$severity->value] ?? 0))->all(),
+                "{$section['fixableCount']}/{$section['total']}",
+            ];
         }
 
-        return '*' . voightTrans('notifications.common.top_issues') . "*\n" . $lines->implode("\n");
+        $widths = array_map(
+            fn (int $column): int => max(array_map(fn (array $row): int => mb_strlen($row[$column]), $rows)),
+            array_keys($rows[0]),
+        );
+
+        return collect($rows)
+            ->map(fn (array $row): string => $this->escapeSlack(rtrim(collect($row)
+                ->map(fn (string $cell, int $column): string => mb_str_pad($cell, $widths[$column], ' ', $column === 0 ? STR_PAD_RIGHT : STR_PAD_LEFT))
+                ->implode('  '))))
+            ->implode("\n");
     }
 
     /**

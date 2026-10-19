@@ -11,10 +11,10 @@ function makeDigestSummary(): AuditSummary
         projectName: 'Demo Project',
         projectCode: 'PRJ-0001',
         environmentNames: ['production', 'staging'],
-        severityCounts: ['high' => 4],
         totalFindings: 4,
-        fixableCount: 0,
-        topFindings: [],
+        sections: [
+            'composer' => ['label' => 'Composer', 'total' => 4, 'severityCounts' => ['high' => 4], 'fixableCount' => 0, 'topFindings' => []],
+        ],
         detailUrl: 'https://voight.test/voight/projects/PRJ-0001',
         detailLabel: 'View Project',
         projectUrl: 'https://voight.test/voight/projects/PRJ-0001',
