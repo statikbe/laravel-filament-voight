@@ -146,3 +146,99 @@ it('records failed runs only for environments that still exist', function () {
     expect(AuditRun::count())->toBe(1)
         ->and(AuditRun::first()->environment_id)->toBe($kept->id);
 });
+
+/**
+ * @param  array<int, array<int, array<string, string>>>  $ranges  one events list per OSV range
+ * @return array<string, mixed>
+ */
+function rawVulnWithRanges(string $pkgName, array $ranges, string $type = 'SEMVER'): array
+{
+    return [
+        'id' => 'GHSA-multi',
+        'summary' => 's',
+        'database_specific' => ['severity' => 'HIGH'],
+        'affected' => [[
+            'package' => ['name' => $pkgName, 'ecosystem' => 'npm'],
+            'ranges' => array_map(fn (array $events): array => ['type' => $type, 'events' => $events], $ranges),
+        ]],
+    ];
+}
+
+function fixedVersionFor(string $installed, array $raw, string $name = 'immutable'): ?string
+{
+    $package = Package::factory()->npm()->create(['name' => $name]);
+    $environment = Environment::factory()->create();
+    EnvironmentPackage::factory()->create(['environment_id' => $environment->id, 'package_id' => $package->id, 'version' => $installed]);
+
+    $service = app(RecordEnvironmentAuditRunsService::class);
+    $rawMap = ['GHSA-multi' => $raw];
+    $map = ["npm|{$name}|{$installed}" => [['vulnerability_id' => 'GHSA-multi', 'max_severity' => '7.5']]];
+
+    $run = $service->record($environment, $map, $service->upsertVulnerabilities($rawMap, ['GHSA-multi' => '7.5']), $rawMap, AuditRunTrigger::Nightly);
+
+    return AuditFinding::where('audit_run_id', $run->id)->value('fixed_version');
+}
+
+it('picks the fixed version of the range containing the installed version', function () {
+    $raw = rawVulnWithRanges('immutable', [
+        [['introduced' => '0'], ['fixed' => '4.3.8']],
+        [['introduced' => '5.0.0-rc.1'], ['fixed' => '5.1.5']],
+    ]);
+
+    expect(fixedVersionFor('5.0.3', $raw))->toBe('5.1.5');
+});
+
+it('treats introduced 0 as the beginning of time', function () {
+    $raw = rawVulnWithRanges('immutable', [
+        [['introduced' => '0'], ['fixed' => '4.3.8']],
+        [['introduced' => '5.0.0'], ['fixed' => '5.1.5']],
+    ]);
+
+    expect(fixedVersionFor('3.8.2', $raw))->toBe('4.3.8');
+});
+
+it('returns null when the matching range has no fixed event', function () {
+    $raw = rawVulnWithRanges('immutable', [
+        [['introduced' => '0'], ['fixed' => '4.3.8']],
+        [['introduced' => '5.0.0']],
+    ]);
+
+    expect(fixedVersionFor('5.0.3', $raw))->toBeNull();
+});
+
+it('returns null when the installed version is above every fix', function () {
+    $raw = rawVulnWithRanges('immutable', [
+        [['introduced' => '0'], ['fixed' => '4.3.8']],
+        [['introduced' => '5.0.0'], ['fixed' => '5.1.5']],
+    ]);
+
+    expect(fixedVersionFor('6.0.0', $raw))->toBeNull();
+});
+
+it('compares versions with a v prefix', function () {
+    $raw = rawVulnWithRanges('laravel/framework', [
+        [['introduced' => '10.0.0'], ['fixed' => '10.48.29']],
+        [['introduced' => '11.0.0'], ['fixed' => '11.31.0']],
+    ], 'ECOSYSTEM');
+
+    expect(fixedVersionFor('v11.2.0', $raw, 'laravel/framework'))->toBe('11.31.0');
+});
+
+it('ignores GIT ranges', function () {
+    $raw = rawVulnWithRanges('immutable', [
+        [['introduced' => '0'], ['fixed' => 'abc123def']],
+    ], 'GIT');
+
+    expect(fixedVersionFor('1.0.0', $raw))->toBeNull();
+});
+
+it('stores the highest fixed version on the shared package range', function () {
+    $raw = rawVulnWithRanges('immutable', [
+        [['introduced' => '0'], ['fixed' => '4.3.8']],
+        [['introduced' => '5.0.0'], ['fixed' => '5.1.5']],
+    ]);
+
+    fixedVersionFor('4.0.0', $raw);
+
+    expect(VulnerablePackageRange::first()->fixed_version)->toBe('5.1.5');
+});

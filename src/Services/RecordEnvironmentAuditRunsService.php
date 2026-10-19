@@ -86,9 +86,9 @@ class RecordEnvironmentAuditRunsService
                 }
 
                 $affected = $this->affectedFor($rawVulnerabilities[$vulnerability->source_id] ?? [], $package->name);
-                $fixedVersion = $this->extractFixedVersion($affected);
+                $fixedVersion = $this->extractFixedVersion($affected, $environmentPackage->version);
 
-                $this->upsertVulnerablePackageRange($vulnerability, $package, $affected, $fixedVersion);
+                $this->upsertVulnerablePackageRange($vulnerability, $package, $affected);
                 $this->createAuditFinding($auditRun, $package, $vulnerability, $environmentPackage->version, $fixedVersion);
             }
         }
@@ -199,7 +199,6 @@ class RecordEnvironmentAuditRunsService
         Vulnerability $vulnerability,
         Package $package,
         array $affected,
-        ?string $fixedVersion,
     ): void {
         if ($affected === []) {
             return;
@@ -216,11 +215,13 @@ class RecordEnvironmentAuditRunsService
             }
         }
 
-        $model::firstOrCreate(
+        // Shared by every environment, so it cannot depend on one installed version.
+        // updateOrCreate so a corrected advisory heals rows written by the old logic.
+        $model::updateOrCreate(
             ['vulnerability_id' => $vulnerability->id, 'package_id' => $package->id],
             [
                 'affected_range' => $this->buildAffectedRange($ranges),
-                'fixed_version' => $fixedVersion,
+                'fixed_version' => $this->highestFixedVersion($affected),
             ],
         );
     }
@@ -240,21 +241,109 @@ class RecordEnvironmentAuditRunsService
     }
 
     /**
+     * Fixed version for the range line containing the installed version, so a
+     * package with one range per major line yields the fix for its own line.
+     * Never returns a version at or below the installed one.
+     *
      * @param  array<int, array<string, mixed>>  $affected  affected[] entries for one package
      */
-    private function extractFixedVersion(array $affected): ?string
+    private function extractFixedVersion(array $affected, string $installedVersion): ?string
     {
+        $intervals = $this->versionIntervals($affected);
+
+        foreach ($intervals as $interval) {
+            if ($this->versionCompare($installedVersion, $interval['introduced']) < 0) {
+                continue;
+            }
+
+            if ($interval['fixed'] !== null && $this->versionCompare($installedVersion, $interval['fixed']) >= 0) {
+                continue;
+            }
+
+            if ($interval['last_affected'] !== null && $this->versionCompare($installedVersion, $interval['last_affected']) > 0) {
+                continue;
+            }
+
+            // The matching line has no fix when 'fixed' is null.
+            return $interval['fixed'];
+        }
+
+        // Installed version matches no range (e.g. only listed in affected[].versions):
+        // offer the nearest fix above it.
+        $candidates = array_filter(
+            array_column($intervals, 'fixed'),
+            fn (?string $fixed): bool => $fixed !== null && $this->versionCompare($fixed, $installedVersion) > 0,
+        );
+
+        usort($candidates, fn (string $a, string $b): int => $this->versionCompare($a, $b));
+
+        return $candidates[0] ?? null;
+    }
+
+    /**
+     * Highest fixed version across all ranges: a stable, environment-independent value.
+     *
+     * @param  array<int, array<string, mixed>>  $affected
+     */
+    private function highestFixedVersion(array $affected): ?string
+    {
+        $fixed = array_filter(array_column($this->versionIntervals($affected), 'fixed'));
+
+        usort($fixed, fn (string $a, string $b): int => $this->versionCompare($b, $a));
+
+        return $fixed[0] ?? null;
+    }
+
+    /**
+     * Flatten OSV SEMVER/ECOSYSTEM ranges into introduced/fixed intervals. GIT ranges
+     * hold commit hashes, which cannot be compared with package versions.
+     *
+     * @param  array<int, array<string, mixed>>  $affected
+     * @return array<int, array{introduced: string, fixed: string|null, last_affected: string|null}>
+     */
+    private function versionIntervals(array $affected): array
+    {
+        $intervals = [];
+
         foreach ($affected as $entry) {
             foreach ($entry['ranges'] ?? [] as $range) {
+                if (! in_array($range['type'] ?? null, ['SEMVER', 'ECOSYSTEM'], true)) {
+                    continue;
+                }
+
+                $open = null;
+
                 foreach ($range['events'] ?? [] as $event) {
-                    if (isset($event['fixed'])) {
-                        return (string) $event['fixed'];
+                    if (isset($event['introduced'])) {
+                        if ($open !== null) {
+                            $intervals[] = $open;
+                        }
+
+                        $open = ['introduced' => (string) $event['introduced'], 'fixed' => null, 'last_affected' => null];
+                    } elseif ($open !== null && (isset($event['fixed']) || isset($event['last_affected']))) {
+                        $open['fixed'] = isset($event['fixed']) ? (string) $event['fixed'] : null;
+                        $open['last_affected'] = isset($event['last_affected']) ? (string) $event['last_affected'] : null;
+                        $intervals[] = $open;
+                        $open = null;
                     }
+                }
+
+                if ($open !== null) {
+                    $intervals[] = $open;
                 }
             }
         }
 
-        return null;
+        return $intervals;
+    }
+
+    /**
+     * Composer "v" prefixes are stripped; PHP's version_compare orders -rc/-beta tags before the release.
+     * ponytail: not full semver precedence (e.g. numeric vs alphanumeric prerelease identifiers); swap in composer/semver if that matters.
+     */
+    private function versionCompare(string $a, string $b): int
+    {
+        return version_compare(ltrim($a, 'vV'), ltrim($b, 'vV'));
     }
 
     /**

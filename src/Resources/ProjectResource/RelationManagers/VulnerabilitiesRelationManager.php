@@ -54,6 +54,7 @@ class VulnerabilitiesRelationManager extends RelationManager
                 TextColumn::make('vulnerability.summary')
                     ->label(voightTrans('models.package.view.columns.summary'))
                     ->limit(80)
+                    ->wrap()
                     ->tooltip(fn ($record): ?string => $record->vulnerability?->summary)
                     ->searchable(),
                 TextColumn::make('installed_version')

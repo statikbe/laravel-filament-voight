@@ -30,6 +30,11 @@ class AlertSettingsRelationManager extends RelationManager
         return voightTrans('models.alert_setting.plural');
     }
 
+    public function isReadOnly(): bool
+    {
+        return false;
+    }
+
     public function form(Schema $schema): Schema
     {
         return $schema

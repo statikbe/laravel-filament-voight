@@ -405,23 +405,30 @@ return [
     // Notifications
     'notifications' => [
         'audit_run_summary' => [
-            'subject' => 'Voight alert: :total finding(s) for :project (:environment)',
+            'subject' => '{1} Voight alert: :total finding for :project (:environment)|[0,*] Voight alert: :total findings for :project (:environment)',
             'headline' => 'New vulnerability findings in :project',
-            'intro' => 'The latest scan of :project (:environment) found :total vulnerability finding(s) at or above your severity threshold.',
+            'slack_headline' => '{1} :project · :total new finding|[0,*] :project · :total new findings',
+            'intro' => '{1} The latest scan of :project (:environment) found :total vulnerability finding at or above your severity threshold.|[0,*] The latest scan of :project (:environment) found :total vulnerability findings at or above your severity threshold.',
         ],
         'audit_digest' => [
-            'subject' => 'Voight digest: :total outstanding finding(s) for :project',
+            'subject' => '{1} Voight digest: :total outstanding finding for :project|[0,*] Voight digest: :total outstanding findings for :project',
             'headline' => 'Outstanding vulnerabilities in :project',
-            'intro' => ':project currently has :total outstanding vulnerability finding(s) at or above your severity threshold.',
+            'slack_headline' => '{1} :project · :total outstanding finding|[0,*] :project · :total outstanding findings',
+            'intro' => '{1} :project currently has :total outstanding vulnerability finding at or above your severity threshold.|[0,*] :project currently has :total outstanding vulnerability findings at or above your severity threshold.',
         ],
         'common' => [
             'severity' => 'Severity',
             'count' => 'Count',
             'top_findings' => 'Top Findings',
+            'top_issues' => 'Top issues',
             'view_project' => 'View Project',
             'view_audit_run' => 'View Audit Run',
             'environments' => 'Environments: :environments',
+            'scanned' => 'scanned :time',
             'fixed_in' => 'fixed in :version',
+            'fixable' => ':fixable of :total fixable by upgrade',
+            'no_fix' => 'no fix yet',
+            'more' => '…and :count more',
         ],
     ],
 

@@ -118,3 +118,15 @@ it('links a digest to the project because it spans several runs', function () {
     expect($summary->detailUrl)->toContain($project->getRouteKey())
         ->and($summary->detailLabel)->toBe(voightTrans('notifications.common.view_project'));
 });
+
+it('counts findings with a fixed version as fixable and exposes the project url', function () {
+    $run = AuditRun::factory()->create();
+    addFindingWithScore($run, 9.5);
+    $unfixed = addFindingWithScore($run, 8.0);
+    $unfixed->update(['fixed_version' => null]);
+
+    $summary = AuditSummary::fromAuditRun($run, 0.0);
+
+    expect($summary->fixableCount)->toBe(1)
+        ->and($summary->projectUrl)->toContain($run->environment->project->getRouteKey());
+});

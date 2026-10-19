@@ -13,9 +13,11 @@ function makeDigestSummary(): AuditSummary
         environmentNames: ['production', 'staging'],
         severityCounts: ['high' => 4],
         totalFindings: 4,
+        fixableCount: 0,
         topFindings: [],
         detailUrl: 'https://voight.test/voight/projects/PRJ-0001',
         detailLabel: 'View Project',
+        projectUrl: 'https://voight.test/voight/projects/PRJ-0001',
         generatedAt: now(),
     );
 }
@@ -23,7 +25,7 @@ function makeDigestSummary(): AuditSummary
 it('uses the digest translation keys for mail', function () {
     $mail = (new AuditDigestNotification(makeDigestSummary(), AlertChannel::Email))->toMail(new User);
 
-    expect($mail->subject)->toBe(voightTrans('notifications.audit_digest.subject', [
+    expect($mail->subject)->toBe(voightTransChoice('notifications.audit_digest.subject', 4, [
         'project' => 'Demo Project',
         'environment' => 'production, staging',
         'total' => 4,
@@ -37,9 +39,5 @@ it('uses the digest translation keys for the slack header', function () {
 
     $header = collect($payload['blocks'])->firstWhere('type', 'header');
 
-    expect($header['text']['text'])->toBe(voightTrans('notifications.audit_digest.headline', [
-        'project' => 'Demo Project',
-        'environment' => 'production, staging',
-        'total' => 4,
-    ]));
+    expect($header['text']['text'])->toBe('Demo Project · 4 outstanding findings');
 });

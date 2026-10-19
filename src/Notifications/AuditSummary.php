@@ -28,9 +28,11 @@ final readonly class AuditSummary
         public array $environmentNames,
         public array $severityCounts,
         public int $totalFindings,
+        public int $fixableCount,
         public array $topFindings,
         public string $detailUrl,
         public string $detailLabel,
+        public string $projectUrl,
         public Carbon $generatedAt,
     ) {}
 
@@ -164,9 +166,11 @@ final readonly class AuditSummary
             environmentNames: $environmentNames,
             severityCounts: $severityCounts,
             totalFindings: $findings->count(),
+            fixableCount: $findings->filter(fn (AuditFinding $finding): bool => filled($finding->fixed_version))->count(),
             topFindings: $topFindings,
             detailUrl: $detailUrl,
             detailLabel: $detailLabel,
+            projectUrl: self::alertsPanelUrl(ProjectResource::class, $project),
             generatedAt: now(),
         );
     }
