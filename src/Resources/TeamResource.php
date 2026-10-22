@@ -11,9 +11,9 @@ use Statikbe\FilamentVoight\Resources\TeamResource\Pages\CreateTeam;
 use Statikbe\FilamentVoight\Resources\TeamResource\Pages\EditTeam;
 use Statikbe\FilamentVoight\Resources\TeamResource\Pages\ListTeams;
 use Statikbe\FilamentVoight\Resources\TeamResource\Pages\ViewTeam;
+use Statikbe\FilamentVoight\Resources\TeamResource\RelationManagers\ProjectsRelationManager;
 use Statikbe\FilamentVoight\Resources\TeamResource\RelationManagers\UsersRelationManager;
 use Statikbe\FilamentVoight\Resources\TeamResource\Schemas\TeamFormSchema;
-use Statikbe\FilamentVoight\Resources\TeamResource\Schemas\TeamInfoListSchema;
 use Statikbe\FilamentVoight\Resources\TeamResource\Schemas\TeamTableSchema;
 
 class TeamResource extends Resource
@@ -59,15 +59,11 @@ class TeamResource extends Resource
         return TeamTableSchema::configure($table);
     }
 
-    public static function infolist(Schema $schema): Schema
-    {
-        return TeamInfoListSchema::configure($schema);
-    }
-
     public static function getRelations(): array
     {
         return [
             UsersRelationManager::class,
+            ProjectsRelationManager::class,
         ];
     }
 
