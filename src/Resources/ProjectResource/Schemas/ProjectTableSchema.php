@@ -5,9 +5,9 @@ namespace Statikbe\FilamentVoight\Resources\ProjectResource\Schemas;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
-use Filament\Support\Enums\Width;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Enums\FiltersLayout;
 use Filament\Tables\Filters\QueryBuilder;
 use Filament\Tables\Filters\QueryBuilder\Constraints\BooleanConstraint;
 use Filament\Tables\Filters\QueryBuilder\Constraints\DateConstraint;
@@ -15,8 +15,6 @@ use Filament\Tables\Filters\QueryBuilder\Constraints\RelationshipConstraint;
 use Filament\Tables\Filters\QueryBuilder\Constraints\RelationshipConstraint\Operators\IsRelatedToOperator;
 use Filament\Tables\Filters\QueryBuilder\Constraints\SelectConstraint;
 use Filament\Tables\Filters\QueryBuilder\Constraints\TextConstraint;
-use Filament\Tables\Filters\SelectFilter;
-use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
 use Statikbe\FilamentVoight\Enums\PackageType;
 use Statikbe\FilamentVoight\Resources\ProjectResource;
@@ -59,18 +57,6 @@ class ProjectTableSchema
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
-                SelectFilter::make('customer_id')
-                    ->label(voightTrans('models.project.fields.customer'))
-                    ->relationship('customer', 'name')
-                    ->searchable()
-                    ->preload(),
-                SelectFilter::make('team_id')
-                    ->label(voightTrans('models.project.fields.team'))
-                    ->relationship('team', 'name')
-                    ->searchable()
-                    ->preload(),
-                TernaryFilter::make('is_muted')
-                    ->label(voightTrans('models.project.fields.is_muted')),
                 QueryBuilder::make()
                     ->constraints([
                         PackageVersionConstraint::make(),
@@ -109,8 +95,7 @@ class ProjectTableSchema
                             ->label(voightTrans('fields.created_at')),
                     ])
                     ->constraintPickerColumns(2),
-            ])
-            ->filtersFormWidth(Width::FourExtraLarge)
+            ], layout: FiltersLayout::AboveContent)
             ->recordActions([
                 ViewAction::make()
                     ->url(fn ($record) => ProjectResource::getUrl('view', ['record' => $record])),

@@ -35,6 +35,29 @@ it('returns nothing for an invalid range', function () {
     expect(VersionRange::filterSatisfying(['1.0.0'], '>>> nope'))->toBe([]);
 });
 
+it('validates single versions', function (string $version, bool $isValid) {
+    expect(VersionRange::isValidVersion($version))->toBe($isValid);
+})->with([
+    ['10.48.29', true],
+    ['v6.4.1', true],
+    ['1.2', true],
+    ['', false],
+    ['<1.2', false],
+    ['1.0 || 2.0', false],
+]);
+
+it('splits a range into alternative groups of comparisons', function (string $range, ?array $expected) {
+    expect(VersionRange::toComparisons($range))->toBe($expected);
+})->with([
+    'single bound' => ['<1.2.3', [[['<', '1.2.3']]]],
+    'two bounds' => ['>=0 <v10.48.29', [[['>=', '0'], ['<', 'v10.48.29']]]],
+    'alternatives' => ['>=1.0.0 <1.6.4 || >=2.0.0', [[['>=', '1.0.0'], ['<', '1.6.4']], [['>=', '2.0.0']]]],
+    'comma and' => ['>= 10.0.0, < 10.48.29', [[['>=', '10.0.0'], ['<', '10.48.29']]]],
+    'exact' => ['1.2.3', [[['=', '1.2.3']]]],
+    'anything' => ['*', [[['>=', '0']]]],
+    'unsupported' => ['^1.2', null],
+]);
+
 it('validates ranges', function (string $range, bool $isValid) {
     expect(VersionRange::isValid($range))->toBe($isValid);
 })->with([

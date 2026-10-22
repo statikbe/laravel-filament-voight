@@ -355,20 +355,18 @@ return [
         'package_version' => [
             'label' => 'Package version',
             'operators' => [
-                'satisfies' => [
-                    'direct' => 'Is in range',
-                    'inverse' => 'Is not in range',
-                ],
+                'is' => 'Is',
+                'isNot' => 'Is not',
+                'isBelow' => 'Is below',
+                'isAtMost' => 'Is at most',
+                'isAbove' => 'Is above',
+                'isAtLeast' => 'Is at least',
             ],
-            'summary' => [
-                'direct' => ':package version is in :range',
-                'inverse' => ':package version is not in :range',
-            ],
+            'summary' => ':package version :operator :version',
             'form' => [
-                'range' => [
-                    'label' => 'Version range',
-                    'help' => 'Paste the affected range from the advisory, e.g. ">=10.0.0,<10.48.29" or "<1.6.4 || >=2.0.0 <2.1.1".',
-                    'invalid' => 'This is not a valid version range.',
+                'version' => [
+                    'label' => 'Version',
+                    'invalid' => 'This is not a valid version.',
                 ],
             ],
         ],

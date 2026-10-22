@@ -11,28 +11,49 @@ use Statikbe\FilamentVoight\Models\EnvironmentPackage;
 use Statikbe\FilamentVoight\Models\Package;
 use Statikbe\FilamentVoight\Support\VersionRange;
 
-class SatisfiesRangeOperator extends Operator
+/**
+ * One query builder line comparing a package's installed version, e.g. "laravel/framework is below 10.48.29".
+ * A project matches when any of its environments has the package at a version that passes the comparison.
+ */
+class VersionComparisonOperator extends Operator
 {
-    public function getName(): string
+    /**
+     * Operator names mapped to the Composer comparison they apply.
+     */
+    public const COMPARISONS = [
+        'is' => '=',
+        'isNot' => '!=',
+        'isBelow' => '<',
+        'isAtMost' => '<=',
+        'isAbove' => '>',
+        'isAtLeast' => '>=',
+    ];
+
+    /**
+     * @return array<static>
+     */
+    public static function all(): array
     {
-        return 'satisfies';
+        return array_map(static::make(...), array_keys(self::COMPARISONS));
+    }
+
+    public static function nameFor(string $comparison): ?string
+    {
+        return array_search($comparison, self::COMPARISONS, true) ?: null;
     }
 
     public function getLabel(): string
     {
-        return voightTrans($this->isInverse()
-            ? 'filters.package_version.operators.satisfies.inverse'
-            : 'filters.package_version.operators.satisfies.direct');
+        return voightTrans("filters.package_version.operators.{$this->getName()}");
     }
 
     public function getSummary(): string
     {
-        return voightTrans($this->isInverse()
-            ? 'filters.package_version.summary.inverse'
-            : 'filters.package_version.summary.direct', [
-                'package' => self::packageLabel(Package::find($this->getStringSetting('package_id'))),
-                'range' => $this->getStringSetting('range'),
-            ]);
+        return voightTrans('filters.package_version.summary', [
+            'package' => self::packageLabel(Package::find($this->getStringSetting('package_id'))),
+            'operator' => mb_strtolower($this->getLabel()),
+            'version' => $this->getStringSetting('version'),
+        ]);
     }
 
     public function getFormSchema(): array
@@ -50,14 +71,13 @@ class SatisfiesRangeOperator extends Operator
                     ->all())
                 ->getOptionLabelUsing(fn (?string $value): string => self::packageLabel(Package::find($value)))
                 ->required(),
-            TextInput::make('range')
-                ->label(voightTrans('filters.package_version.form.range.label'))
-                ->placeholder('>=10.0.0,<10.48.29')
-                ->helperText(voightTrans('filters.package_version.form.range.help'))
+            TextInput::make('version')
+                ->label(voightTrans('filters.package_version.form.version.label'))
+                ->placeholder('10.48.29')
                 ->required()
                 ->rule(fn (): Closure => function (string $attribute, mixed $value, Closure $fail): void {
-                    if (! is_string($value) || ! VersionRange::isValid($value)) {
-                        $fail(voightTrans('filters.package_version.form.range.invalid'));
+                    if (! is_string($value) || ! VersionRange::isValidVersion($value)) {
+                        $fail(voightTrans('filters.package_version.form.version.invalid'));
                     }
                 }),
         ];
@@ -66,23 +86,25 @@ class SatisfiesRangeOperator extends Operator
     public function applyToBaseQuery(Builder $query): Builder
     {
         $packageId = $this->getStringSetting('package_id');
-        $range = $this->getStringSetting('range');
+        $version = $this->getStringSetting('version');
+        $comparison = self::COMPARISONS[$this->getName()] ?? null;
 
-        if (blank($packageId) || blank($range)) {
+        if (blank($packageId) || blank($version) || $comparison === null) {
             return $query;
         }
 
-        // Version strings can't be range-compared in SQL ("1.10" < "1.9"), so match
+        // Version strings can't be compared in SQL ("1.10" < "1.9"), so compare
         // the package's distinct installed versions in PHP and filter on those.
-        $matchingVersions = VersionRange::filterSatisfying(
+        $matchingVersions = VersionRange::filterComparing(
             EnvironmentPackage::query()
                 ->where('package_id', $packageId)
                 ->distinct()
                 ->pluck('version'),
-            $range,
+            $comparison,
+            $version,
         );
 
-        return $query->{$this->isInverse() ? 'whereDoesntHave' : 'whereHas'}(
+        return $query->whereHas(
             'environments.environmentPackages',
             fn (Builder $query): Builder => $query
                 ->where('package_id', $packageId)
