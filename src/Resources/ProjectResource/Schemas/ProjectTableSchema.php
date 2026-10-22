@@ -26,7 +26,10 @@ use Statikbe\FilamentVoight\Resources\ProjectResource;
 
 class ProjectTableSchema
 {
-    public static function configure(Table $table): Table
+    /**
+     * @param  bool  $showTeam  Hidden where the team is already implied by the page.
+     */
+    public static function configure(Table $table, bool $showTeam = true): Table
     {
         return $table
             ->columns([
@@ -46,7 +49,8 @@ class ProjectTableSchema
                     ->label(voightTrans('models.project.fields.team'))
                     ->formatStateUsing(fn (Project $record): View => view('filament-voight::team.avatar-name', ['team' => $record->team]))
                     ->searchable()
-                    ->sortable(),
+                    ->sortable()
+                    ->visible($showTeam),
                 TextColumn::make('environments_count')
                     ->label(voightTrans('models.environment.plural'))
                     ->counts('environments')
@@ -69,7 +73,7 @@ class ProjectTableSchema
                         TextConstraint::make('name')
                             ->label(voightTrans('models.project.fields.name')),
                         ProjectConstraint::customer('customer_id'),
-                        ProjectConstraint::team('team_id'),
+                        ...($showTeam ? [ProjectConstraint::team('team_id')] : []),
                         BooleanConstraint::make('is_muted')
                             ->label(voightTrans('models.project.fields.is_muted')),
                         DateConstraint::make('created_at')

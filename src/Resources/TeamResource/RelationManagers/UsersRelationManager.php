@@ -7,9 +7,11 @@ use Filament\Actions\DetachAction;
 use Filament\Actions\DetachBulkAction;
 use Filament\Forms\Components\Select;
 use Filament\Resources\RelationManagers\RelationManager;
+use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Model;
+use Statikbe\FilamentVoight\Models\Team;
 
 class UsersRelationManager extends RelationManager
 {
@@ -17,9 +19,24 @@ class UsersRelationManager extends RelationManager
 
     protected static bool $hasInverseRelationship = false;
 
+    protected static string | \BackedEnum | null $icon = Heroicon::OutlinedUsers;
+
     public static function getTitle(Model $ownerRecord, string $pageClass): string
     {
         return voightTrans('models.team.fields.users');
+    }
+
+    /**
+     * @param  Team  $ownerRecord
+     */
+    public static function getBadge(Model $ownerRecord, string $pageClass): ?string
+    {
+        return (string) $ownerRecord->users()->count();
+    }
+
+    public function isReadOnly(): bool
+    {
+        return false;
     }
 
     public function table(Table $table): Table

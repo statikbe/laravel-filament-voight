@@ -10,9 +10,9 @@ use Statikbe\FilamentVoight\Models\Team;
  */
 class TeamOption
 {
-    public static function label(Team $team): string
+    public static function label(Team $team, string $size = 'sm'): string
     {
-        return view('filament-voight::team.avatar-name', ['team' => $team])->render();
+        return view('filament-voight::team.avatar-name', ['team' => $team, 'size' => $size])->render();
     }
 
     /**
