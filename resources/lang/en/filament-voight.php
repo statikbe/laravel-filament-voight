@@ -229,6 +229,8 @@ return [
             ],
             'actions' => [
                 'open_source' => 'View on source',
+                'find_affected_projects' => 'Find affected projects',
+                'find_affected_projects_for' => 'Projects using :package',
             ],
         ],
         'vulnerable_package_range' => [

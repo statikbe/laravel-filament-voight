@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Model;
 use Statikbe\FilamentVoight\Enums\Severity;
 use Statikbe\FilamentVoight\Enums\VulnerabilitySource;
 use Statikbe\FilamentVoight\Resources\VulnerabilityResource;
+use Statikbe\FilamentVoight\Resources\VulnerabilityResource\Actions\FindAffectedProjectsAction;
 
 class KnownVulnerabilitiesRelationManager extends RelationManager
 {
@@ -84,6 +85,9 @@ class KnownVulnerabilitiesRelationManager extends RelationManager
                                 ->where('vulnerability_score', '<=', $max),
                         );
                     }),
+            ])
+            ->recordActions([
+                FindAffectedProjectsAction::make(),
             ])
             ->defaultSort('vulnerability.vulnerability_score', 'desc')
             ->emptyStateIcon(Heroicon::OutlinedShieldCheck)

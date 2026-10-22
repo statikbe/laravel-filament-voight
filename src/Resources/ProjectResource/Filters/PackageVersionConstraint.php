@@ -4,6 +4,7 @@ namespace Statikbe\FilamentVoight\Resources\ProjectResource\Filters;
 
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Filters\QueryBuilder\Constraints\Constraint;
+use Statikbe\FilamentVoight\Resources\ProjectResource;
 use Statikbe\FilamentVoight\Resources\ProjectResource\Filters\PackageVersionConstraint\Operators\SatisfiesRangeOperator;
 
 /**
@@ -15,6 +16,31 @@ class PackageVersionConstraint extends Constraint
     public static function getDefaultName(): ?string
     {
         return 'package_version';
+    }
+
+    /**
+     * Projects list URL with this constraint applied, e.g. to jump from an advisory to the projects it hits.
+     */
+    public static function projectsUrl(string $packageId, string $range): string
+    {
+        return ProjectResource::getUrl('index', [
+            'filters' => [
+                'queryBuilder' => [
+                    'rules' => [
+                        static::getDefaultName() => [
+                            'type' => static::getDefaultName(),
+                            'data' => [
+                                'operator' => 'satisfies',
+                                'settings' => [
+                                    'package_id' => $packageId,
+                                    'range' => $range,
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ]);
     }
 
     protected function setUp(): void
