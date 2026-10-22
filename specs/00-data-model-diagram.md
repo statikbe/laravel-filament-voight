@@ -59,6 +59,7 @@ erDiagram
         int package_count
         enum status
         text error_message
+        json warnings
         timestamp synced_at
     }
 
@@ -80,7 +81,16 @@ erDiagram
         string version
         bool is_direct
         bool is_dev
-        ulid parent_package_id FK
+    }
+
+    EnvironmentPackage ||--o{ EnvironmentPackageDependency : parent_of
+    EnvironmentPackage ||--o{ EnvironmentPackageDependency : child_of
+
+    EnvironmentPackageDependency {
+        ulid parent_id PK,FK
+        ulid child_id PK,FK
+        string constraint
+        enum kind
     }
 
     Environment ||--o{ AuditRun : audited_by
@@ -91,6 +101,7 @@ erDiagram
         enum status
         timestamp started_at
         timestamp completed_at
+        string error_message
     }
 
     AuditRun ||--o{ AuditFinding : produces

@@ -1,5 +1,6 @@
 <?php
 
+use Statikbe\FilamentVoight\Enums\DependencyKind;
 use Statikbe\FilamentVoight\Enums\PackageType;
 use Statikbe\FilamentVoight\Models\Environment;
 use Statikbe\FilamentVoight\Models\EnvironmentPackage;
@@ -37,4 +38,20 @@ it('excludes environments not passed in', function () {
 
 it('returns an empty collection for no environments', function () {
     expect(EnvironmentPackage::distinctPackageSetForEnvironments(collect()))->toHaveCount(0);
+});
+
+it('links installed packages to their dependencies and dependents with the edge details', function () {
+    $environment = Environment::factory()->create();
+    $express = EnvironmentPackage::factory()->for($environment)->create();
+    $react = EnvironmentPackage::factory()->for($environment)->create();
+    $lodash = EnvironmentPackage::factory()->for($environment)->transitive()->create();
+
+    $express->children()->attach($lodash, ['constraint' => '^4.17.0', 'kind' => DependencyKind::Dependency]);
+    $react->children()->attach($lodash, ['constraint' => '^4.0.0', 'kind' => DependencyKind::Peer]);
+
+    expect($express->children()->sole()->is($lodash))->toBeTrue()
+        ->and($express->children()->sole()->pivot->constraint)->toBe('^4.17.0')
+        ->and($lodash->parents()->pluck('voight_environment_packages.id')->sort()->values()->all())
+        ->toBe(collect([$express->id, $react->id])->sort()->values()->all())
+        ->and($lodash->parents()->whereKey($react->id)->sole()->pivot->kind)->toBe(DependencyKind::Peer);
 });

@@ -19,6 +19,7 @@ it('creates all voight tables', function () {
         'voight_alert_settings',
         'voight_alert_recipients',
         'voight_alert_notification_logs',
+        'voight_environment_system_details',
     ];
 
     foreach ($tables as $table) {
@@ -62,4 +63,26 @@ it('has expected columns on voight_dependency_syncs', function () {
 it('adds scan_nightly and trigger via the incremental migrations', function () {
     expect(Schema::hasColumn('voight_environments', 'scan_nightly'))->toBeTrue()
         ->and(Schema::hasColumn('voight_audit_runs', 'trigger'))->toBeTrue();
+});
+
+it('adds warnings to voight_dependency_syncs and error_message to voight_audit_runs', function () {
+    expect(Schema::hasColumn('voight_dependency_syncs', 'warnings'))->toBeTrue()
+        ->and(Schema::hasColumn('voight_audit_runs', 'error_message'))->toBeTrue();
+});
+
+it('stores dependency edges between installed packages and drops parent_package_id', function () {
+    expect(Schema::hasColumns('voight_environment_package_dependencies', ['parent_id', 'child_id', 'constraint', 'kind']))->toBeTrue()
+        ->and(Schema::hasColumn('voight_environment_packages', 'parent_package_id'))->toBeFalse();
+});
+
+it('creates the async scan tables', function () {
+    expect(Schema::hasTable('voight_nightly_sweeps'))->toBeTrue()
+        ->and(Schema::hasColumns('voight_osv_scans', [
+            'id', 'scanner_scan_id', 'type', 'status', 'environment_id', 'nightly_sweep_id',
+            'trigger', 'meta', 'resubmits', 'input_path', 'error_message', 'created_at', 'updated_at',
+        ]))->toBeTrue();
+});
+
+it('adds an avatar_path column to voight_teams', function () {
+    expect(Schema::hasColumn('voight_teams', 'avatar_path'))->toBeTrue();
 });

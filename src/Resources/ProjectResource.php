@@ -67,6 +67,7 @@ class ProjectResource extends Resource
      */
     public static function getGlobalSearchResultDetails(Model $record): array
     {
+        /** @var Project $record */
         return array_filter([
             voightTrans('models.project.fields.customer') => $record->customer?->name,
             voightTrans('models.project.fields.team') => $record->team?->name,

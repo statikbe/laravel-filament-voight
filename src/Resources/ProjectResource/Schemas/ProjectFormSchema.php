@@ -14,7 +14,9 @@ use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Statikbe\FilamentVoight\Models\Project;
 use Statikbe\FilamentVoight\Models\Team;
+use Statikbe\FilamentVoight\Resources\Components\TeamOption;
 use Statikbe\FilamentVoight\Resources\CustomerResource\Schemas\CustomerFormSchema;
+use Statikbe\FilamentVoight\Services\ProjectOnboardingService;
 
 class ProjectFormSchema
 {
@@ -55,6 +57,8 @@ class ProjectFormSchema
                         Select::make('team_id')
                             ->label(voightTrans('models.project.fields.team'))
                             ->relationship('team', 'name')
+                            ->getOptionLabelFromRecordUsing(fn (Team $record): string => TeamOption::label($record))
+                            ->allowHtml()
                             ->default(
                                 Team::whereHas('users', function ($query) {
                                     return $query->where('user_id', auth()->id());
@@ -97,7 +101,7 @@ class ProjectFormSchema
                             ->label(voightTrans('models.project.actions.generate_token'))
                             ->requiresConfirmation()
                             ->action(function (Project $record) {
-                                $token = $record->createToken(Project::DEFAULT_API_TOKEN_NAME);
+                                $token = app(ProjectOnboardingService::class)->createToken($record);
 
                                 Notification::make()
                                     ->title(voightTrans('models.project.actions.token_generated'))

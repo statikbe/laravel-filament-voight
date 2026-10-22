@@ -15,14 +15,20 @@ use Illuminate\Support\Str;
 use RuntimeException;
 use Statikbe\FilamentVoight\Enums\AuditRunTrigger;
 use Statikbe\FilamentVoight\Enums\DependencySyncStatus;
-use Statikbe\FilamentVoight\Enums\PackageType;
+use Statikbe\FilamentVoight\Enums\SyncWarning;
 use Statikbe\FilamentVoight\Facades\FilamentVoight;
 use Statikbe\FilamentVoight\Models\DependencySync;
+use Statikbe\FilamentVoight\Models\EnvironmentPackageDependency;
 use Statikbe\FilamentVoight\Models\Package;
 use Statikbe\FilamentVoight\Parsers\ComposerLockParser;
+use Statikbe\FilamentVoight\Parsers\LockfileParser;
 use Statikbe\FilamentVoight\Parsers\PackageLockParser;
+use Statikbe\FilamentVoight\Parsers\UnsupportedLockfileException;
 use Statikbe\FilamentVoight\Parsers\YarnLockParser;
 
+/**
+ * @phpstan-import-type ParsedPackage from LockfileParser
+ */
 class ProcessLockFilesJob implements ShouldQueue
 {
     use Dispatchable;
@@ -36,6 +42,21 @@ class ProcessLockFilesJob implements ShouldQueue
 
     /** @var array<int> */
     public array $backoff = [10, 60, 180];
+
+    /**
+     * Manifests are uploaded next to lockfiles so parsers can detect direct
+     * dependencies; they are never parsed on their own.
+     *
+     * @var array<int, string>
+     */
+    private const array MANIFEST_FILENAMES = ['composer.json', 'package.json'];
+
+    /**
+     * Warnings collected while parsing, stored on the sync when it completes.
+     *
+     * @var array<int, array{code: string, context: array<string, string>}>
+     */
+    private array $warnings = [];
 
     public function __construct(
         public DependencySync $sync,
@@ -57,21 +78,25 @@ class ProcessLockFilesJob implements ShouldQueue
             'lockfiles' => $this->sync->lockfile_paths,
         ]);
 
+        $this->warnings = [];
+
         try {
-            $parsedPackages = $this->parseLockFiles();
+            $parsedLockfiles = $this->parseLockFiles();
+            $packageCount = array_sum(array_map(count(...), $parsedLockfiles));
 
             Log::info('[Voight] Parsed lock files', [
                 'sync' => $this->sync->id,
-                'package_count' => count($parsedPackages),
+                'package_count' => $packageCount,
             ]);
 
-            DB::transaction(function () use ($parsedPackages) {
-                $this->syncPackages($parsedPackages);
+            DB::transaction(function () use ($parsedLockfiles) {
+                $this->syncPackages($parsedLockfiles);
             });
 
             $this->sync->update([
                 'status' => DependencySyncStatus::Completed,
-                'package_count' => count($parsedPackages),
+                'package_count' => $packageCount,
+                'warnings' => $this->warnings ?: null,
                 'synced_at' => now(),
             ]);
 
@@ -79,7 +104,7 @@ class ProcessLockFilesJob implements ShouldQueue
 
             Log::info('[Voight] Lock file processing completed', [
                 'sync' => $this->sync->id,
-                'package_count' => count($parsedPackages),
+                'package_count' => $packageCount,
             ]);
 
             RunOsvScanJob::dispatch($this->sync->environment, AuditRunTrigger::PostSync);
@@ -101,14 +126,22 @@ class ProcessLockFilesJob implements ShouldQueue
     }
 
     /**
-     * @return array<int, array{name: string, version: string, type: PackageType, is_direct: bool, is_dev: bool, require: array<string>}>
+     * Parse keys are only unique within one lockfile, so results stay grouped per lockfile path.
+     *
+     * @return array<string, array<int, ParsedPackage>> lockfile path => parsed packages
      */
     private function parseLockFiles(): array
     {
         $disk = Storage::disk(FilamentVoight::config()->getLockfilesDisk());
-        $packages = [];
+        $parsedLockfiles = [];
 
         foreach ($this->sync->lockfile_paths ?? [] as $path) {
+            $filename = basename($path);
+
+            if (in_array($filename, self::MANIFEST_FILENAMES, true)) {
+                continue;
+            }
+
             $content = $disk->get($path);
 
             if (! $content) {
@@ -116,21 +149,32 @@ class ProcessLockFilesJob implements ShouldQueue
                     'sync' => $this->sync->id,
                     'path' => $path,
                 ]);
+                $this->addWarning(SyncWarning::LockfileMissingOnDisk, $path);
 
                 continue;
             }
 
-            $filename = basename($path);
+            try {
+                $parsed = match ($filename) {
+                    'composer.lock' => (new ComposerLockParser)->parse(
+                        $content,
+                        $this->findCompanionFile($path, 'composer.json', $disk),
+                    ),
+                    'package-lock.json' => (new PackageLockParser)->parse($content),
+                    'yarn.lock' => $this->parseYarnLock($path, $content, $disk),
+                    default => null,
+                };
+            } catch (UnsupportedLockfileException $e) {
+                $this->warnUnsupported($e->warning, $path);
 
-            $parsed = match ($filename) {
-                'composer.lock' => (new ComposerLockParser)->parse($content),
-                'package-lock.json' => (new PackageLockParser)->parse($content),
-                'yarn.lock' => (new YarnLockParser)->parse(
-                    $content,
-                    $this->findCompanionFile($path, 'package.json', $disk),
-                ),
-                default => [],
-            };
+                continue;
+            }
+
+            if ($parsed === null) {
+                $this->warnUnsupported(SyncWarning::UnsupportedLockfile, $path);
+
+                continue;
+            }
 
             Log::debug('[Voight] Parsed lockfile', [
                 'sync' => $this->sync->id,
@@ -138,10 +182,40 @@ class ProcessLockFilesJob implements ShouldQueue
                 'packages_found' => count($parsed),
             ]);
 
-            $packages = array_merge($packages, $parsed);
+            $parsedLockfiles[$path] = $parsed;
         }
 
-        return $packages;
+        return $parsedLockfiles;
+    }
+
+    /**
+     * @return array<int, ParsedPackage>
+     */
+    private function parseYarnLock(string $path, string $content, Filesystem $disk): array
+    {
+        $packageJson = $this->findCompanionFile($path, 'package.json', $disk);
+
+        if ($packageJson !== null && array_key_exists('workspaces', (array) json_decode($packageJson, true))) {
+            $this->warnUnsupported(SyncWarning::YarnWorkspacesUnsupported, $path);
+        }
+
+        return (new YarnLockParser)->parse($content, $packageJson);
+    }
+
+    private function warnUnsupported(SyncWarning $warning, string $path): void
+    {
+        Log::warning('[Voight] Lockfile not fully supported', [
+            'sync' => $this->sync->id,
+            'path' => $path,
+            'warning' => $warning->value,
+        ]);
+
+        $this->addWarning($warning, $path);
+    }
+
+    private function addWarning(SyncWarning $warning, string $path): void
+    {
+        $this->warnings[] = ['code' => $warning->value, 'context' => ['file' => basename($path)]];
     }
 
     /**
@@ -159,83 +233,113 @@ class ProcessLockFilesJob implements ShouldQueue
     }
 
     /**
-     * @param  array<int, array{name: string, version: string, type: PackageType, is_direct: bool, is_dev: bool, require: array<string>}>  $parsedPackages
+     * Replace the environment's installed packages and edges with the parsed graph.
+     *
+     * @param  array<string, array<int, ParsedPackage>>  $parsedLockfiles  lockfile path => parsed packages
      */
-    private function syncPackages(array $parsedPackages): void
+    private function syncPackages(array $parsedLockfiles): void
     {
         $environmentId = $this->sync->environment_id;
         $environmentPackageModel = FilamentVoight::config()->getEnvironmentPackageModel();
 
         $environmentPackageModel::where('environment_id', $environmentId)->delete();
 
-        $packageModels = $this->resolvePackageModels($parsedPackages);
-        $dependedBy = $this->buildReverseDependencyMap($parsedPackages);
-
-        $rows = [];
+        $packageModels = $this->resolvePackageModels(array_merge(...array_values($parsedLockfiles)));
+        $nodeIds = [];
+        $nodeRows = [];
         $now = now();
 
-        foreach ($parsedPackages as $parsed) {
-            $package = $packageModels[$parsed['name']];
-            $parentName = ! $parsed['is_direct'] ? ($dependedBy[$parsed['name']] ?? null) : null;
+        foreach ($parsedLockfiles as $path => $parsedPackages) {
+            foreach ($parsedPackages as $parsed) {
+                $id = Str::ulid()->toBase32();
+                $nodeIds[$path][$parsed['key']] = $id;
 
-            $rows[] = [
-                'id' => Str::ulid()->toBase32(),
-                'environment_id' => $environmentId,
-                'package_id' => $package->id,
-                'version' => $parsed['version'],
-                'is_direct' => $parsed['is_direct'],
-                'is_dev' => $parsed['is_dev'],
-                'parent_package_id' => $parentName ? ($packageModels[$parentName]->id ?? null) : null,
-                'created_at' => $now,
-                'updated_at' => $now,
-            ];
+                $nodeRows[] = [
+                    'id' => $id,
+                    'environment_id' => $environmentId,
+                    'package_id' => $packageModels[self::packageKey($parsed)]->id,
+                    'version' => $parsed['version'],
+                    'is_direct' => $parsed['is_direct'],
+                    'is_dev' => $parsed['is_dev'],
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ];
+            }
         }
 
-        foreach (array_chunk($rows, 500) as $chunk) {
+        foreach (array_chunk($nodeRows, 500) as $chunk) {
             $environmentPackageModel::insert($chunk);
+        }
+
+        foreach (array_chunk($this->edgeRows($parsedLockfiles, $nodeIds), 500) as $chunk) {
+            EnvironmentPackageDependency::query()->insert($chunk);
         }
     }
 
     /**
-     * @param  array<int, array{name: string, version: string, type: PackageType, is_direct: bool, is_dev: bool, require: array<string>}>  $parsedPackages
-     * @return array<string, Package>
+     * @param  array<string, array<int, ParsedPackage>>  $parsedLockfiles
+     * @param  array<string, array<string, string>>  $nodeIds  lockfile path => parse key => node id
+     * @return array<int, array{parent_id: string, child_id: string, constraint: string|null, kind: string}>
+     */
+    private function edgeRows(array $parsedLockfiles, array $nodeIds): array
+    {
+        $edgeRows = [];
+
+        foreach ($parsedLockfiles as $path => $parsedPackages) {
+            foreach ($parsedPackages as $parsed) {
+                $parentId = $nodeIds[$path][$parsed['key']];
+
+                foreach ($parsed['dependencies'] as $dependency) {
+                    $childId = $nodeIds[$path][$dependency['key']] ?? null;
+
+                    if ($childId !== null) {
+                        $edgeRows[$parentId . '|' . $childId] ??= [
+                            'parent_id' => $parentId,
+                            'child_id' => $childId,
+                            'constraint' => $dependency['constraint'],
+                            'kind' => $dependency['kind']->value,
+                        ];
+                    }
+                }
+            }
+        }
+
+        return array_values($edgeRows);
+    }
+
+    /**
+     * @param  array<int, ParsedPackage>  $parsedPackages
+     * @return array<string, Package> "type|name" => package
      */
     private function resolvePackageModels(array $parsedPackages): array
     {
         $uniquePackages = [];
+
         foreach ($parsedPackages as $parsed) {
-            $uniquePackages[$parsed['name']] ??= $parsed['type'];
+            $uniquePackages[self::packageKey($parsed)] = $parsed;
         }
 
         $packageModel = FilamentVoight::config()->getPackageModel();
 
-        $existing = $packageModel::whereIn('name', array_keys($uniquePackages))
+        $packages = $packageModel::whereIn('name', array_column($uniquePackages, 'name'))
             ->get()
-            ->keyBy('name');
+            ->keyBy(fn (Package $package): string => $package->type->value . '|' . $package->name);
 
-        foreach ($uniquePackages as $name => $type) {
-            if (! $existing->has($name)) {
-                $existing[$name] = $packageModel::create(['name' => $name, 'type' => $type]);
+        foreach ($uniquePackages as $typeAndName => $parsed) {
+            if (! $packages->has($typeAndName)) {
+                $packages[$typeAndName] = $packageModel::create(['name' => $parsed['name'], 'type' => $parsed['type']]);
             }
         }
 
-        return $existing->all();
+        return $packages->all();
     }
 
     /**
-     * @param  array<int, array{name: string, version: string, type: PackageType, is_direct: bool, is_dev: bool, require: array<string>}>  $parsedPackages
-     * @return array<string, string>
+     * @param  ParsedPackage  $parsed
+     * @return string "type|name", matching the keys of resolvePackageModels()
      */
-    private function buildReverseDependencyMap(array $parsedPackages): array
+    private static function packageKey(array $parsed): string
     {
-        $dependedBy = [];
-
-        foreach ($parsedPackages as $parsed) {
-            foreach ($parsed['require'] as $requiredName) {
-                $dependedBy[$requiredName] ??= $parsed['name'];
-            }
-        }
-
-        return $dependedBy;
+        return $parsed['type']->value . '|' . $parsed['name'];
     }
 }

@@ -16,8 +16,11 @@ use Filament\Tables\Filters\QueryBuilder\Constraints\RelationshipConstraint\Oper
 use Filament\Tables\Filters\QueryBuilder\Constraints\SelectConstraint;
 use Filament\Tables\Filters\QueryBuilder\Constraints\TextConstraint;
 use Filament\Tables\Table;
+use Illuminate\Contracts\View\View;
 use Statikbe\FilamentVoight\Enums\PackageType;
+use Statikbe\FilamentVoight\Models\Project;
 use Statikbe\FilamentVoight\Resources\ProjectResource;
+use Statikbe\FilamentVoight\Resources\ProjectResource\Filters\IsRelatedToTeamOperator;
 use Statikbe\FilamentVoight\Resources\ProjectResource\Filters\PackageVersionConstraint;
 
 class ProjectTableSchema
@@ -40,6 +43,7 @@ class ProjectTableSchema
                     ->sortable(),
                 TextColumn::make('team.name')
                     ->label(voightTrans('models.project.fields.team'))
+                    ->formatStateUsing(fn (Project $record): View => view('filament-voight::team.avatar-name', ['team' => $record->team]))
                     ->searchable()
                     ->sortable(),
                 TextColumn::make('environments_count')
@@ -70,7 +74,7 @@ class ProjectTableSchema
                             ->emptyable(),
                         RelationshipConstraint::make('team')
                             ->label(voightTrans('models.project.fields.team'))
-                            ->selectable(IsRelatedToOperator::make()->titleAttribute('name')->searchable()->preload())
+                            ->selectable(IsRelatedToTeamOperator::make())
                             ->emptyable(),
                         BooleanConstraint::make('is_muted')
                             ->label(voightTrans('models.project.fields.is_muted')),

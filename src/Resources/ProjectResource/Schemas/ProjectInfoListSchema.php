@@ -3,7 +3,6 @@
 namespace Statikbe\FilamentVoight\Resources\ProjectResource\Schemas;
 
 use Filament\Actions\Action;
-use Filament\Forms\Components\TextInput\Actions\CopyAction;
 use Filament\Infolists\Components\RepeatableEntry;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Notifications\Notification;
@@ -12,18 +11,23 @@ use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Support\Enums\IconPosition;
 use Filament\Support\Icons\Heroicon;
+use Illuminate\Contracts\View\View;
+use Illuminate\Support\Js;
 use Statikbe\FilamentVoight\Models\Project;
 use Statikbe\FilamentVoight\Resources\CustomerResource;
 use Statikbe\FilamentVoight\Resources\TeamResource;
+use Statikbe\FilamentVoight\Services\ProjectOnboardingService;
 
 class ProjectInfoListSchema
 {
     public static function configure(Schema $schema): Schema
     {
         return $schema->components([
+            EnvironmentHealthCallouts::make(),
             Grid::make(2)
                 ->components([
                     Section::make(voightTrans('models.project.sections.general'))
+                        ->icon(Heroicon::OutlinedInformationCircle)
                         ->components([
                             TextEntry::make('project_code')
                                 ->label(voightTrans('models.project.fields.project_code')),
@@ -41,6 +45,7 @@ class ProjectInfoListSchema
                         ])
                         ->extraAttributes(['class' => 'h-full [&>.fi-section]:h-full']),
                     Section::make(voightTrans('models.project.sections.assignment'))
+                        ->icon(Heroicon::OutlinedUserGroup)
                         ->components([
                             TextEntry::make('customer.name')
                                 ->label(voightTrans('models.project.fields.customer'))
@@ -48,11 +53,12 @@ class ProjectInfoListSchema
                                 ->badge(),
                             TextEntry::make('team.name')
                                 ->label(voightTrans('models.project.fields.team'))
-                                ->url(fn ($record) => TeamResource::getUrl('view', ['record' => $record->team]))
-                                ->badge(),
+                                ->formatStateUsing(fn (Project $record): View => view('filament-voight::team.avatar-name', ['team' => $record->team]))
+                                ->url(fn ($record) => TeamResource::getUrl('view', ['record' => $record->team])),
                         ])
                         ->extraAttributes(['class' => 'h-full [&>.fi-section]:h-full']),
                     Section::make(voightTrans('models.project.sections.settings'))
+                        ->icon(Heroicon::OutlinedCog6Tooth)
                         ->components([
                             TextEntry::make('is_muted')
                                 ->badge()
@@ -62,6 +68,8 @@ class ProjectInfoListSchema
                         ])
                         ->extraAttributes(['class' => 'h-full [&>.fi-section]:h-full']),
                     Section::make(voightTrans('models.project.sections.api_token'))
+                        ->key('api_token')
+                        ->icon(Heroicon::OutlinedKey)
                         ->description(voightTrans('models.project.sections.api_token_description'))
                         ->visible(fn (?Project $record): bool => $record !== null)
                         ->components([
@@ -86,16 +94,19 @@ class ProjectInfoListSchema
                                 ->label(voightTrans('models.project.actions.generate_token'))
                                 ->requiresConfirmation()
                                 ->action(function (Project $record) {
-                                    $token = $record->createToken(Project::DEFAULT_API_TOKEN_NAME);
+                                    $token = app(ProjectOnboardingService::class)->createToken($record);
 
                                     Notification::make()
                                         ->title(voightTrans('models.project.actions.token_generated'))
                                         ->body($token->plainTextToken)
                                         ->persistent()
                                         ->actions([
-                                            CopyAction::make('copy_token')
+                                            Action::make('copy_token')
                                                 ->label(voightTrans('models.project.actions.copy_token'))
-                                                ->copyMessage($token->plainTextToken)
+                                                ->alpineClickHandler(
+                                                    'window.navigator.clipboard.writeText(' . Js::from($token->plainTextToken) . '); '
+                                                    . '$tooltip(' . Js::from(__('filament-forms::components.text_input.actions.copy.message')) . ', { theme: $store.theme, timeout: 2000 })'
+                                                )
                                                 ->button()
                                                 ->color('primary'),
                                         ])

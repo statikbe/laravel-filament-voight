@@ -45,3 +45,15 @@ it('maps the highest numeric severity per vulnerability id', function () {
 
     expect($response->maxSeverityById())->toBe(['V1' => '8.1', 'V2' => null]);
 });
+
+it('keys composer findings by the version without its v prefix, as the parser stores it', function () {
+    $response = ScanResponse::fromArray(['findings' => [
+        ['ecosystem' => 'Packagist', 'name' => 'laravel/framework', 'version' => 'v10.9.0', 'vulnerability_id' => 'GHSA-a'],
+        ['ecosystem' => 'npm', 'name' => 'some-npm-package', 'version' => 'v1.0.0', 'vulnerability_id' => 'GHSA-b'],
+    ]]);
+
+    expect(array_keys($response->findingsByPackageKey()))->toBe([
+        'composer|laravel/framework|10.9.0',
+        'npm|some-npm-package|v1.0.0',
+    ]);
+});

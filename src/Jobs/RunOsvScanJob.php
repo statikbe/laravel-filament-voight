@@ -7,18 +7,20 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
-use RuntimeException;
-use Statikbe\FilamentVoight\Enums\AuditRunStatus;
 use Statikbe\FilamentVoight\Enums\AuditRunTrigger;
 use Statikbe\FilamentVoight\Enums\DependencySyncStatus;
+use Statikbe\FilamentVoight\Enums\OsvScanType;
 use Statikbe\FilamentVoight\Facades\FilamentVoight;
-use Statikbe\FilamentVoight\Models\AuditRun;
 use Statikbe\FilamentVoight\Models\Environment;
-use Statikbe\FilamentVoight\Services\OsvScannerClient;
+use Statikbe\FilamentVoight\Services\OsvScanSubmitter;
 use Statikbe\FilamentVoight\Services\RecordEnvironmentAuditRunsService;
+use Throwable;
 
+/**
+ * Starts an asynchronous lockfile scan for one environment. The outcome is
+ * recorded later by OsvScanResultHandler, once the scanner has finished.
+ */
 class RunOsvScanJob implements ShouldQueue
 {
     use Dispatchable;
@@ -28,61 +30,57 @@ class RunOsvScanJob implements ShouldQueue
 
     public int $tries = 3;
 
-    public int $timeout = 300;
-
     /** @var array<int> */
-    public array $backoff = [30, 120, 300];
+    public array $backoff = [10, 60, 180];
 
     public function __construct(
         public Environment $environment,
         public AuditRunTrigger $trigger = AuditRunTrigger::Manual,
     ) {}
 
-    public function handle(OsvScannerClient $client, RecordEnvironmentAuditRunsService $recorder): void
+    public function handle(OsvScanSubmitter $submitter): void
     {
         $files = $this->resolveLockfileContents();
 
         if ($files === []) {
-            $this->fail(new RuntimeException(
+            $this->fail(new NoScannableLockfilesException(
                 "No completed dependency sync found for environment '{$this->environment->name}'. Run a lock file sync first."
             ));
 
             return;
         }
 
-        try {
-            $response = $client->scanLockfiles(
-                $files,
-                $this->environment->project->project_code,
-                $this->environment->name,
-            );
+        $input = json_encode([
+            'files' => collect($files)
+                ->map(fn (string $contents, string $name): array => ['name' => $name, 'content_base64' => base64_encode($contents)])
+                ->values()
+                ->all(),
+        ], JSON_THROW_ON_ERROR);
 
-            $models = $recorder->upsertVulnerabilities($response->vulnerabilities, $response->maxSeverityById());
-            $auditRun = $recorder->record(
-                $this->environment,
-                $response->findingsByPackageKey(),
-                $models,
-                $response->vulnerabilities,
-                $this->trigger,
-            );
+        $submitter->start(
+            OsvScanType::Locks,
+            $input,
+            ['project_code' => $this->environment->project->project_code, 'environment' => $this->environment->name],
+            $this->trigger,
+            environmentId: $this->environment->id,
+        );
+    }
 
-            SendAuditAlertsJob::dispatch($auditRun);
-
-            Log::info('[Voight] OSV scan completed', [
-                'environment' => $this->environment->id,
-                'trigger' => $this->trigger->value,
-            ]);
-        } catch (\Throwable $e) {
-            Log::error('[Voight] OSV scan failed', [
-                'environment' => $this->environment->id,
-                'error' => $e->getMessage(),
-                'attempt' => $this->attempts(),
-            ]);
-
-            $this->recordFailedRun();
-
-            throw $e;
+    /**
+     * Starting the scan failed on every try, so no OsvScan will ever record an
+     * outcome for this environment: record the failure here instead.
+     */
+    public function failed(Throwable $e): void
+    {
+        if ($e instanceof NoScannableLockfilesException) {
+            return;
         }
+
+        app(RecordEnvironmentAuditRunsService::class)->recordFailed(
+            $this->environment->id,
+            $this->trigger,
+            'Starting the scan failed: ' . $e->getMessage(),
+        );
     }
 
     /**
@@ -120,19 +118,5 @@ class RunOsvScanJob implements ShouldQueue
         }
 
         return $files;
-    }
-
-    private function recordFailedRun(): void
-    {
-        /** @var class-string<AuditRun> $auditRunModel */
-        $auditRunModel = FilamentVoight::config()->getAuditRunModel();
-
-        $auditRunModel::create([
-            'environment_id' => $this->environment->id,
-            'status' => AuditRunStatus::Failed,
-            'trigger' => $this->trigger,
-            'started_at' => now(),
-            'completed_at' => now(),
-        ]);
     }
 }

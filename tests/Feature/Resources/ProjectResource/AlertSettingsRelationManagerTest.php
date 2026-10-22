@@ -118,3 +118,16 @@ it('creates a slack alert setting with a slack channel and offers no webhook url
         ->and($setting->slack_channel)->toBe('#security-alerts')
         ->and($setting->recipients()->count())->toBe(0);
 });
+
+it('shows create, edit and delete actions on the view project page', function () {
+    $project = Project::factory()->create();
+    $setting = AlertSetting::factory()->for($project)->create();
+
+    Livewire::test(AlertSettingsRelationManager::class, [
+        'ownerRecord' => $project,
+        'pageClass' => ViewProject::class,
+    ])
+        ->assertActionVisible(TestAction::make('create')->table())
+        ->assertActionVisible(TestAction::make('edit')->table($setting))
+        ->assertActionVisible(TestAction::make('delete')->table($setting));
+});

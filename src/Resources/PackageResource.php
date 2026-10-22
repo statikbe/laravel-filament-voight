@@ -66,6 +66,7 @@ class PackageResource extends Resource
      */
     public static function getGlobalSearchResultDetails(Model $record): array
     {
+        /** @var Package $record */
         return array_filter([
             voightTrans('models.package.fields.type') => $record->type->label(),
             voightTrans('models.package.fields.latest_version') => $record->latest_version,

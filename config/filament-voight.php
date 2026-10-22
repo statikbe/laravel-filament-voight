@@ -1,6 +1,7 @@
 <?php
 
 use Statikbe\FilamentVoight\Http\Middleware\AuthenticateProjectToken;
+use Statikbe\FilamentVoight\Http\Middleware\EnsureMcpUserToken;
 use Statikbe\FilamentVoight\Models\AlertRecipient;
 use Statikbe\FilamentVoight\Models\AlertSetting;
 use Statikbe\FilamentVoight\Models\AuditFinding;
@@ -9,6 +10,7 @@ use Statikbe\FilamentVoight\Models\Customer;
 use Statikbe\FilamentVoight\Models\DependencySync;
 use Statikbe\FilamentVoight\Models\Environment;
 use Statikbe\FilamentVoight\Models\EnvironmentPackage;
+use Statikbe\FilamentVoight\Models\EnvironmentSystemDetail;
 use Statikbe\FilamentVoight\Models\Package;
 use Statikbe\FilamentVoight\Models\Project;
 use Statikbe\FilamentVoight\Models\Team;
@@ -39,11 +41,53 @@ return [
             'yarn.lock',
             'pnpm-lock.yaml',
             'package.json',
+            'composer.json',
         ],
     ],
 
     'api' => [
         'middleware' => [AuthenticateProjectToken::class],
+    ],
+
+    /*
+    | Environment names are matched case-insensitively against these prefixes
+    | to colour their badges; the first matching stage wins, anything else is
+    | grey. Stages: production, acceptance, staging, feature, local.
+    */
+    'environments' => [
+        'stages' => [
+            'production' => ['prod', 'prd', 'live'],
+            'acceptance' => ['acc', 'uat'],
+            'staging' => ['stag', 'test', 'qa'],
+            'feature' => ['feat'],
+            'local' => ['local', 'dev'],
+        ],
+    ],
+
+    /*
+    | Team avatars are stored on this disk; it must be publicly reachable.
+    */
+    'teams' => [
+        'avatar_disk' => env('VOIGHT_TEAM_AVATAR_DISK', 'public'),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | MCP server
+    |--------------------------------------------------------------------------
+    |
+    | Lets AI clients (Claude Code, Cursor, ...) query Voight. When enabled, a
+    | local server is available through `php artisan mcp:start voight` and a
+    | remote one at `path`. Remote users authenticate with a personal access
+    | token from the "MCP access" page; the user model needs HasApiTokens.
+    | `write_tools` exposes the tools that create projects and project tokens.
+    |
+    */
+    'mcp' => [
+        'enabled' => (bool) env('VOIGHT_MCP_ENABLED', false),
+        'path' => 'mcp/voight',
+        'middleware' => ['auth:sanctum', EnsureMcpUserToken::class],
+        'write_tools' => (bool) env('VOIGHT_MCP_WRITE_TOOLS', true),
     ],
 
     /*
@@ -57,9 +101,28 @@ return [
     */
     'scanner' => [
         'url' => env('VOIGHT_SCANNER_URL'),
-        'packages_url' => env('VOIGHT_SCANNER_PACKAGES_URL'),
         'token' => env('VOIGHT_SCANNER_TOKEN'),
+
+        /*
+        | Where the scanner posts completion callbacks. Unset uses the package's
+        | own route; an empty string disables callbacks (polling still works),
+        | e.g. for local development the scanner cannot reach.
+        */
+        'callback_url' => env('VOIGHT_SCANNER_CALLBACK_URL'),
+        'callback_secret' => env('VOIGHT_SCANNER_CALLBACK_SECRET'),
+
+        // Packages per nightly batch: 1..8000 (the scanner's limit); clamped into range.
         'batch_size' => (int) env('VOIGHT_SCANNER_BATCH_SIZE', 5000),
+        'poll_interval' => (int) env('VOIGHT_SCANNER_POLL_INTERVAL', 15),
+        'max_resubmits' => (int) env('VOIGHT_SCANNER_MAX_RESUBMITS', 2),
+
+        /*
+        | The hourly voight:reap-stranded-scans command fails scans still pending
+        | or processing after this many minutes, and nightly sweeps still scanning
+        | or recording after this many minutes, recording failed audit runs.
+        */
+        'reap_scans_after_minutes' => (int) env('VOIGHT_SCANNER_REAP_SCANS_AFTER_MINUTES', 120),
+        'reap_sweeps_after_minutes' => (int) env('VOIGHT_SCANNER_REAP_SWEEPS_AFTER_MINUTES', 360),
 
         /*
         | Cron expression for the nightly deduplicated OSV scan. Defaults to
@@ -104,10 +167,13 @@ return [
         // 'package' => \Statikbe\FilamentVoight\Models\Package::class,
         // 'environment_package' => \Statikbe\FilamentVoight\Models\EnvironmentPackage::class,
         // 'dependency_sync' => \Statikbe\FilamentVoight\Models\DependencySync::class,
+        // 'environment_system_detail' => \Statikbe\FilamentVoight\Models\EnvironmentSystemDetail::class,
         // 'vulnerability' => \Statikbe\FilamentVoight\Models\Vulnerability::class,
         // 'vulnerable_package_range' => \Statikbe\FilamentVoight\Models\VulnerablePackageRange::class,
         // 'audit_run' => \Statikbe\FilamentVoight\Models\AuditRun::class,
         // 'audit_finding' => \Statikbe\FilamentVoight\Models\AuditFinding::class,
+        // 'osv_scan' => \Statikbe\FilamentVoight\Models\OsvScan::class,
+        // 'nightly_sweep' => \Statikbe\FilamentVoight\Models\NightlySweep::class,
         // 'alert_setting' => \Statikbe\FilamentVoight\Models\AlertSetting::class,
         // 'user' => \App\Models\User::class,
     ],
@@ -129,6 +195,7 @@ return [
         'voight-package' => Package::class,
         'voight-environment-package' => EnvironmentPackage::class,
         'voight-dependency-sync' => DependencySync::class,
+        'voight-environment-system-detail' => EnvironmentSystemDetail::class,
         'voight-vulnerability' => Vulnerability::class,
         'voight-vulnerable-package-range' => VulnerablePackageRange::class,
         'voight-audit-run' => AuditRun::class,

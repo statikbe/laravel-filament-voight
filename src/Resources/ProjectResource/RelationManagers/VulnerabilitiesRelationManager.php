@@ -15,6 +15,7 @@ use Illuminate\Database\Eloquent\Model;
 use Statikbe\FilamentVoight\Enums\PackageType;
 use Statikbe\FilamentVoight\Enums\Severity;
 use Statikbe\FilamentVoight\Facades\FilamentVoight;
+use Statikbe\FilamentVoight\Resources\Components\EnvironmentNameColumn;
 use Statikbe\FilamentVoight\Resources\VulnerabilityResource\Actions\ViewFindingVulnerabilityAction;
 
 class VulnerabilitiesRelationManager extends RelationManager
@@ -54,6 +55,7 @@ class VulnerabilitiesRelationManager extends RelationManager
                 TextColumn::make('vulnerability.summary')
                     ->label(voightTrans('models.package.view.columns.summary'))
                     ->limit(80)
+                    ->wrap()
                     ->tooltip(fn ($record): ?string => $record->vulnerability?->summary)
                     ->searchable(),
                 TextColumn::make('installed_version')
@@ -67,7 +69,7 @@ class VulnerabilitiesRelationManager extends RelationManager
                     ->label(voightTrans('widgets.active_findings.columns.package_type'))
                     ->badge()
                     ->formatStateUsing(fn (PackageType $state): string => $state->label()),
-                TextColumn::make('auditRun.environment.name')
+                EnvironmentNameColumn::make('auditRun.environment.name')
                     ->label(voightTrans('models.package.view.columns.environment'))
                     ->sortable()
                     ->toggleable(),

@@ -21,6 +21,7 @@ use Statikbe\FilamentVoight\Enums\AuditRunTrigger;
  * @property AuditRunTrigger|null $trigger
  * @property Carbon|null $started_at
  * @property Carbon|null $completed_at
+ * @property string|null $error_message
  * @property-read string|null $formatted_duration
  * @property-read string|null $max_vulnerability_score Only present when loaded via withMax('vulnerabilities as max_vulnerability_score', ...)
  * @property Carbon|null $created_at

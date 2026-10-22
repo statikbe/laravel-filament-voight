@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
+use Statikbe\FilamentVoight\Enums\PackageType;
 use Statikbe\FilamentVoight\Enums\Severity;
 use Statikbe\FilamentVoight\Facades\FilamentVoight;
 use Statikbe\FilamentVoight\Models\AuditFinding;
@@ -19,18 +20,17 @@ final readonly class AuditSummary
 {
     /**
      * @param  array<string>  $environmentNames
-     * @param  array<string, int>  $severityCounts  keyed by Severity value, critical first, zero buckets omitted
-     * @param  array<int, array{package: string, summary: string, severity: Severity, score: float, installed_version: string|null, fixed_version: string|null}>  $topFindings
+     * @param  array<string, array{label: string, total: int, severityCounts: array<string, int>, fixableCount: int, topFindings: array<int, array{package: string, summary: string, severity: Severity, score: float, installed_version: string|null, fixed_version: string|null}>}>  $sections  keyed by PackageType value in enum order, types without findings omitted; severityCounts keyed by Severity value, critical first, zero buckets omitted
      */
     public function __construct(
         public string $projectName,
         public string $projectCode,
         public array $environmentNames,
-        public array $severityCounts,
         public int $totalFindings,
-        public array $topFindings,
+        public array $sections,
         public string $detailUrl,
         public string $detailLabel,
+        public string $projectUrl,
         public Carbon $generatedAt,
     ) {}
 
@@ -132,41 +132,57 @@ final readonly class AuditSummary
         string $detailUrl,
         string $detailLabel,
     ): self {
-        $severityCounts = [];
+        $sections = [];
 
-        foreach ([Severity::Critical, Severity::High, Severity::Medium, Severity::Low, Severity::None] as $severity) {
-            $count = $findings
-                ->filter(fn (AuditFinding $finding): bool => $finding->vulnerability->severity === $severity)
-                ->count();
+        foreach (PackageType::cases() as $type) {
+            $typeFindings = $findings->filter(fn (AuditFinding $finding): bool => $finding->package->type === $type);
 
-            if ($count > 0) {
-                $severityCounts[$severity->value] = $count;
+            if ($typeFindings->isEmpty()) {
+                continue;
             }
-        }
 
-        $topFindings = $findings
-            ->sortByDesc(fn (AuditFinding $finding): float => (float) $finding->vulnerability->vulnerability_score)
-            ->take(5)
-            ->map(fn (AuditFinding $finding): array => [
-                'package' => $finding->package->name,
-                'summary' => $finding->vulnerability->summary,
-                'severity' => $finding->vulnerability->severity,
-                'score' => (float) $finding->vulnerability->vulnerability_score,
-                'installed_version' => $finding->installed_version,
-                'fixed_version' => $finding->fixed_version,
-            ])
-            ->values()
-            ->all();
+            $severityCounts = [];
+
+            foreach ([Severity::Critical, Severity::High, Severity::Medium, Severity::Low, Severity::None] as $severity) {
+                $count = $typeFindings
+                    ->filter(fn (AuditFinding $finding): bool => $finding->vulnerability->severity === $severity)
+                    ->count();
+
+                if ($count > 0) {
+                    $severityCounts[$severity->value] = $count;
+                }
+            }
+
+            $sections[$type->value] = [
+                'label' => $type->label(),
+                'total' => $typeFindings->count(),
+                'severityCounts' => $severityCounts,
+                'fixableCount' => $typeFindings->filter(fn (AuditFinding $finding): bool => filled($finding->fixed_version))->count(),
+                'topFindings' => $typeFindings
+                    ->sortByDesc(fn (AuditFinding $finding): float => (float) $finding->vulnerability->vulnerability_score)
+                    ->take(3)
+                    ->map(fn (AuditFinding $finding): array => [
+                        'package' => $finding->package->name,
+                        'summary' => $finding->vulnerability->summary,
+                        'severity' => $finding->vulnerability->severity,
+                        'score' => (float) $finding->vulnerability->vulnerability_score,
+                        'installed_version' => $finding->installed_version,
+                        'fixed_version' => $finding->fixed_version,
+                    ])
+                    ->values()
+                    ->all(),
+            ];
+        }
 
         return new self(
             projectName: $project->name ?? $project->project_code,
             projectCode: $project->project_code,
             environmentNames: $environmentNames,
-            severityCounts: $severityCounts,
             totalFindings: $findings->count(),
-            topFindings: $topFindings,
+            sections: $sections,
             detailUrl: $detailUrl,
             detailLabel: $detailLabel,
+            projectUrl: self::alertsPanelUrl(ProjectResource::class, $project),
             generatedAt: now(),
         );
     }

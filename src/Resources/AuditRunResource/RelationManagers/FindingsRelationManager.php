@@ -8,6 +8,7 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Statikbe\FilamentVoight\Resources\PackageResource\Actions\WhyInstalledAction;
 use Statikbe\FilamentVoight\Resources\VulnerabilityResource\Actions\ViewFindingVulnerabilityAction;
 
 class FindingsRelationManager extends RelationManager
@@ -52,6 +53,7 @@ class FindingsRelationManager extends RelationManager
             ])
             ->recordActions([
                 ViewFindingVulnerabilityAction::make(),
+                WhyInstalledAction::make(),
             ])
             // Severity is an accessor derived from vulnerability_score, not a column,
             // so it cannot be sorted in SQL. Sorting by the score gives the same

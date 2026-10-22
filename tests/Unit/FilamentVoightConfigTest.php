@@ -1,6 +1,11 @@
 <?php
 
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\URL;
 use Statikbe\FilamentVoight\Facades\FilamentVoight;
+use Statikbe\FilamentVoight\Models\NightlySweep;
+use Statikbe\FilamentVoight\Models\OsvScan;
 use Statikbe\FilamentVoight\Tests\Support\User;
 
 it('resolves the user model from the models.user config', function () {
@@ -81,4 +86,108 @@ it('returns the configured alerts queue', function () {
     config()->set('filament-voight.notifications.queue', null);
 
     expect(FilamentVoight::config()->getAlertsQueue())->toBeNull();
+});
+
+it('allows uploading the composer.json and package.json manifests by default', function () {
+    $lockfilesConfig = config('filament-voight.lockfiles');
+    unset($lockfilesConfig['allowed_names']);
+    config()->set('filament-voight.lockfiles', $lockfilesConfig);
+
+    expect(FilamentVoight::config()->getAllowedLockfileNames())->toContain('composer.json', 'package.json');
+});
+
+it('allows composer.json in the published config', function () {
+    $publishedConfig = require dirname(__DIR__, 2) . '/config/filament-voight.php';
+
+    expect($publishedConfig['lockfiles']['allowed_names'])->toContain('composer.json');
+});
+
+it('reads the async scanner settings with spec defaults', function () {
+    config()->set('filament-voight.scanner.poll_interval', null);
+    config()->set('filament-voight.scanner.max_resubmits', null);
+    config()->set('filament-voight.scanner.callback_secret', '');
+
+    expect(FilamentVoight::config()->getScannerPollInterval())->toBe(15)
+        ->and(FilamentVoight::config()->getScannerMaxResubmits())->toBe(2)
+        ->and(FilamentVoight::config()->getScannerCallbackSecret())->toBeNull();
+
+    config()->set('filament-voight.scanner.poll_interval', 5);
+    config()->set('filament-voight.scanner.max_resubmits', 0);
+    config()->set('filament-voight.scanner.callback_secret', 's3cret');
+
+    expect(FilamentVoight::config()->getScannerPollInterval())->toBe(5)
+        ->and(FilamentVoight::config()->getScannerMaxResubmits())->toBe(0)
+        ->and(FilamentVoight::config()->getScannerCallbackSecret())->toBe('s3cret');
+});
+
+it('resolves the scan models from config', function () {
+    expect(FilamentVoight::config()->getOsvScanModel())->toBe(OsvScan::class)
+        ->and(FilamentVoight::config()->getNightlySweepModel())->toBe(NightlySweep::class);
+});
+
+it('turns callbacks off with an empty callback url', function () {
+    config()->set('filament-voight.scanner.callback_url', '');
+
+    expect(FilamentVoight::config()->getScannerCallbackUrl())->toBeNull();
+});
+
+it('uses a configured callback url as-is', function () {
+    config()->set('filament-voight.scanner.callback_secret', 'cb-secret');
+    config()->set('filament-voight.scanner.callback_url', 'https://voight.example/cb');
+
+    expect(FilamentVoight::config()->getScannerCallbackUrl())->toBe('https://voight.example/cb');
+});
+
+it('turns callbacks off with a warning when the configured callback url is not https', function () {
+    config()->set('filament-voight.scanner.callback_secret', 'cb-secret');
+    Log::spy();
+    config()->set('filament-voight.scanner.callback_url', 'http://voight.example/cb');
+
+    expect(FilamentVoight::config()->getScannerCallbackUrl())->toBeNull();
+    Log::shouldHaveReceived('warning')->once()->withArgs(fn (string $message) => str_contains($message, 'callbacks are disabled') && str_contains($message, 'https'));
+});
+
+it('defaults the callback url to the package callback route', function () {
+    config()->set('filament-voight.scanner.callback_secret', 'cb-secret');
+    Route::post('api/voight/scans/callback', fn () => null)->name('voight.scans.callback');
+    Route::getRoutes()->refreshNameLookups();
+    URL::forceRootUrl('https://voight.test');
+    URL::forceScheme('https');
+    config()->set('filament-voight.scanner.callback_url', null);
+
+    expect(FilamentVoight::config()->getScannerCallbackUrl())->toBe('https://voight.test/api/voight/scans/callback');
+});
+
+it('turns callbacks off with a warning when the default callback route is not https', function () {
+    config()->set('filament-voight.scanner.callback_secret', 'cb-secret');
+    Log::spy();
+    Route::post('api/voight/scans/callback', fn () => null)->name('voight.scans.callback');
+    Route::getRoutes()->refreshNameLookups();
+    config()->set('filament-voight.scanner.callback_url', null);
+
+    expect(FilamentVoight::config()->getScannerCallbackUrl())->toBeNull();
+    Log::shouldHaveReceived('warning')->once();
+});
+
+it('defaults the callback url to the real registered package route', function () {
+    config()->set('filament-voight.scanner.callback_secret', 'cb-secret');
+    URL::forceScheme('https');
+    config()->set('filament-voight.scanner.callback_url', null);
+
+    expect(FilamentVoight::config()->getScannerCallbackUrl())->toBe(url('/api/voight/scans/callback'));
+});
+
+it('turns callbacks off with a warning when no callback secret is configured', function () {
+    Log::spy();
+    config()->set('filament-voight.scanner.callback_secret', null);
+    config()->set('filament-voight.scanner.callback_url', 'https://voight.example/cb');
+
+    expect(FilamentVoight::config()->getScannerCallbackUrl())->toBeNull();
+    Log::shouldHaveReceived('warning')->once()->withArgs(fn (string $message) => str_contains($message, 'callbacks are disabled') && str_contains($message, 'VOIGHT_SCANNER_CALLBACK_SECRET'));
+});
+
+it('stores team avatars on the public disk by default', function () {
+    config()->set('filament-voight.teams', null);
+
+    expect(FilamentVoight::config()->getTeamAvatarDisk())->toBe('public');
 });

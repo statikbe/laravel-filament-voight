@@ -22,7 +22,6 @@ class EnvironmentPackageFactory extends Factory
             'version' => fake()->numerify('#.#.#'),
             'is_direct' => true,
             'is_dev' => false,
-            'parent_package_id' => null,
         ];
     }
 

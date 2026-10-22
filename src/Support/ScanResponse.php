@@ -45,7 +45,15 @@ final class ScanResponse
 
         foreach ($this->findings as $finding) {
             $type = self::ecosystemToType((string) ($finding['ecosystem'] ?? ''));
-            $key = $type->value . '|' . (string) ($finding['name'] ?? '') . '|' . (string) ($finding['version'] ?? '');
+            $version = (string) ($finding['version'] ?? '');
+
+            // ComposerLockParser stores versions without the "v" tag prefix; /locks
+            // reports them as written in composer.lock (e.g. "v10.9.0").
+            if ($type === PackageType::Composer) {
+                $version = ltrim($version, 'v');
+            }
+
+            $key = $type->value . '|' . (string) ($finding['name'] ?? '') . '|' . $version;
             $maxSeverity = $finding['max_severity'] ?? null;
             $map[$key][] = [
                 'vulnerability_id' => (string) ($finding['vulnerability_id'] ?? ''),

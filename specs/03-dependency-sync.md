@@ -53,14 +53,13 @@ Lockfiles are stored on a configurable disk for later use by osv-scanner and aud
 - Directory structure: `{project_code}/{environment}/` — e.g. `my-project/production/composer.lock`.
 - Files are overwritten on each sync (only latest version kept).
 - Relative paths stored in `DependencySync.lockfile_paths` (JSON array) for traceability.
-- Allowed lockfile names are configurable via `FilamentVoightConfig::getAllowedLockfileNames()` (defaults: `composer.lock`, `package-lock.json`, `yarn.lock`, `pnpm-lock.yaml`).
+- Allowed lockfile names are configurable via `FilamentVoightConfig::getAllowedLockfileNames()` (defaults: `composer.lock`, `package-lock.json`, `yarn.lock`, `pnpm-lock.yaml`, `package.json`, `composer.json`). Manifests are only used to detect direct dependencies; they are never scanned.
 - The osv-scanner audit job reads lockfiles from this disk to perform scanning.
 
 ## Lockfile Parsing
 
-- **composer.lock**: Extract `packages` and `packages-dev` arrays. Each entry has `name`, `version`, and `require` (for tree relationships).
-- **package-lock.json**: Extract from `packages` object. Use `dev` flag and `dependencies` for tree.
-- Deduplication: same package at same version across trees is one `Package` record.
+- Parsers return installed nodes plus resolved edges; see `12-dependency-graph.md` for the per-format rules (nested npm versions, yarn descriptors, composer `replace`/`provide`, direct and dev detection).
+- Deduplication: the same package name and type across environments is one `Package` record.
 - Lockfile hash stored to skip processing if nothing changed.
 
 ## Versioning History
