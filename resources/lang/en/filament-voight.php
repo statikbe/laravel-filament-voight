@@ -335,4 +335,34 @@ return [
             ],
         ],
     ],
+
+    // Table filters
+    'filters' => [
+        'project' => [
+            'environment_name' => 'Environment name',
+            'environment_scanned_at' => 'Environment last scanned',
+            'package_name' => 'Package name',
+            'package_type' => 'Package type',
+        ],
+        'package_version' => [
+            'label' => 'Package version',
+            'operators' => [
+                'satisfies' => [
+                    'direct' => 'Is in range',
+                    'inverse' => 'Is not in range',
+                ],
+            ],
+            'summary' => [
+                'direct' => ':package version is in :range',
+                'inverse' => ':package version is not in :range',
+            ],
+            'form' => [
+                'range' => [
+                    'label' => 'Version range',
+                    'help' => 'Paste the affected range from the advisory, e.g. ">=10.0.0,<10.48.29" or "<1.6.4 || >=2.0.0 <2.1.1".',
+                    'invalid' => 'This is not a valid version range.',
+                ],
+            ],
+        ],
+    ],
 ];
