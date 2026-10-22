@@ -66,3 +66,18 @@ it('shows which installed packages require the installation', function () {
         ->assertSee('express')
         ->assertSee('webpack-dev-server');
 });
+
+it('filters installations by environment stage', function () {
+    $package = Package::factory()->create();
+    $production = EnvironmentPackage::factory()->for(Environment::factory()->create(['name' => 'production']))->for($package)->create();
+    $staging = EnvironmentPackage::factory()->for(Environment::factory()->create(['name' => 'staging']))->for($package)->create();
+
+    Livewire::test(InstallationsRelationManager::class, [
+        'ownerRecord' => $package,
+        'pageClass' => ViewPackage::class,
+    ])
+        ->set('tableDeferredFilters.queryBuilder.rules', queryBuilderRule('environment_stage', 'is', ['values' => ['production']]))
+        ->call('applyTableFilters')
+        ->assertCanSeeTableRecords([$production])
+        ->assertCanNotSeeTableRecords([$staging]);
+});

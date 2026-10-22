@@ -42,7 +42,8 @@ it('narrows by severity filter using CVSS buckets', function () {
         'ownerRecord' => $package,
         'pageClass' => ViewPackage::class,
     ])
-        ->filterTable('severity', 'critical')
+        ->set('tableDeferredFilters.queryBuilder.rules', queryBuilderRule('severity', 'is', ['values' => ['critical']]))
+        ->call('applyTableFilters')
         ->assertCanSeeTableRecords([$criticalRange])
         ->assertCanNotSeeTableRecords([$lowRange]);
 });

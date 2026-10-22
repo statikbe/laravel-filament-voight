@@ -52,7 +52,8 @@ it('shows all findings when latest_only filter is off', function () {
         'ownerRecord' => $package,
         'pageClass' => ViewPackage::class,
     ])
-        ->filterTable('latest_only', false)
+        ->set('tableDeferredFilters.latest_only.value', false)
+        ->call('applyTableFilters')
         ->assertCanSeeTableRecords([$oldFinding, $newFinding]);
 });
 
@@ -71,11 +72,9 @@ it('narrows findings by observed_at date range', function () {
         'ownerRecord' => $package,
         'pageClass' => ViewPackage::class,
     ])
-        ->filterTable('latest_only', false)
-        ->filterTable('observed_at', [
-            'from' => now()->subDays(2)->toDateString(),
-            'until' => now()->toDateString(),
-        ])
+        ->set('tableDeferredFilters.latest_only.value', false)
+        ->set('tableDeferredFilters.queryBuilder.rules', queryBuilderRule('observed_at', 'isAfter', ['date' => now()->subDays(2)->toDateString()]))
+        ->call('applyTableFilters')
         ->assertCanSeeTableRecords([$findingInRange])
         ->assertCanNotSeeTableRecords([$findingOutOfRange]);
 });
