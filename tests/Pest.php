@@ -2,6 +2,7 @@
 
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Str;
 use Illuminate\Testing\Fluent\AssertableJson;
 use Laravel\Mcp\Server\Testing\TestResponse;
 use Statikbe\FilamentVoight\Models\AuditFinding;
@@ -22,6 +23,17 @@ uses(TestCase::class)->in(__DIR__);
 function lockfileFixture(string $path): string
 {
     return file_get_contents(__DIR__ . '/Fixtures/lockfiles/' . $path);
+}
+
+/**
+ * A single QueryBuilder filter rule, shaped for `tableDeferredFilters.queryBuilder.rules`.
+ *
+ * @param  array<string, mixed>  $settings
+ * @return array<string, array<string, mixed>>
+ */
+function queryBuilderRule(string $type, string $operator, array $settings = []): array
+{
+    return [(string) Str::uuid() => ['type' => $type, 'data' => ['operator' => $operator, 'settings' => $settings]]];
 }
 
 /**

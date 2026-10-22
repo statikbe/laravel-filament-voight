@@ -1,6 +1,8 @@
 <?php
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\QueryException;
+use Statikbe\FilamentVoight\Enums\EnvironmentStage;
 use Statikbe\FilamentVoight\Models\AuditRun;
 use Statikbe\FilamentVoight\Models\DependencySync;
 use Statikbe\FilamentVoight\Models\Environment;
@@ -53,3 +55,49 @@ it('casts scanned_at to datetime', function () {
 
     expect($environment->scanned_at)->toBeInstanceOf(Carbon\Carbon::class);
 });
+
+it('scopes environments by stage like EnvironmentStage::fromName', function (string $name, EnvironmentStage $stage) {
+    $environment = Environment::factory()->create(['name' => $name]);
+
+    foreach (EnvironmentStage::cases() as $candidate) {
+        expect(staged($candidate)->whereKey($environment->id)->exists())
+            ->toBe($candidate === $stage, "{$name} vs {$candidate->value}");
+    }
+})->with([
+    ['Production', EnvironmentStage::Production],
+    ['  live2 ', EnvironmentStage::Production],
+    ['uat', EnvironmentStage::Acceptance],
+    ['testing', EnvironmentStage::Staging],
+    ['feat-search', EnvironmentStage::Feature],
+    ['development', EnvironmentStage::Local],
+    ['demo', EnvironmentStage::Other],
+]);
+
+it('gives the first stage in config order priority when prefixes overlap', function () {
+    config()->set('filament-voight.environments.stages', [
+        'staging' => ['pre'],
+        'production' => ['pre', 'prod'],
+    ]);
+    $environment = Environment::factory()->create(['name' => 'preprod']);
+
+    expect(EnvironmentStage::fromName('preprod'))->toBe(EnvironmentStage::Staging)
+        ->and(staged(EnvironmentStage::Staging)->whereKey($environment->id)->exists())->toBeTrue()
+        ->and(staged(EnvironmentStage::Production)->whereKey($environment->id)->exists())->toBeFalse();
+});
+
+it('matches several stages and treats like wildcards in prefixes literally', function () {
+    config()->set('filament-voight.environments.stages', ['production' => ['p_od']]);
+    $literal = Environment::factory()->create(['name' => 'p_od1']);
+    $wildcard = Environment::factory()->create(['name' => 'prod1']);
+
+    expect(staged(EnvironmentStage::Production)->pluck('id')->all())->toBe([$literal->id])
+        ->and(staged(EnvironmentStage::Production, EnvironmentStage::Other)->count())->toBe(2);
+});
+
+function staged(EnvironmentStage ...$stages): Builder
+{
+    $query = Environment::query();
+    Environment::constrainToStages($query, ...$stages);
+
+    return $query;
+}

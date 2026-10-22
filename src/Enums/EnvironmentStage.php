@@ -4,14 +4,18 @@ namespace Statikbe\FilamentVoight\Enums;
 
 use Filament\Support\Colors\Color;
 use Filament\Support\Contracts\HasColor;
+use Filament\Support\Contracts\HasLabel;
+use Statikbe\FilamentVoight\Enums\Concerns\HasOptions;
 use Statikbe\FilamentVoight\Facades\FilamentVoight;
 
 /**
  * The deployment stage of an environment, derived from its name using the
  * prefixes in the `environments.stages` config.
  */
-enum EnvironmentStage: string implements HasColor
+enum EnvironmentStage: string implements HasColor, HasLabel
 {
+    use HasOptions;
+
     case Production = 'production';
     case Acceptance = 'acceptance';
     case Staging = 'staging';
@@ -30,6 +34,16 @@ enum EnvironmentStage: string implements HasColor
         }
 
         return self::Other;
+    }
+
+    public function label(): string
+    {
+        return voightTrans('enums.environment_stage.' . $this->value);
+    }
+
+    public function getLabel(): string
+    {
+        return $this->label();
     }
 
     /**
