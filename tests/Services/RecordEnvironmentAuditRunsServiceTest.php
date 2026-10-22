@@ -60,6 +60,26 @@ it('maps a finding to exactly the environments carrying that version', function 
     expect(VulnerablePackageRange::where('package_id', $laravel->id)->count())->toBe(1);
 });
 
+it('stores separate OSV ranges as a composer parseable || constraint', function () {
+    $pkg = Package::factory()->composer()->create(['name' => 'laravel/framework']);
+    $env = Environment::factory()->create();
+    EnvironmentPackage::factory()->create(['environment_id' => $env->id, 'package_id' => $pkg->id, 'version' => 'v10.9.0']);
+
+    $raw = ['GHSA-5vg9' => rawVuln('GHSA-5vg9', 'laravel/framework', 'v10.48.29')];
+    $raw['GHSA-5vg9']['affected'][0]['ranges'] = [
+        ['type' => 'ECOSYSTEM', 'events' => [['introduced' => '0'], ['fixed' => 'v10.48.29']]],
+        ['type' => 'ECOSYSTEM', 'events' => [['introduced' => '11.0.0'], ['last_affected' => '11.2.0']]],
+        ['type' => 'ECOSYSTEM', 'events' => [['introduced' => '12.0.0']]],
+    ];
+    $map = ['composer|laravel/framework|v10.9.0' => [['vulnerability_id' => 'GHSA-5vg9', 'max_severity' => '9.1']]];
+    $service = app(RecordEnvironmentAuditRunsService::class);
+
+    $service->record($env, $map, $service->upsertVulnerabilities($raw, ['GHSA-5vg9' => '9.1']), $raw, AuditRunTrigger::Nightly);
+
+    expect(VulnerablePackageRange::where('package_id', $pkg->id)->sole()->affected_range)
+        ->toBe('>=0 <v10.48.29 || >=11.0.0 <=11.2.0 || >=12.0.0');
+});
+
 it('scores from max_severity when present', function () {
     $raw = ['GHSA-a' => rawVuln('GHSA-a', 'league/commonmark', '1.0.1')];
     $models = app(RecordEnvironmentAuditRunsService::class)

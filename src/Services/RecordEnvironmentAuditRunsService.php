@@ -232,6 +232,7 @@ class RecordEnvironmentAuditRunsService
         foreach ($ranges as $range) {
             $introduced = null;
             $fixed = null;
+            $lastAffected = null;
 
             foreach ($range['events'] ?? [] as $event) {
                 if (isset($event['introduced'])) {
@@ -240,15 +241,21 @@ class RecordEnvironmentAuditRunsService
                 if (isset($event['fixed'])) {
                     $fixed = $event['fixed'];
                 }
+                if (isset($event['last_affected'])) {
+                    $lastAffected = $event['last_affected'];
+                }
             }
 
             if ($introduced !== null && $fixed !== null) {
                 $parts[] = ">={$introduced} <{$fixed}";
+            } elseif ($introduced !== null && $lastAffected !== null) {
+                $parts[] = ">={$introduced} <={$lastAffected}";
             } elseif ($introduced !== null) {
                 $parts[] = ">={$introduced}";
             }
         }
 
-        return implode(', ', $parts) ?: '*';
+        // Separate OSV ranges are alternatives, so join them with Composer's OR operator.
+        return implode(' || ', $parts) ?: '*';
     }
 }

@@ -27,6 +27,15 @@ class VulnerablePackageRange extends Model
     protected $guarded = [];
 
     /**
+     * The affected range as a constraint VersionRange can evaluate. Older rows joined
+     * separate OSV ranges with ", ", which Composer would read as AND instead of OR.
+     */
+    public function versionConstraint(): string
+    {
+        return str_replace(', ', ' || ', $this->affected_range);
+    }
+
+    /**
      * @return BelongsTo<Vulnerability, $this>
      */
     public function vulnerability(): BelongsTo
