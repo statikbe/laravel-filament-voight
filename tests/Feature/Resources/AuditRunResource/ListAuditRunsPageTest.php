@@ -3,9 +3,12 @@
 use Illuminate\Foundation\Auth\User;
 use Illuminate\Support\Facades\DB;
 use Livewire\Livewire;
+use Statikbe\FilamentVoight\Enums\AuditRunStatus;
+use Statikbe\FilamentVoight\Enums\EnvironmentStage;
 use Statikbe\FilamentVoight\Enums\Severity;
 use Statikbe\FilamentVoight\Models\AuditFinding;
 use Statikbe\FilamentVoight\Models\AuditRun;
+use Statikbe\FilamentVoight\Models\Environment;
 use Statikbe\FilamentVoight\Models\Vulnerability;
 use Statikbe\FilamentVoight\Resources\AuditRunResource\Pages\ListAuditRuns;
 
@@ -76,3 +79,86 @@ it('renders the run list within a small fixed query budget', function () {
 
     expect($queries)->toBeLessThanOrEqual(8);
 });
+
+it('filters runs by status through the query builder', function () {
+    $completed = AuditRun::factory()->create(['status' => AuditRunStatus::Completed]);
+    $failed = AuditRun::factory()->create(['status' => AuditRunStatus::Failed]);
+
+    Livewire::test(ListAuditRuns::class)
+        ->set('tableDeferredFilters.queryBuilder.rules', queryBuilderRule('status', 'is', ['values' => [AuditRunStatus::Failed->value]]))
+        ->call('applyTableFilters')
+        ->assertCanSeeTableRecords([$failed])
+        ->assertCanNotSeeTableRecords([$completed]);
+});
+
+it('filters runs by project through the environment', function () {
+    $wanted = AuditRun::factory()->create();
+    $other = AuditRun::factory()->create();
+
+    Livewire::test(ListAuditRuns::class)
+        ->set('tableDeferredFilters.queryBuilder.rules', queryBuilderRule('project', 'is', ['values' => [$wanted->environment->project_id]]))
+        ->call('applyTableFilters')
+        ->assertCanSeeTableRecords([$wanted])
+        ->assertCanNotSeeTableRecords([$other]);
+});
+
+it('filters runs by findings count through the query builder', function () {
+    $busy = AuditRun::factory()->create();
+    AuditFinding::factory()->for($busy, 'auditRun')->count(3)->create();
+    $quiet = AuditRun::factory()->create();
+    AuditFinding::factory()->for($quiet, 'auditRun')->create();
+
+    Livewire::test(ListAuditRuns::class)
+        ->set('tableDeferredFilters.queryBuilder.rules', queryBuilderRule('auditFindings', 'hasMin', ['count' => 2]))
+        ->call('applyTableFilters')
+        ->assertCanSeeTableRecords([$busy])
+        ->assertCanNotSeeTableRecords([$quiet]);
+});
+
+it('filters runs by environment stage through the query builder', function (string $operator, bool $productionVisible) {
+    $production = AuditRun::factory()->for(Environment::factory()->state(['name' => 'production']), 'environment')->create();
+    $staging = AuditRun::factory()->for(Environment::factory()->state(['name' => 'staging']), 'environment')->create();
+
+    Livewire::test(ListAuditRuns::class)
+        ->set('tableDeferredFilters.queryBuilder.rules', queryBuilderRule('environment_stage', $operator, ['values' => [EnvironmentStage::Production->value]]))
+        ->call('applyTableFilters')
+        ->assertCanSeeTableRecords($productionVisible ? [$production] : [$staging])
+        ->assertCanNotSeeTableRecords($productionVisible ? [$staging] : [$production]);
+})->with([
+    'is' => ['is', true],
+    'is not' => ['is.inverse', false],
+]);
+
+function auditRunWithScores(float ...$scores): AuditRun
+{
+    $run = AuditRun::factory()->create();
+
+    foreach ($scores as $score) {
+        AuditFinding::factory()->for($run, 'auditRun')->create([
+            'vulnerability_id' => Vulnerability::factory()->create(['vulnerability_score' => $score])->id,
+        ]);
+    }
+
+    return $run;
+}
+
+it('filters runs by their max severity through the query builder', function (string $operator, array $severities, array $visible, array $hidden) {
+    $runs = [
+        'critical' => auditRunWithScores(3.1, 9.5),
+        'high' => auditRunWithScores(2.0, 7.0),
+        'low' => auditRunWithScores(3.9),
+        'none' => auditRunWithScores(0.0),
+        'empty' => AuditRun::factory()->create(),
+    ];
+
+    Livewire::test(ListAuditRuns::class)
+        ->set('tableDeferredFilters.queryBuilder.rules', queryBuilderRule('max_severity', $operator, ['values' => array_map(fn (Severity $severity): string => $severity->value, $severities)]))
+        ->call('applyTableFilters')
+        ->assertCanSeeTableRecords(array_map(fn (string $key): AuditRun => $runs[$key], $visible))
+        ->assertCanNotSeeTableRecords(array_map(fn (string $key): AuditRun => $runs[$key], $hidden));
+})->with([
+    'is high ignores runs with a worse finding' => ['is', [Severity::High], ['high'], ['critical', 'low', 'none', 'empty']],
+    'is high or low' => ['is', [Severity::High, Severity::Low], ['high', 'low'], ['critical', 'none', 'empty']],
+    'is none means a max score of zero' => ['is', [Severity::None], ['none'], ['critical', 'high', 'low', 'empty']],
+    'is not critical' => ['is.inverse', [Severity::Critical], ['high', 'low', 'none', 'empty'], ['critical']],
+]);

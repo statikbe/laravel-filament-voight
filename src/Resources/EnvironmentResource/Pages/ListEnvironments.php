@@ -2,24 +2,16 @@
 
 namespace Statikbe\FilamentVoight\Resources\EnvironmentResource\Pages;
 
-use Closure;
 use Filament\Pages\Page;
 use Filament\Schemas\Components\EmbeddedTable;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
-use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Contracts\HasTable;
-use Filament\Tables\Filters\SelectFilter;
-use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
 use Illuminate\Contracts\Support\Htmlable;
-use Illuminate\Database\Eloquent\Builder;
 use Statikbe\FilamentVoight\Facades\FilamentVoight;
-use Statikbe\FilamentVoight\Models\Environment;
-use Statikbe\FilamentVoight\Models\EnvironmentSystemDetail;
-use Statikbe\FilamentVoight\Resources\Components\EnvironmentNameColumn;
-use Statikbe\FilamentVoight\Resources\EnvironmentResource;
+use Statikbe\FilamentVoight\Resources\EnvironmentResource\Schemas\EnvironmentTableSchema;
 /**
  * Cross-project overview. The nested EnvironmentResource cannot list without a parent project,
  * so this is a plain page that links its rows to the nested view page.
@@ -66,73 +58,8 @@ class ListEnvironments extends Page implements HasTable
         $environmentModel = FilamentVoight::config()->getEnvironmentModel();
 
         // Follows whatever scoping the host applies to the project list.
-        $projectIds = fn (): Builder => ProjectResource::getEloquentQuery()->select('id');
-
-        $columns = [
-            TextColumn::make('project.name')
-                ->label(voightTrans('models.environment.fields.project'))
-                ->searchable(),
-            EnvironmentNameColumn::make('name')
-                ->label(voightTrans('models.environment.fields.name'))
-                ->searchable()
-                ->sortable(),
-        ];
-
-        // Sorts through a correlated subquery so no join is needed next to the eager-loaded relation.
-        $sortBy = fn (string $column): Closure => fn (Builder $query, string $direction): Builder => $query->orderBy(
-            EnvironmentSystemDetail::query()->select($column)->whereColumn('environment_id', (new $environmentModel)->getQualifiedKeyName()),
-            $direction,
+        return EnvironmentTableSchema::configure(
+            $table->query($environmentModel::query()->whereIn('project_id', ProjectResource::getEloquentQuery()->select('id'))),
         );
-
-        $columns[] = TextColumn::make('systemDetails.php_version')
-            ->label(voightTrans('models.environment.fields.php_version'))
-            ->placeholder('—')
-            ->sortable(query: $sortBy('php_version'));
-
-        $columns[] = TextColumn::make('systemDetails.received_at')
-            ->label(voightTrans('models.environment.fields.system_details_received_at'))
-            ->since()
-            ->placeholder(voightTrans('models.environment.never_reported'))
-            ->sortable(query: $sortBy('received_at'));
-
-        return $table
-            ->query($environmentModel::query()->whereIn('project_id', $projectIds())->with(['project', 'systemDetails']))
-            ->columns($columns)
-            ->filters([
-                TernaryFilter::make('server_reported')
-                    ->label(voightTrans('models.environment.fields.system_details_received_at'))
-                    ->default(true)
-                    ->queries(
-                        true: fn (Builder $query): Builder => $query->whereHas('systemDetails'),
-                        false: fn (Builder $query): Builder => $query->whereDoesntHave('systemDetails'),
-                    ),
-                SelectFilter::make('name')
-                    ->label(voightTrans('models.environment.fields.name'))
-                    ->multiple()
-                    ->options(fn (): array => $environmentModel::query()
-                        ->whereIn('project_id', $projectIds())
-                        ->distinct()
-                        ->orderBy('name')
-                        ->pluck('name', 'name')
-                        ->all()),
-                SelectFilter::make('php_version')
-                    ->label(voightTrans('models.environment.fields.php_version'))
-                    ->options(fn (): array => EnvironmentSystemDetail::query()
-                        ->whereIn('environment_id', $environmentModel::query()->whereIn('project_id', $projectIds())->select('id'))
-                        ->whereNotNull('php_version')
-                        ->distinct()
-                        ->orderBy('php_version')
-                        ->pluck('php_version', 'php_version')
-                        ->all())
-                    ->query(fn (Builder $query, array $data): Builder => $query->when(
-                        filled($data['value'] ?? null),
-                        fn (Builder $query): Builder => $query->whereHas('systemDetails', fn (Builder $query): Builder => $query->where('php_version', $data['value'])),
-                    )),
-            ])
-            ->recordUrl(fn (Environment $record): string => EnvironmentResource::getUrl('view', [
-                'project' => $record->project,
-                'record' => $record,
-            ]))
-            ->defaultSort(fn (Builder $query): Builder => $sortBy('received_at')($query, 'desc')->orderBy('name'));
     }
 }

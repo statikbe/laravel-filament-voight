@@ -139,6 +139,7 @@ return [
                 'customer' => 'Customer',
                 'team' => 'Team',
                 'is_muted' => 'Muted',
+                'current_severity' => 'Current finding severity',
                 'is_unmuted' => 'Notification enabled',
                 'is_muted_help' => 'Muted projects will not send alert notifications.',
                 'active_tokens' => 'Active Tokens',
@@ -271,6 +272,9 @@ return [
                 'latest_version' => 'Latest Version',
                 'latest_version_updated_at' => 'Latest Version Updated',
                 'installations' => 'Installations',
+                'findings' => 'Findings',
+                'known_vulnerabilities' => 'Known Vulnerabilities',
+                'projects' => 'Projects',
             ],
             'actions' => [
                 'open_website' => 'Open Website',
@@ -361,6 +365,8 @@ return [
                 'severity' => 'Severity',
                 'published_at' => 'Published',
                 'modified_at' => 'Modified',
+                'affected_packages' => 'Affected packages',
+                'findings' => 'Findings',
             ],
             'actions' => [
                 'open_source' => 'View on source',

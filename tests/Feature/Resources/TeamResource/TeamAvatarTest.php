@@ -105,14 +105,16 @@ it('shows team avatars in the project form team select', function () {
             && str_contains($field->getOptionLabelFromRecord($team), e($team->getAvatarUrl())));
 });
 
-it('shows team avatars in the projects team filter', function () {
+it('filters the projects list by team name through the query builder', function () {
     $team = Team::factory()->create(['name' => 'Backend']);
+    $match = Project::factory()->for($team)->create();
+    $other = Project::factory()->create();
 
-    $filter = Livewire::test(ListProjects::class)->instance()->getTable()->getFilter('team_id');
-    $field = $filter->getSchemaComponents()[0];
-
-    expect($field->isHtmlAllowed())->toBeTrue()
-        ->and($field->getOptionLabelFromRecord($team))->toContain(e($team->getAvatarUrl()));
+    Livewire::test(ListProjects::class)
+        ->set('tableDeferredFilters.queryBuilder.rules', queryBuilderRule('team', 'is', ['values' => [$team->id]]))
+        ->call('applyTableFilters')
+        ->assertCanSeeTableRecords([$match])
+        ->assertCanNotSeeTableRecords([$other]);
 });
 
 it('labels team options with their avatar and name', function () {
