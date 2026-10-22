@@ -66,7 +66,7 @@ it('filters packages by project through the query builder', function () {
     $unused = Package::factory()->create();
 
     Livewire::test(ListPackages::class)
-        ->set('tableDeferredFilters.queryBuilder.rules', queryBuilderRule('projects', 'isRelatedTo', ['values' => [$environment->project_id]]))
+        ->set('tableDeferredFilters.queryBuilder.rules', queryBuilderRule('project', 'is', ['values' => [$environment->project_id]]))
         ->call('applyTableFilters')
         ->assertCanSeeTableRecords([$used])
         ->assertCanNotSeeTableRecords([$unused]);

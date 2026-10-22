@@ -274,7 +274,6 @@ return [
                 'installations' => 'Installations',
                 'findings' => 'Findings',
                 'known_vulnerabilities' => 'Known Vulnerabilities',
-                'projects' => 'Projects',
             ],
             'actions' => [
                 'open_website' => 'Open Website',

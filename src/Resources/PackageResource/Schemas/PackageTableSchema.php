@@ -3,7 +3,6 @@
 namespace Statikbe\FilamentVoight\Resources\PackageResource\Schemas;
 
 use Filament\Actions\ViewAction;
-use Filament\QueryBuilder\Constraints\RelationshipConstraint\Operators\IsRelatedToOperator;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Enums\FiltersLayout;
 use Filament\Tables\Filters\QueryBuilder;
@@ -16,6 +15,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 use Statikbe\FilamentVoight\Enums\PackageType;
 use Statikbe\FilamentVoight\Resources\Components\EnvironmentStageConstraint;
+use Statikbe\FilamentVoight\Resources\Components\ProjectConstraint;
 use Statikbe\FilamentVoight\Resources\PackageResource\Actions\OpenPackageWebsiteAction;
 
 class PackageTableSchema
@@ -68,15 +68,7 @@ class PackageTableSchema
                         RelationshipConstraint::make('vulnerablePackageRanges')
                             ->label(voightTrans('models.package.fields.known_vulnerabilities'))
                             ->multiple(),
-                        RelationshipConstraint::make('projects')
-                            ->label(voightTrans('models.package.fields.projects'))
-                            ->multiple()
-                            ->selectable(
-                                IsRelatedToOperator::make()
-                                    ->titleAttribute('name')
-                                    ->searchable()
-                                    ->multiple(),
-                            ),
+                        ProjectConstraint::project('environmentPackages.environment.project_id'),
                     ]),
             ], layout: FiltersLayout::AboveContentCollapsible)
             ->recordActions([
