@@ -5,12 +5,17 @@ namespace Statikbe\FilamentVoight\Resources\PackageResource\RelationManagers;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
-use Filament\Tables\Filters\SelectFilter;
+use Filament\Tables\Enums\FiltersLayout;
+use Filament\Tables\Filters\QueryBuilder;
+use Filament\Tables\Filters\QueryBuilder\Constraints\DateConstraint;
+use Filament\Tables\Filters\QueryBuilder\Constraints\SelectConstraint;
+use Filament\Tables\Filters\QueryBuilder\Constraints\TextConstraint;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Statikbe\FilamentVoight\Enums\Severity;
 use Statikbe\FilamentVoight\Enums\VulnerabilitySource;
+use Statikbe\FilamentVoight\Resources\Components\SeverityConstraint;
 use Statikbe\FilamentVoight\Resources\VulnerabilityResource;
 
 class KnownVulnerabilitiesRelationManager extends RelationManager
@@ -68,23 +73,34 @@ class KnownVulnerabilitiesRelationManager extends RelationManager
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
-                SelectFilter::make('severity')
-                    ->label(voightTrans('models.package.view.columns.severity'))
-                    ->options(Severity::options())
-                    ->query(function (Builder $query, array $data): Builder {
-                        if (blank($data['value'] ?? null)) {
-                            return $query;
-                        }
-                        [$min, $max] = Severity::from($data['value'])->scoreRange();
-
-                        return $query->whereHas(
-                            'vulnerability',
-                            fn (Builder $q) => $q
-                                ->where('vulnerability_score', '>=', $min)
-                                ->where('vulnerability_score', '<=', $max),
-                        );
-                    }),
-            ])
+                QueryBuilder::make()
+                    ->constraints([
+                        SeverityConstraint::make('severity', 'vulnerability')
+                            ->label(voightTrans('models.package.view.columns.severity')),
+                        SelectConstraint::make('source')
+                            ->label(voightTrans('models.package.view.columns.source'))
+                            ->attribute('vulnerability.source')
+                            ->options(VulnerabilitySource::options())
+                            ->multiple(),
+                        TextConstraint::make('source_id')
+                            ->label(voightTrans('models.package.view.columns.source_id'))
+                            ->attribute('vulnerability.source_id'),
+                        TextConstraint::make('summary')
+                            ->label(voightTrans('models.package.view.columns.summary'))
+                            ->attribute('vulnerability.summary'),
+                        TextConstraint::make('affected_range')
+                            ->label(voightTrans('models.package.view.columns.affected_range')),
+                        TextConstraint::make('fixed_version')
+                            ->label(voightTrans('models.package.view.columns.fixed_version'))
+                            ->nullable(),
+                        DateConstraint::make('published_at')
+                            ->label(voightTrans('models.package.view.columns.published'))
+                            ->attribute('vulnerability.published_at'),
+                        DateConstraint::make('modified_at')
+                            ->label(voightTrans('models.package.view.columns.modified'))
+                            ->attribute('vulnerability.modified_at'),
+                    ]),
+            ], layout: FiltersLayout::AboveContentCollapsible)
             ->defaultSort('vulnerability.vulnerability_score', 'desc')
             ->emptyStateIcon(Heroicon::OutlinedShieldCheck)
             ->emptyStateHeading(voightTrans('models.package.view.empty.no_known_vulnerabilities_heading'))

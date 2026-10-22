@@ -4,6 +4,7 @@ use Filament\Models\Contracts\FilamentUser;
 use Filament\Panel;
 use Illuminate\Foundation\Auth\User;
 use Livewire\Livewire;
+use Statikbe\FilamentVoight\Enums\EnvironmentStage;
 use Statikbe\FilamentVoight\Models\Environment;
 use Statikbe\FilamentVoight\Models\EnvironmentSystemDetail;
 use Statikbe\FilamentVoight\Models\Project;
@@ -161,19 +162,18 @@ it('links relation manager rows to the view page and shows the PHP version', fun
         ->assertTableColumnStateSet('systemDetails.php_version', '8.4.1', $environment);
 });
 
-it('lists environments across projects and filters by version', function () {
+it('lists environments across projects, newest report first, and filters by version', function () {
     $php83 = Environment::factory()->create();
-    EnvironmentSystemDetail::factory()->for($php83)->create(['php_version' => '8.3.12']);
+    EnvironmentSystemDetail::factory()->for($php83)->create(['php_version' => '8.3.12', 'received_at' => now()->subDay()]);
     $php84 = Environment::factory()->create();
-    EnvironmentSystemDetail::factory()->for($php84)->create(['php_version' => '8.4.1']);
+    EnvironmentSystemDetail::factory()->for($php84)->create(['php_version' => '8.4.1', 'received_at' => now()]);
     $never = Environment::factory()->create();
 
     Livewire::test(ListEnvironments::class)
         ->assertSuccessful()
-        ->filterTable('server_reported', null)
-        ->assertCanSeeTableRecords([$php83, $php84, $never])
-        ->assertTableFilterExists('php_version')
-        ->filterTable('php_version', '8.3.12')
+        ->assertCanSeeTableRecords([$php84, $php83, $never], inOrder: true)
+        ->set('tableDeferredFilters.queryBuilder.rules', queryBuilderRule('php_version', 'is', ['values' => ['8.3.12']]))
+        ->call('applyTableFilters')
         ->assertCanSeeTableRecords([$php83])
         ->assertCanNotSeeTableRecords([$php84, $never]);
 });
@@ -184,27 +184,26 @@ it('filters the environments list by name', function () {
     $acceptance = Environment::factory()->create(['name' => 'acceptance']);
 
     Livewire::test(ListEnvironments::class)
-        ->filterTable('server_reported', null)
-        ->assertTableFilterExists('name')
-        ->filterTable('name', ['production', 'staging'])
+        ->set('tableDeferredFilters.queryBuilder.rules', queryBuilderRule('name', 'is', ['values' => ['production', 'staging']]))
+        ->call('applyTableFilters')
         ->assertCanSeeTableRecords([$production, $staging])
         ->assertCanNotSeeTableRecords([$acceptance]);
 });
 
-it('shows only reported environments by default, newest report first', function () {
-    $old = Environment::factory()->create();
-    EnvironmentSystemDetail::factory()->for($old)->create(['received_at' => now()->subDay()]);
-    $new = Environment::factory()->create();
-    EnvironmentSystemDetail::factory()->for($new)->create(['received_at' => now()]);
+it('filters the environments list by whether the server reported', function (string $operator, bool $reportedVisible) {
+    $reported = Environment::factory()->create();
+    EnvironmentSystemDetail::factory()->for($reported)->create();
     $never = Environment::factory()->create();
 
     Livewire::test(ListEnvironments::class)
-        ->assertCanSeeTableRecords([$new, $old], inOrder: true)
-        ->assertCanNotSeeTableRecords([$never])
-        ->filterTable('server_reported', false)
-        ->assertCanSeeTableRecords([$never])
-        ->assertCanNotSeeTableRecords([$new, $old]);
-});
+        ->set('tableDeferredFilters.queryBuilder.rules', queryBuilderRule('systemDetails', $operator))
+        ->call('applyTableFilters')
+        ->assertCanSeeTableRecords($reportedVisible ? [$reported] : [$never])
+        ->assertCanNotSeeTableRecords($reportedVisible ? [$never] : [$reported]);
+})->with([
+    'filled' => ['isEmpty.inverse', true],
+    'empty' => ['isEmpty', false],
+]);
 
 it('renders storage symlink paths colored by link state', function () {
     $environment = Environment::factory()->create();
@@ -225,4 +224,28 @@ it('renders storage symlink paths colored by link state', function () {
         ->assertSee('/var/www/html/public/missing')
         ->assertSee('fi-color-success', false)
         ->assertSee('fi-color-danger', false);
+});
+
+it('shows the query builder in the relation manager and only lists the project environments', function () {
+    $project = Project::factory()->create();
+    $production = Environment::factory()->for($project)->create(['name' => 'production']);
+    $staging = Environment::factory()->for($project)->create(['name' => 'staging']);
+    $foreign = Environment::factory()->create(['name' => 'production']);
+
+    $component = Livewire::test(EnvironmentsRelationManager::class, [
+        'ownerRecord' => $project,
+        'pageClass' => ViewProject::class,
+    ])
+        ->assertCanSeeTableRecords([$production, $staging])
+        ->assertCanNotSeeTableRecords([$foreign])
+        ->assertTableColumnHidden('project.name')
+        ->assertTableActionExists('create')
+        ->set('tableDeferredFilters.queryBuilder.rules', queryBuilderRule('environment_stage', 'is', ['values' => [EnvironmentStage::Production->value]]))
+        ->call('applyTableFilters')
+        ->assertCanSeeTableRecords([$production])
+        ->assertCanNotSeeTableRecords([$staging, $foreign]);
+
+    expect(collect($component->instance()->getTable()->getFilter('queryBuilder')->getConstraints())->map->getName())
+        ->toContain('environment_stage')
+        ->not->toContain('project', 'customer', 'team');
 });

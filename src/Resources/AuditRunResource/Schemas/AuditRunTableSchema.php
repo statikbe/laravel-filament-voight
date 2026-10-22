@@ -4,14 +4,22 @@ namespace Statikbe\FilamentVoight\Resources\AuditRunResource\Schemas;
 
 use Filament\Actions\ViewAction;
 use Filament\Tables\Columns\TextColumn;
-use Filament\Tables\Filters\SelectFilter;
+use Filament\Tables\Enums\FiltersLayout;
+use Filament\Tables\Filters\QueryBuilder;
+use Filament\Tables\Filters\QueryBuilder\Constraints\DateConstraint;
+use Filament\Tables\Filters\QueryBuilder\Constraints\RelationshipConstraint;
+use Filament\Tables\Filters\QueryBuilder\Constraints\SelectConstraint;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Statikbe\FilamentVoight\Enums\AuditRunStatus;
 use Statikbe\FilamentVoight\Enums\AuditRunTrigger;
 use Statikbe\FilamentVoight\Enums\Severity;
 use Statikbe\FilamentVoight\Models\AuditRun;
+use Statikbe\FilamentVoight\Models\Project;
 use Statikbe\FilamentVoight\Resources\Components\EnvironmentNameColumn;
+use Statikbe\FilamentVoight\Resources\Components\EnvironmentStageConstraint;
+use Statikbe\FilamentVoight\Resources\Components\ProjectConstraint;
+use Statikbe\FilamentVoight\Resources\Components\SeverityConstraint;
 
 class AuditRunTableSchema
 {
@@ -63,18 +71,36 @@ class AuditRunTableSchema
                     ->placeholder('—'),
             ])
             ->filters([
-                SelectFilter::make('status')
-                    ->label(voightTrans('models.audit_run.fields.status'))
-                    ->options(AuditRunStatus::class),
-                SelectFilter::make('trigger')
-                    ->label(voightTrans('models.audit_run.fields.trigger'))
-                    ->options(AuditRunTrigger::class),
-                SelectFilter::make('environment')
-                    ->label(voightTrans('models.audit_run.fields.environment'))
-                    ->relationship('environment', 'name')
-                    ->searchable()
-                    ->preload(),
-            ])
+                QueryBuilder::make()
+                    ->constraints([
+                        ...($showProject ? [ProjectConstraint::project('environment.project_id')] : []),
+                        EnvironmentStageConstraint::make('environment'),
+                        SelectConstraint::make('status')
+                            ->label(voightTrans('models.audit_run.fields.status'))
+                            ->options(AuditRunStatus::class)
+                            ->multiple(),
+                        SelectConstraint::make('trigger')
+                            ->label(voightTrans('models.audit_run.fields.trigger'))
+                            ->options(AuditRunTrigger::class)
+                            ->multiple(),
+                        // The max severity is derived from the highest vulnerability score, which a HasManyThrough aggregate constraint cannot filter.
+                        SeverityConstraint::make('max_severity', function (Builder $query, Severity $severity): void {
+                            [$minimum, $maximum] = $severity->scoreRange();
+
+                            $query
+                                ->whereHas('vulnerabilities', fn (Builder $vulnerability) => $vulnerability->whereBetween('vulnerability_score', [$minimum, $maximum]))
+                                ->whereDoesntHave('vulnerabilities', fn (Builder $vulnerability) => $vulnerability->where('vulnerability_score', '>', $maximum));
+                        })->label(voightTrans('models.audit_run.fields.max_severity')),
+                        DateConstraint::make('started_at')
+                            ->label(voightTrans('models.audit_run.fields.started_at')),
+                        DateConstraint::make('completed_at')
+                            ->label(voightTrans('models.audit_run.fields.completed_at'))
+                            ->nullable(),
+                        RelationshipConstraint::make('auditFindings')
+                            ->label(voightTrans('models.audit_run.fields.findings_count'))
+                            ->multiple(),
+                    ]),
+            ], layout: FiltersLayout::AboveContentCollapsible)
             ->defaultSort('started_at', 'desc')
             ->recordActions([
                 ViewAction::make(),

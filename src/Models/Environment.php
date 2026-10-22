@@ -12,6 +12,8 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Carbon;
 use Statikbe\FilamentVoight\Enums\AuditRunStatus;
 use Statikbe\FilamentVoight\Enums\DependencySyncStatus;
+use Statikbe\FilamentVoight\Enums\EnvironmentStage;
+use Statikbe\FilamentVoight\Facades\FilamentVoight;
 
 /**
  * @property string $id
@@ -113,5 +115,57 @@ class Environment extends Model
             ['created_at' => 'max', 'id' => 'max'],
             fn (Builder $query) => $query->whereIn('status', [AuditRunStatus::Completed, AuditRunStatus::Failed]),
         );
+    }
+
+    /**
+     * SQL mirror of EnvironmentStage::fromName(): the first stage in config order whose prefix matches wins.
+     *
+     * @param  Builder<Environment>  $query
+     */
+    public static function constrainToStages(Builder $query, EnvironmentStage ...$stages): void
+    {
+        $prefixes = array_map(array_filter(...), FilamentVoight::config()->getEnvironmentStagePrefixes());
+
+        // Other has no prefixes of its own: it is whatever no earlier stage claims. Any other stage without prefixes matches nothing.
+        $stages = array_filter($stages, fn (EnvironmentStage $stage): bool => $stage === EnvironmentStage::Other || ($prefixes[$stage->value] ?? []) !== []);
+
+        if ($stages === []) {
+            $query->whereRaw('1 = 0');
+
+            return;
+        }
+
+        $query->where(function (Builder $query) use ($stages, $prefixes): void {
+            foreach ($stages as $stage) {
+                $position = array_search($stage->value, array_keys($prefixes), true);
+                $earlier = array_merge([], ...array_values(array_slice($prefixes, 0, $position === false ? null : $position)));
+
+                $query->orWhere(function (Builder $query) use ($stage, $prefixes, $earlier): void {
+                    if ($stage !== EnvironmentStage::Other) {
+                        self::whereNameStartsWithAny($query, $prefixes[$stage->value]);
+                    }
+
+                    if ($earlier !== []) {
+                        $query->whereNot(fn (Builder $query) => self::whereNameStartsWithAny($query, $earlier));
+                    }
+                });
+            }
+        });
+    }
+
+    /**
+     * @param  Builder<Environment>  $query
+     * @param  array<int, string>  $prefixes
+     */
+    private static function whereNameStartsWithAny(Builder $query, array $prefixes): void
+    {
+        $column = $query->getQuery()->getGrammar()->wrap($query->qualifyColumn('name'));
+
+        $query->where(function (Builder $query) use ($prefixes, $column): void {
+            foreach ($prefixes as $prefix) {
+                $escaped = preg_replace('/[%_!]/', '!$0', mb_strtolower(trim($prefix)));
+                $query->orWhereRaw("LOWER(TRIM({$column})) LIKE ? ESCAPE '!'", [$escaped . '%']);
+            }
+        });
     }
 }

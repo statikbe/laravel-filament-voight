@@ -2,11 +2,13 @@
 
 namespace Statikbe\FilamentVoight\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
+use Statikbe\FilamentVoight\Facades\FilamentVoight;
 
 /**
  * @property string $id
@@ -26,6 +28,17 @@ class AuditFinding extends Model
     protected $table = 'voight_audit_findings';
 
     protected $guarded = [];
+
+    /**
+     * Restricts findings to those of an environment's latest audit run.
+     *
+     * @param  Builder<AuditFinding>  $query
+     * @return Builder<AuditFinding>
+     */
+    public static function constrainToCurrent(Builder $query): Builder
+    {
+        return $query->whereIn('audit_run_id', FilamentVoight::config()->getAuditRunModel()::latestIdsPerEnvironment());
+    }
 
     /**
      * @return BelongsTo<AuditRun, $this>

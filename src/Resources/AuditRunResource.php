@@ -21,7 +21,12 @@ class AuditRunResource extends Resource
 
     protected static string | \BackedEnum | null $navigationIcon = Heroicon::OutlinedClipboardDocumentCheck;
 
-    protected static ?int $navigationSort = 5;
+    protected static ?int $navigationSort = 1;
+
+    public static function getNavigationGroup(): ?string
+    {
+        return null;
+    }
 
     public static function getModelLabel(): string
     {

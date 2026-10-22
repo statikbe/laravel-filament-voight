@@ -21,8 +21,7 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Statikbe\FilamentVoight\Enums\EnvironmentIssueType;
 use Statikbe\FilamentVoight\Models\Environment;
-use Statikbe\FilamentVoight\Resources\Components\EnvironmentNameColumn;
-use Statikbe\FilamentVoight\Resources\EnvironmentResource;
+use Statikbe\FilamentVoight\Resources\EnvironmentResource\Schemas\EnvironmentTableSchema;
 use Statikbe\FilamentVoight\Services\EnvironmentHealthService;
 use Statikbe\FilamentVoight\Support\EnvironmentIssue;
 
@@ -55,12 +54,10 @@ class EnvironmentsRelationManager extends RelationManager
 
     public function table(Table $table): Table
     {
-        return $table
-            ->modifyQueryUsing(fn (Builder $query) => $query->with([...Environment::HEALTH_RELATIONS, 'systemDetails']))
-            ->columns([
-                EnvironmentNameColumn::make('name')
-                    ->label(voightTrans('models.environment.fields.name'))
-                    ->sortable(),
+        // The project is implied by the page, so its column and constraints are hidden here.
+        return EnvironmentTableSchema::configure($table, showProject: false)
+            ->modifyQueryUsing(fn (Builder $query) => $query->with(Environment::HEALTH_RELATIONS))
+            ->pushColumns([
                 IconColumn::make('health')
                     ->label(voightTrans('models.environment.fields.health'))
                     ->state(fn (Environment $record): string => $this->issues($record)->first()?->type->value ?? self::HEALTHY)
@@ -77,22 +74,11 @@ class EnvironmentsRelationManager extends RelationManager
                     ->dateTime()
                     ->sortable()
                     ->placeholder(voightTrans('models.environment.never_scanned')),
-                TextColumn::make('systemDetails.php_version')
-                    ->label(voightTrans('models.environment.fields.php_version'))
-                    ->placeholder('—'),
-                TextColumn::make('systemDetails.received_at')
-                    ->label(voightTrans('models.environment.fields.system_details_received_at'))
-                    ->since()
-                    ->placeholder(voightTrans('models.environment.never_reported')),
                 TextColumn::make('environment_packages_count')
                     ->label(voightTrans('models.package.plural'))
                     ->counts(['environmentPackages' => fn (Builder $query) => $query->select(DB::raw('count(distinct package_id)'))])
                     ->sortable(),
             ])
-            ->recordUrl(fn (Environment $record): string => EnvironmentResource::getUrl('view', [
-                'project' => $this->getOwnerRecord(),
-                'record' => $record,
-            ]))
             ->headerActions([
                 CreateAction::make(),
             ])

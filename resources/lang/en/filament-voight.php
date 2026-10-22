@@ -8,9 +8,9 @@ return [
 
     // Navigation
     'navigation' => [
-        'management' => 'Management',
-        'dependencies' => 'Dependencies',
+        'monitoring' => 'Monitoring',
         'security' => 'Security',
+        'organisation' => 'Organisation',
         'settings' => 'Settings',
     ],
 
@@ -81,6 +81,14 @@ return [
             'github_advisory' => 'GitHub Advisory',
             'manual' => 'Manual',
         ],
+        'environment_stage' => [
+            'production' => 'Production',
+            'acceptance' => 'Acceptance',
+            'staging' => 'Staging',
+            'feature' => 'Feature',
+            'local' => 'Local',
+            'other' => 'Other',
+        ],
         'alert_channel' => [
             'email' => 'Email',
             'slack' => 'Slack',
@@ -131,6 +139,7 @@ return [
                 'customer' => 'Customer',
                 'team' => 'Team',
                 'is_muted' => 'Muted',
+                'current_severity' => 'Current finding severity',
                 'is_unmuted' => 'Notification enabled',
                 'is_muted_help' => 'Muted projects will not send alert notifications.',
                 'active_tokens' => 'Active Tokens',
@@ -169,6 +178,10 @@ return [
                 'system_details_received_at' => 'Server reported',
                 'project' => 'Project',
                 'php_version' => 'PHP',
+                'stage' => 'Environment stage',
+                'latest_audit_status' => 'Latest audit status',
+                'latest_sync_status' => 'Latest sync status',
+                'created_at' => 'Created',
             ],
             'never_scanned' => 'Never scanned',
             'never_reported' => 'Never',
@@ -259,6 +272,8 @@ return [
                 'latest_version' => 'Latest Version',
                 'latest_version_updated_at' => 'Latest Version Updated',
                 'installations' => 'Installations',
+                'findings' => 'Findings',
+                'known_vulnerabilities' => 'Known Vulnerabilities',
             ],
             'actions' => [
                 'open_website' => 'Open Website',
@@ -349,6 +364,8 @@ return [
                 'severity' => 'Severity',
                 'published_at' => 'Published',
                 'modified_at' => 'Modified',
+                'affected_packages' => 'Affected packages',
+                'findings' => 'Findings',
             ],
             'actions' => [
                 'open_source' => 'View on source',

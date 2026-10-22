@@ -6,10 +6,17 @@ use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Enums\FiltersLayout;
+use Filament\Tables\Filters\QueryBuilder;
+use Filament\Tables\Filters\QueryBuilder\Constraints\BooleanConstraint;
+use Filament\Tables\Filters\QueryBuilder\Constraints\DateConstraint;
+use Filament\Tables\Filters\QueryBuilder\Constraints\TextConstraint;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Statikbe\FilamentVoight\Resources\Components\EnvironmentNameColumn;
+use Statikbe\FilamentVoight\Resources\Components\EnvironmentStageConstraint;
+use Statikbe\FilamentVoight\Resources\Components\ProjectConstraint;
 use Statikbe\FilamentVoight\Resources\PackageResource\Actions\WhyInstalledAction;
 
 class InstallationsRelationManager extends RelationManager
@@ -57,6 +64,23 @@ class InstallationsRelationManager extends RelationManager
                     ->sortable()
                     ->placeholder(voightTrans('models.environment.never_scanned')),
             ])
+            ->filters([
+                QueryBuilder::make()
+                    ->constraints([
+                        ProjectConstraint::project('environment.project_id'),
+                        EnvironmentStageConstraint::make('environment'),
+                        TextConstraint::make('version')
+                            ->label(voightTrans('models.package.view.columns.installed_version')),
+                        BooleanConstraint::make('is_direct')
+                            ->label(voightTrans('models.package.view.columns.direct')),
+                        BooleanConstraint::make('is_dev')
+                            ->label(voightTrans('models.package.view.columns.dev')),
+                        DateConstraint::make('scanned_at')
+                            ->label(voightTrans('models.package.view.columns.last_scan'))
+                            ->attribute('environment.scanned_at')
+                            ->nullable(),
+                    ]),
+            ], layout: FiltersLayout::AboveContentCollapsible)
             ->recordActions([
                 WhyInstalledAction::make(),
             ])
