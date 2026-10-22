@@ -231,6 +231,12 @@ return [
                 'open_source' => 'View on source',
                 'find_affected_projects' => 'Find affected projects',
                 'find_affected_projects_for' => 'Projects using :package',
+                'view_project' => 'View project',
+            ],
+            'affected_projects' => [
+                'title' => 'Affected Projects',
+                'empty_heading' => 'No affected projects',
+                'empty_description' => 'No environment reported this vulnerability in its latest scan.',
             ],
         ],
         'vulnerable_package_range' => [
