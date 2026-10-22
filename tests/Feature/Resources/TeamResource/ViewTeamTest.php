@@ -81,3 +81,11 @@ it('renders the relation manager tabs on the team page', function () {
         ->assertSee(voightTrans('models.project.plural'))
         ->assertDontSee('Overview');
 });
+
+it('does not render the form on the team view page', function () {
+    $team = Team::factory()->create();
+
+    Livewire::test(ViewTeam::class, ['record' => $team->getRouteKey()])
+        ->assertDontSee('No files uploaded')
+        ->assertDontSee(voightTrans('models.team.fields.avatar'));
+});
