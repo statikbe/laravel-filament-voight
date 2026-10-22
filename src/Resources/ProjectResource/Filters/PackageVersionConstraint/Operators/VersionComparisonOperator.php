@@ -50,9 +50,9 @@ class VersionComparisonOperator extends Operator
     public function getSummary(): string
     {
         return voightTrans('filters.package_version.summary', [
-            'package' => self::packageLabel(Package::find($this->getStringSetting('package_id'))),
+            'package' => self::packageLabel(Package::find($this->stringSetting('package_id'))),
             'operator' => mb_strtolower($this->getLabel()),
-            'version' => $this->getStringSetting('version'),
+            'version' => $this->stringSetting('version'),
         ]);
     }
 
@@ -85,8 +85,8 @@ class VersionComparisonOperator extends Operator
 
     public function applyToBaseQuery(Builder $query): Builder
     {
-        $packageId = $this->getStringSetting('package_id');
-        $version = $this->getStringSetting('version');
+        $packageId = $this->stringSetting('package_id');
+        $version = $this->stringSetting('version');
         $comparison = self::COMPARISONS[$this->getName()] ?? null;
 
         if (blank($packageId) || blank($version) || $comparison === null) {
@@ -110,6 +110,17 @@ class VersionComparisonOperator extends Operator
                 ->where('package_id', $packageId)
                 ->whereIn('version', $matchingVersions),
         );
+    }
+
+    /**
+     * Settings come from the request payload, so anything but a scalar is ignored. Filament's own
+     * getStringSetting() does this too, but is missing from some supported Filament 5 releases.
+     */
+    private function stringSetting(string $key): ?string
+    {
+        $value = $this->getSettings()[$key] ?? null;
+
+        return is_scalar($value) ? trim((string) $value) : null;
     }
 
     private static function packageLabel(?Package $package): string
