@@ -8,9 +8,9 @@ return [
 
     // Navigation
     'navigation' => [
-        'management' => 'Management',
-        'dependencies' => 'Dependencies',
+        'monitoring' => 'Monitoring',
         'security' => 'Security',
+        'organisation' => 'Organisation',
         'settings' => 'Settings',
     ],
 

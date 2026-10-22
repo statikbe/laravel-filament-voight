@@ -24,7 +24,7 @@ class ListEnvironments extends Page implements HasTable
 
     protected static string | \BackedEnum | null $navigationIcon = Heroicon::OutlinedServerStack;
 
-    protected static ?int $navigationSort = 4;
+    protected static ?int $navigationSort = 2;
 
     protected static ?string $slug = 'environments';
 
@@ -35,7 +35,7 @@ class ListEnvironments extends Page implements HasTable
 
     public static function getNavigationGroup(): ?string
     {
-        return voightTrans('navigation.management');
+        return voightTrans('navigation.monitoring');
     }
 
     public static function getNavigationLabel(): string

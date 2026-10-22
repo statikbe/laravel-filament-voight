@@ -25,11 +25,11 @@ class PackageResource extends Resource
 
     protected static ?string $recordTitleAttribute = 'name';
 
-    protected static ?int $navigationSort = 4;
+    protected static ?int $navigationSort = 2;
 
     public static function getNavigationGroup(): ?string
     {
-        return voightTrans('navigation.dependencies');
+        return voightTrans('navigation.security');
     }
 
     public static function getModelLabel(): string
