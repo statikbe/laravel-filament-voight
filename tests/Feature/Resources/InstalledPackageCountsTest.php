@@ -35,5 +35,5 @@ it('counts distinct environments per package, not installed copies', function ()
     EnvironmentPackage::factory()->for($production)->for($debug)->create(['version' => '2.6.9']);
     EnvironmentPackage::factory()->for(Environment::factory())->for($debug)->create(['version' => '4.3.4']);
 
-    Livewire::test(ListPackages::class)->assertTableColumnStateSet('environment_packages_count', 2, $debug);
+    Livewire::test(ListPackages::class)->set('activeTab', 'all')->assertTableColumnStateSet('environment_packages_count', 2, $debug);
 });

@@ -6,6 +6,7 @@ use Filament\Contracts\Plugin;
 use Filament\Navigation\NavigationGroup;
 use Filament\Panel;
 use Statikbe\FilamentVoight\Pages\McpAccess;
+use Statikbe\FilamentVoight\Resources\AuditFindingResource;
 use Statikbe\FilamentVoight\Resources\AuditRunResource;
 use Statikbe\FilamentVoight\Resources\CustomerResource;
 use Statikbe\FilamentVoight\Resources\EnvironmentResource;
@@ -32,14 +33,15 @@ class FilamentVoightPlugin implements Plugin
             ProjectResource::class,
             PackageResource::class,
             VulnerabilityResource::class,
+            AuditFindingResource::class,
             AuditRunResource::class,
             EnvironmentResource::class,
         ]);
 
         // Unregistered host groups sort after these; ungrouped items and the blank group stay first.
         $panel->navigationGroups([
-            NavigationGroup::make(fn (): string => voightTrans('navigation.monitoring')),
             NavigationGroup::make(fn (): string => voightTrans('navigation.security')),
+            NavigationGroup::make(fn (): string => voightTrans('navigation.monitoring')),
             NavigationGroup::make(fn (): string => voightTrans('navigation.organisation')),
             NavigationGroup::make(fn (): string => voightTrans('navigation.settings')),
         ]);
