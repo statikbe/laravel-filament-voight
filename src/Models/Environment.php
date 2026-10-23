@@ -118,6 +118,36 @@ class Environment extends Model
     }
 
     /**
+     * SQL mirror of the NeverSynced, SyncFailed and ScanFailed issues in EnvironmentHealthService.
+     * A failed scan only counts once the environment has a finished sync.
+     *
+     * @param  Builder<Environment>  $query
+     */
+    public static function constrainToFailing(Builder $query): void
+    {
+        $query->where(function (Builder $query): void {
+            $query->whereDoesntHave('latestFinishedDependencySync')
+                ->orWhereHas('latestFinishedDependencySync', fn (Builder $query) => $query->where('status', DependencySyncStatus::Failed))
+                ->orWhere(fn (Builder $query) => $query
+                    ->whereHas('latestFinishedDependencySync')
+                    ->whereHas('latestFinishedAuditRun', fn (Builder $query) => $query->where('status', AuditRunStatus::Failed)));
+        });
+    }
+
+    /**
+     * SQL mirror of the SyncWarning issue in EnvironmentHealthService. It counts any warning, while
+     * issuesFor() drops warnings with an unknown SyncWarning code.
+     *
+     * @param  Builder<Environment>  $query
+     */
+    public static function constrainToSyncWarnings(Builder $query): void
+    {
+        $query->whereHas('latestFinishedDependencySync', fn (Builder $query) => $query
+            ->where('status', DependencySyncStatus::Completed)
+            ->whereJsonLength('warnings', '>', 0));
+    }
+
+    /**
      * SQL mirror of EnvironmentStage::fromName(): the first stage in config order whose prefix matches wins.
      *
      * @param  Builder<Environment>  $query

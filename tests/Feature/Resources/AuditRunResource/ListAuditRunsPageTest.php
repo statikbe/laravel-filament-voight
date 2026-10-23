@@ -20,6 +20,7 @@ it('lists audit runs', function () {
     $run = AuditRun::factory()->create();
 
     Livewire::test(ListAuditRuns::class)
+        ->set('activeTab', 'all')
         ->assertSuccessful()
         ->assertCanSeeTableRecords([$run]);
 });
@@ -34,6 +35,7 @@ it('reports the worst severity found in a run', function () {
     }
 
     Livewire::test(ListAuditRuns::class)
+        ->set('activeTab', 'all')
         ->assertSuccessful()
         ->assertTableColumnStateSet('max_severity', Severity::Critical, $run);
 });
@@ -43,6 +45,7 @@ it('counts the findings in a run', function () {
     AuditFinding::factory()->for($run, 'auditRun')->count(3)->create();
 
     Livewire::test(ListAuditRuns::class)
+        ->set('activeTab', 'all')
         ->assertSuccessful()
         ->assertTableColumnStateSet('audit_findings_count', 3, $run);
 });
@@ -51,6 +54,7 @@ it('leaves max severity empty for a run with no findings', function () {
     $run = AuditRun::factory()->create();
 
     Livewire::test(ListAuditRuns::class)
+        ->set('activeTab', 'all')
         ->assertSuccessful()
         ->assertTableColumnStateSet('max_severity', null, $run);
 });
@@ -85,6 +89,7 @@ it('filters runs by status through the query builder', function () {
     $failed = AuditRun::factory()->create(['status' => AuditRunStatus::Failed]);
 
     Livewire::test(ListAuditRuns::class)
+        ->set('activeTab', 'all')
         ->set('tableDeferredFilters.queryBuilder.rules', queryBuilderRule('status', 'is', ['values' => [AuditRunStatus::Failed->value]]))
         ->call('applyTableFilters')
         ->assertCanSeeTableRecords([$failed])
@@ -96,6 +101,7 @@ it('filters runs by project through the environment', function () {
     $other = AuditRun::factory()->create();
 
     Livewire::test(ListAuditRuns::class)
+        ->set('activeTab', 'all')
         ->set('tableDeferredFilters.queryBuilder.rules', queryBuilderRule('project', 'is', ['values' => [$wanted->environment->project_id]]))
         ->call('applyTableFilters')
         ->assertCanSeeTableRecords([$wanted])
@@ -109,6 +115,7 @@ it('filters runs by findings count through the query builder', function () {
     AuditFinding::factory()->for($quiet, 'auditRun')->create();
 
     Livewire::test(ListAuditRuns::class)
+        ->set('activeTab', 'all')
         ->set('tableDeferredFilters.queryBuilder.rules', queryBuilderRule('auditFindings', 'hasMin', ['count' => 2]))
         ->call('applyTableFilters')
         ->assertCanSeeTableRecords([$busy])
@@ -120,6 +127,7 @@ it('filters runs by environment stage through the query builder', function (stri
     $staging = AuditRun::factory()->for(Environment::factory()->state(['name' => 'staging']), 'environment')->create();
 
     Livewire::test(ListAuditRuns::class)
+        ->set('activeTab', 'all')
         ->set('tableDeferredFilters.queryBuilder.rules', queryBuilderRule('environment_stage', $operator, ['values' => [EnvironmentStage::Production->value]]))
         ->call('applyTableFilters')
         ->assertCanSeeTableRecords($productionVisible ? [$production] : [$staging])
@@ -152,6 +160,7 @@ it('filters runs by their max severity through the query builder', function (str
     ];
 
     Livewire::test(ListAuditRuns::class)
+        ->set('activeTab', 'all')
         ->set('tableDeferredFilters.queryBuilder.rules', queryBuilderRule('max_severity', $operator, ['values' => array_map(fn (Severity $severity): string => $severity->value, $severities)]))
         ->call('applyTableFilters')
         ->assertCanSeeTableRecords(array_map(fn (string $key): AuditRun => $runs[$key], $visible))
@@ -162,3 +171,45 @@ it('filters runs by their max severity through the query builder', function (str
     'is none means a max score of zero' => ['is', [Severity::None], ['none'], ['critical', 'high', 'low', 'empty']],
     'is not critical' => ['is.inverse', [Severity::Critical], ['high', 'low', 'none', 'empty'], ['critical']],
 ]);
+
+it('shows only the latest run of each environment on the latest per environment tab', function () {
+    $environment = Environment::factory()->create();
+    $old = AuditRun::factory()->for($environment, 'environment')->create(['started_at' => now()->subDay()]);
+    $latest = AuditRun::factory()->for($environment, 'environment')->create(['started_at' => now()]);
+
+    Livewire::test(ListAuditRuns::class)
+        ->assertSet('activeTab', 'latest_per_environment')
+        ->assertCanSeeTableRecords([$latest])
+        ->assertCanNotSeeTableRecords([$old]);
+});
+
+it('shows only failed runs on the failed tab', function () {
+    $failed = AuditRun::factory()->failed()->create();
+    $completed = AuditRun::factory()->create();
+
+    Livewire::test(ListAuditRuns::class)
+        ->set('activeTab', 'failed')
+        ->assertCanSeeTableRecords([$failed])
+        ->assertCanNotSeeTableRecords([$completed]);
+});
+
+it('lists every run on the all tab', function () {
+    $failed = AuditRun::factory()->failed()->create();
+    $completed = AuditRun::factory()->create();
+
+    Livewire::test(ListAuditRuns::class)
+        ->set('activeTab', 'all')
+        ->assertCanSeeTableRecords([$failed, $completed]);
+});
+
+it('counts the records of each tab in its badge', function () {
+    $environment = Environment::factory()->create();
+    AuditRun::factory()->for($environment, 'environment')->create(['started_at' => now()->subDay()]);
+    AuditRun::factory()->for($environment, 'environment')->failed()->create(['started_at' => now()]);
+
+    $tabs = Livewire::test(ListAuditRuns::class)->instance()->getCachedTabs();
+
+    expect((int) $tabs['latest_per_environment']->getBadge())->toBe(1)
+        ->and((int) $tabs['failed']->getBadge())->toBe(1)
+        ->and((int) $tabs['all']->getBadge())->toBe(2);
+});

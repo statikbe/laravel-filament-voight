@@ -7,6 +7,7 @@ use Filament\Tables\Filters\QueryBuilder\Constraints\SelectConstraint;
 use Filament\Tables\Filters\QueryBuilder\Constraints\SelectConstraint\Operators\IsOperator;
 use Illuminate\Database\Eloquent\Builder;
 use Statikbe\FilamentVoight\Enums\Severity;
+use Statikbe\FilamentVoight\Models\Vulnerability;
 
 /**
  * Severity is derived from the vulnerability score, so the stock "is" operator is queried via score ranges.
@@ -27,11 +28,7 @@ class SeverityConstraint
                     function (Builder $query, array $settings, bool $isInverse) use ($relation): Builder {
                         $severities = array_map(Severity::from(...), $settings['values']);
 
-                        $matchesScore = fn (Builder $query): Builder => $query->where(function (Builder $query) use ($severities): void {
-                            foreach ($severities as $severity) {
-                                $query->orWhereBetween('vulnerability_score', $severity->scoreRange());
-                            }
-                        });
+                        $matchesScore = fn (Builder $query) => Vulnerability::constrainToSeverities($query, ...$severities);
 
                         $matches = match (true) {
                             $relation instanceof Closure => function (Builder $query) use ($severities, $relation): void {

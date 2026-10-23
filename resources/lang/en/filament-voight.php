@@ -12,6 +12,40 @@ return [
         'security' => 'Security',
         'organisation' => 'Organisation',
         'settings' => 'Settings',
+        'badges' => [
+            'open_findings' => 'Critical vulnerabilities on production',
+            'failing_environments' => 'Failing environments',
+        ],
+    ],
+
+    // Tabs
+    'tabs' => [
+        'all' => 'All',
+        'environments' => [
+            'production' => 'Production',
+            'failing' => 'Failing',
+            'warnings' => 'Warnings',
+        ],
+        'vulnerabilities' => [
+            'active' => 'Active',
+            'on_production' => 'On production',
+        ],
+        'audit_runs' => [
+            'latest_per_environment' => 'Latest per environment',
+            'failed' => 'Failed',
+        ],
+        'projects' => [
+            'my_team' => 'My team',
+            'critical_high_on_production' => 'Critical / high on production',
+        ],
+        'packages' => [
+            'vulnerable_in_use' => 'Vulnerable in use',
+        ],
+        'open_findings' => [
+            'production_critical_high' => 'Production · critical & high',
+            'production' => 'Production',
+            'other_stages' => 'Other stages',
+        ],
     ],
 
     // Common fields
@@ -408,8 +442,8 @@ return [
             ],
         ],
         'audit_finding' => [
-            'label' => 'Audit Finding',
-            'plural' => 'Audit Findings',
+            'label' => 'Open finding',
+            'plural' => 'Open findings',
             'fields' => [
                 'installed_version' => 'Installed Version',
                 'fixed_version' => 'Fixed Version',
