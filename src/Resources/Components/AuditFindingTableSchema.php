@@ -25,7 +25,7 @@ class AuditFindingTableSchema
      * @param  bool  $showPackage  Hidden where the package is already implied by the page.
      * @param  bool  $showVulnerability  Hidden where the vulnerability is already implied by the page.
      * @param  bool  $singleRun  The findings of one audit run: hides the environment and observed-at columns and the "latest scan only" toggle, as the run implies them.
-     * @param  bool  $showLatestOnlyToggle  Hidden where the page only ever lists current findings.
+     * @param  bool  $latestCompletedOnly  The "latest scan only" filter follows the latest completed run instead of the latest run of any status.
      */
     public static function configure(
         Table $table,
@@ -33,7 +33,7 @@ class AuditFindingTableSchema
         bool $showPackage = true,
         bool $showVulnerability = true,
         bool $singleRun = false,
-        bool $showLatestOnlyToggle = true,
+        bool $latestCompletedOnly = false,
     ): Table {
         $constraints = [];
 
@@ -149,14 +149,14 @@ class AuditFindingTableSchema
                     ->visible(! $singleRun),
             ])
             ->filters([
-                ...($singleRun || ! $showLatestOnlyToggle ? [] : [
+                ...($singleRun ? [] : [
                     TernaryFilter::make('latest_only')
                         ->label(voightTrans('models.package.view.filters.latest_only'))
                         ->trueLabel(voightTrans('models.package.view.filters.latest_only_true'))
                         ->falseLabel(voightTrans('models.package.view.filters.latest_only_false'))
                         ->default(true)
                         ->queries(
-                            true: fn (Builder $q) => AuditFinding::constrainToCurrent($q),
+                            true: fn (Builder $q) => $latestCompletedOnly ? AuditFinding::constrainToLatestCompleted($q) : AuditFinding::constrainToCurrent($q),
                             false: fn (Builder $q) => $q,
                             blank: fn (Builder $q) => $q,
                         ),

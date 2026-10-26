@@ -7,6 +7,7 @@ use Filament\Schemas\Components\Tabs\Tab;
 use Illuminate\Database\Eloquent\Builder;
 use Statikbe\FilamentVoight\Enums\EnvironmentStage;
 use Statikbe\FilamentVoight\Enums\Severity;
+use Statikbe\FilamentVoight\Models\AuditFinding;
 use Statikbe\FilamentVoight\Models\Environment;
 use Statikbe\FilamentVoight\Models\Vulnerability;
 use Statikbe\FilamentVoight\Resources\AuditFindingResource;
@@ -17,6 +18,20 @@ class ListOpenFindings extends ListRecords
     use HasCountedTabs;
 
     protected static string $resource = AuditFindingResource::class;
+
+    /**
+     * Mirrors the "latest scan only" filter, so the badges count what the list shows.
+     *
+     * @return Builder<AuditFinding>
+     */
+    protected function getTabBaseQuery(): Builder
+    {
+        $query = static::getResource()::getEloquentQuery();
+        $latestOnlyState = $this->tableFilters['latest_only'] ?? null;
+        $isLatestOnly = $latestOnlyState === null || ($latestOnlyState['value'] ?? false);
+
+        return $isLatestOnly ? AuditFinding::constrainToLatestCompleted($query) : $query;
+    }
 
     /**
      * @return array<string, Tab>

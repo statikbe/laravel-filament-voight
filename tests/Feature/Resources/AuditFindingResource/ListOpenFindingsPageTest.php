@@ -6,6 +6,7 @@ use Livewire\Livewire;
 use Statikbe\FilamentVoight\Models\AuditFinding;
 use Statikbe\FilamentVoight\Models\AuditRun;
 use Statikbe\FilamentVoight\Models\Environment;
+use Statikbe\FilamentVoight\Models\Project;
 use Statikbe\FilamentVoight\Models\Vulnerability;
 use Statikbe\FilamentVoight\Resources\AuditFindingResource;
 use Statikbe\FilamentVoight\Resources\AuditFindingResource\Pages\ListOpenFindings;
@@ -76,6 +77,32 @@ it('groups by vulnerability by default', function () {
     expect($component->instance()->getTable()->getGrouping()?->getId())->toBe('vulnerability_id');
 });
 
+it('offers a project group next to the default vulnerability group', function () {
+    $table = Livewire::test(ListOpenFindings::class)->instance()->getTable();
+
+    expect($table->getGroups())->toHaveKeys(['vulnerability_id', 'project']);
+});
+
+it('groups by project, ordered by project code then score', function () {
+    $zulu = Environment::factory()->for(Project::factory()->create(['project_code' => 'ZZZ-1']))->create(['name' => 'production']);
+    $alpha = Environment::factory()->for(Project::factory()->create(['project_code' => 'AAA-1']))->create(['name' => 'production']);
+
+    $zuluLow = openFindingsPageFinding($zulu, Vulnerability::factory()->create(['vulnerability_score' => 5.0]));
+    $alphaLow = openFindingsPageFinding($alpha, Vulnerability::factory()->create(['vulnerability_score' => 7.0]));
+    $zuluHigh = openFindingsPageFinding($zulu, Vulnerability::factory()->create(['vulnerability_score' => 9.0]));
+    $alphaHigh = openFindingsPageFinding($alpha, Vulnerability::factory()->create(['vulnerability_score' => 8.0]));
+
+    $component = Livewire::test(ListOpenFindings::class)
+        ->set('activeTab', 'production')
+        ->set('tableGrouping', 'project');
+
+    expect($component->instance()->getTableRecords()->pluck('id')->all())
+        ->toBe([$alphaHigh->id, $alphaLow->id, $zuluHigh->id, $zuluLow->id]);
+
+    $group = $component->instance()->getTable()->getGrouping();
+    expect($group->getTitle($alphaHigh->load('auditRun.environment.project')))->toContain('AAA-1');
+});
+
 it('orders groups by score then vulnerability', function () {
     $production = Environment::factory()->create(['name' => 'production']);
     $other = Environment::factory()->create(['name' => 'production-eu']);
@@ -107,8 +134,33 @@ it('orders groups by score then vulnerability', function () {
     expect($runs)->toBe(4);
 });
 
-it('does not show the latest only toggle', function () {
-    expect(Livewire::test(ListOpenFindings::class)->instance()->getTable()->getFilter('latest_only'))->toBeNull();
+it('offers the latest only filter, on by default', function () {
+    $component = Livewire::test(ListOpenFindings::class);
+
+    expect($component->instance()->getTable()->getFilter('latest_only'))->not->toBeNull()
+        ->and($component->get('tableFilters.latest_only.value'))->toBeTruthy();
+});
+
+it('hides superseded findings while the latest only filter is on and shows them when it is off', function () {
+    $f = openFindingsPageFixture();
+
+    Livewire::test(ListOpenFindings::class)
+        ->set('activeTab', 'all')
+        ->assertCanNotSeeTableRecords([$f['old']])
+        ->filterTable('latest_only', false)
+        ->assertCanSeeTableRecords([$f['old'], $f['prodCritical']]);
+});
+
+it('makes the tab badges follow the latest only filter', function () {
+    openFindingsPageFixture();
+
+    $component = Livewire::test(ListOpenFindings::class)->filterTable('latest_only', false);
+    $tabs = $component->instance()->getCachedTabs();
+
+    expect((int) $tabs['production_critical_high']->getBadge())->toBe(3)
+        ->and((int) $tabs['production']->getBadge())->toBe(4)
+        ->and((int) $tabs['other_stages']->getBadge())->toBe(1)
+        ->and((int) $tabs['all']->getBadge())->toBe(5);
 });
 
 it('counts distinct critical vulnerabilities on production', function () {
@@ -156,3 +208,17 @@ it('shows the project code, searchable by code and name', function () {
         ->searchTable($project->name)
         ->assertCanSeeTableRecords([$finding]);
 });
+
+it('shows the previous completed run while a newer run is not completed', function (string $state) {
+    $environment = Environment::factory()->create(['name' => 'production']);
+    $completed = openFindingsPageFinding($environment, Vulnerability::factory()->critical()->create());
+
+    $newer = AuditRun::factory()->for($environment)->{$state}()->create(['started_at' => now()->addHour()]);
+    $hidden = AuditFinding::factory()->for($newer)->for(Vulnerability::factory()->critical())->create();
+
+    Livewire::test(ListOpenFindings::class)
+        ->assertCanSeeTableRecords([$completed])
+        ->assertCanNotSeeTableRecords([$hidden]);
+
+    expect(AuditFindingResource::getNavigationBadge())->toBe('1');
+})->with(['pending', 'running', 'failed']);

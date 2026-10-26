@@ -122,6 +122,23 @@ class AuditRun extends Model
     }
 
     /**
+     * Subquery selecting, for each environment, the id of its most recent Completed AuditRun (by started_at).
+     *
+     * Pending, running and failed runs are ignored, so an in-flight or broken run never hides earlier results.
+     *
+     * Intended for use in `whereIn('audit_run_id', AuditRun::latestCompletedIdsPerEnvironment())`.
+     *
+     * @return Builder<AuditRun>
+     */
+    public static function latestCompletedIdsPerEnvironment(): Builder
+    {
+        return self::query()
+            ->select('id')
+            ->where('status', AuditRunStatus::Completed)
+            ->whereRaw('started_at = (select max(started_at) from voight_audit_runs a2 where a2.environment_id = voight_audit_runs.environment_id and a2.status = ?)', [AuditRunStatus::Completed->value]);
+    }
+
+    /**
      * Subquery selecting, for each project, the id of its single most recent AuditRun
      * across all of the project's environments (by started_at, id as tie-breaker).
      *

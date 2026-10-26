@@ -41,6 +41,17 @@ class AuditFinding extends Model
     }
 
     /**
+     * Restricts findings to those of an environment's latest completed audit run.
+     *
+     * @param  Builder<AuditFinding>  $query
+     * @return Builder<AuditFinding>
+     */
+    public static function constrainToLatestCompleted(Builder $query): Builder
+    {
+        return $query->whereIn('audit_run_id', FilamentVoight::config()->getAuditRunModel()::latestCompletedIdsPerEnvironment());
+    }
+
+    /**
      * @return BelongsTo<AuditRun, $this>
      */
     public function auditRun(): BelongsTo
