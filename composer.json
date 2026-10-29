@@ -31,7 +31,8 @@
         "laravel/slack-notification-channel": "^3.0.0",
         "spatie/laravel-package-tools": "^1.15.0",
         "spatie/laravel-sluggable": "^3.8",
-        "staudenmeir/eloquent-has-many-deep": "^1.21"
+        "staudenmeir/eloquent-has-many-deep": "^1.21",
+        "symfony/css-selector": "^6.3 || ^7.0"
     },
     "require-dev": {
         "larastan/larastan": "^3.0",
