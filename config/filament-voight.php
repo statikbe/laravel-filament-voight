@@ -165,6 +165,9 @@ return [
     | itself yields nothing (e.g. 'duck-duck-go', 'google-shared-stuff').
     | These send the domain to a third party, so they are off by default.
     |
+    | `basic_auth` credentials are sent to the project's own site only, for
+    | sites behind an htaccess login. Leave them empty to send none.
+    |
     */
     'favicons' => [
         'enabled' => env('VOIGHT_FAVICONS_ENABLED', true),
@@ -172,6 +175,10 @@ return [
         'directory' => 'voight/favicons',
         'refresh_after_days' => 30,
         'fallback_drivers' => [],
+        'basic_auth' => [
+            'username' => env('VOIGHT_FAVICONS_BASIC_AUTH_USERNAME'),
+            'password' => env('VOIGHT_FAVICONS_BASIC_AUTH_PASSWORD'),
+        ],
     ],
 
     /*

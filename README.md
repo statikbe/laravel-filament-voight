@@ -276,9 +276,9 @@ The projects and environments tables show each project's favicon so projects are
 
 1. `voight.sh` sends the environment's public URL (`VOIGHT_SITE_URL`, else `APP_URL`, else Craft's `PRIMARY_SITE_URL`) with every sync.
 2. When an environment URL changes, or the stored favicon is older than `favicons.refresh_after_days`, `FetchProjectFaviconJob` is queued.
-3. The job reads `<link rel="icon">` / `apple-touch-icon` tags from a production-stage environment (see `environments.stages`) that has a URL, falling back to `/favicon.ico`, and stores the largest icon on the `favicons.disk` disk (default `public`, so run `php artisan storage:link`).
+3. The job reads `<link rel="icon">` / `apple-touch-icon` tags from a production-stage environment (see `environments.stages`) that has a URL, falling back to `/favicon.ico`, and stores the largest icon on the `favicons.disk` disk (default `public`, so run `php artisan storage:link`). Tags are read from error and dev-lock pages too, whatever their status code.
 
-Only production-like environments are preferred because test and acceptance sites are usually behind basic auth. Third-party lookups (`duck-duck-go`, `google-shared-stuff`, …) are off by default; enable them via `favicons.fallback_drivers`. Disable the feature with `VOIGHT_FAVICONS_ENABLED=false`.
+Only production-like environments are preferred because test and acceptance sites are usually behind basic auth. For sites behind an htaccess login, set `VOIGHT_FAVICONS_BASIC_AUTH_USERNAME` and `VOIGHT_FAVICONS_BASIC_AUTH_PASSWORD`; they are sent to the project's own site only, never to other hosts. Third-party lookups (`duck-duck-go`, `google-shared-stuff`, …) are off by default; enable them via `favicons.fallback_drivers`. Disable the feature with `VOIGHT_FAVICONS_ENABLED=false`.
 
 Backfill existing projects once their environments have a URL (set it in the environment form, or wait for the next deploy):
 

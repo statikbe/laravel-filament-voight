@@ -7,6 +7,7 @@ use AshAllenDesign\FaviconFetcher\Exceptions\FaviconFetcherException;
 use AshAllenDesign\FaviconFetcher\Facades\Favicon;
 use AshAllenDesign\FaviconFetcher\Favicon as FetchedFavicon;
 use Generator;
+use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
@@ -92,36 +93,38 @@ class ProjectFaviconService
     }
 
     /**
-     * Some sites answer 200 with an empty file (e.g. a placeholder /favicon.ico),
-     * so walk the candidates and keep the first one that has content.
+     * Downloads the icons itself rather than through favicon-fetcher, so the site's
+     * basic auth applies. Error pages and empty files (e.g. a placeholder
+     * /favicon.ico) are skipped; the first icon with content is kept.
      *
      * @throws FaviconFetcherException
      */
     private function storeFirstUsableFavicon(Project $project, string $url): ?string
     {
         $config = FilamentVoight::config();
-        $disk = Storage::disk($config->getFaviconsDisk());
 
         foreach ($this->candidates($url) as $favicon) {
-            // Timestamped filename so browsers don't keep showing a cached old icon.
-            $path = $favicon->storeAs(
-                $config->getFaviconsDirectory(),
-                $project->getKey() . '-' . now()->timestamp,
-                $config->getFaviconsDisk(),
-            );
+            $response = $this->download($favicon->getFaviconUrl(), $url);
 
-            if ($disk->size($path) > 0) {
-                return $path;
+            if ($response === null || $response->body() === '') {
+                continue;
             }
 
-            $disk->delete($path);
+            // Timestamped filename so browsers don't keep showing a cached old icon.
+            $path = $config->getFaviconsDirectory() . '/' . $project->getKey() . '-' . now()->timestamp
+                . '.' . $this->guessExtension($favicon->getFaviconUrl(), $response);
+
+            Storage::disk($config->getFaviconsDisk())->put($path, $response->body());
+
+            return $path;
         }
 
         return null;
     }
 
     /**
-     * Icons advertised by the site, largest first, then the configured fallback drivers.
+     * Icons advertised by the site, largest first, then /favicon.ico, then the
+     * configured fallback drivers.
      *
      * @return Generator<FetchedFavicon>
      *
@@ -129,12 +132,13 @@ class ProjectFaviconService
      */
     private function candidates(string $url): Generator
     {
-        $advertised = $this->advertisedFavicons($url);
-
-        // fetchAll guesses /favicon.ico when the page advertises nothing usable.
-        yield from ($advertised->isNotEmpty() ? $advertised : Favicon::fetchAll($url))
+        yield from $this->advertisedFavicons($url)
             ->sortByDesc(fn (FetchedFavicon $favicon): int => $favicon->getIconSize() ?? 0)
             ->values();
+
+        $root = parse_url($url, PHP_URL_SCHEME) . '://' . parse_url($url, PHP_URL_HOST);
+
+        yield new FetchedFavicon($url, $root . '/favicon.ico');
 
         foreach (FilamentVoight::config()->getFaviconFallbackDrivers() as $driver) {
             $favicon = Favicon::driver($driver)->fetch($url);
@@ -148,8 +152,7 @@ class ProjectFaviconService
     /**
      * Icon tags from the page's head, whatever its status code: dev locks, basic auth
      * and error pages usually still carry the site's icons, but favicon-fetcher ignores
-     * any non-2xx page. Only icons that themselves load are kept, so an error page is
-     * never stored as the icon.
+     * any non-2xx page.
      *
      * @return Collection<int, FetchedFavicon>
      *
@@ -157,7 +160,7 @@ class ProjectFaviconService
      */
     private function advertisedFavicons(string $url): Collection
     {
-        $response = $this->withRequestExceptionHandling(fn (): Response => $this->httpClient()->get($url));
+        $response = $this->withRequestExceptionHandling(fn (): Response => $this->clientFor($url, $url)->get($url));
         $pageUrl = (string) ($response->effectiveUri() ?? $url);
 
         return collect((new Crawler($response->body(), $pageUrl))
@@ -175,10 +178,55 @@ class ProjectFaviconService
                     'apple-touch-icon' => FetchedFavicon::TYPE_APPLE_TOUCH_ICON,
                     default => FetchedFavicon::TYPE_ICON_UNKNOWN,
                 });
-            }))
-            ->filter(fn (FetchedFavicon $favicon): bool => $this->withRequestExceptionHandling(
-                fn (): bool => $this->httpClient()->get($favicon->getFaviconUrl())->successful()
-            ))
-            ->values();
+            }));
+    }
+
+    /**
+     * A successful response for the icon, or null when it errors or can't be reached,
+     * so one broken icon doesn't stop the next candidate from being tried.
+     */
+    private function download(string $iconUrl, string $siteUrl): ?Response
+    {
+        try {
+            $response = $this->withRequestExceptionHandling(fn (): Response => $this->clientFor($iconUrl, $siteUrl)->get($iconUrl));
+        } catch (FaviconFetcherException) {
+            return null;
+        }
+
+        return $response->successful() ? $response : null;
+    }
+
+    /**
+     * favicon-fetcher's configured client (timeouts, user agent, TLS), plus the
+     * configured basic auth, but only for requests to the project's own site.
+     */
+    private function clientFor(string $requestUrl, string $siteUrl): PendingRequest
+    {
+        $client = $this->httpClient();
+        $basicAuth = FilamentVoight::config()->getFaviconBasicAuth();
+
+        if ($basicAuth !== null && parse_url($requestUrl, PHP_URL_HOST) === parse_url($siteUrl, PHP_URL_HOST)) {
+            $client->withBasicAuth($basicAuth['username'], $basicAuth['password']);
+        }
+
+        return $client;
+    }
+
+    private function guessExtension(string $iconUrl, Response $response): string
+    {
+        $extension = strtolower(pathinfo((string) parse_url($iconUrl, PHP_URL_PATH), PATHINFO_EXTENSION));
+
+        if (in_array($extension, ['ico', 'png', 'svg', 'jpg', 'jpeg', 'gif', 'webp'], true)) {
+            return $extension;
+        }
+
+        return match (strtok((string) $response->header('Content-Type'), ';')) {
+            'image/png', 'image/x-png' => 'png',
+            'image/svg+xml' => 'svg',
+            'image/jpeg', 'image/pjpeg' => 'jpg',
+            'image/gif' => 'gif',
+            'image/webp' => 'webp',
+            default => 'ico',
+        };
     }
 }

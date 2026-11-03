@@ -173,6 +173,20 @@ class FilamentVoightConfig
         return $this->packageConfig('favicons.fallback_drivers', []);
     }
 
+    /**
+     * @return array{username: string, password: string}|null
+     */
+    public function getFaviconBasicAuth(): ?array
+    {
+        $username = (string) $this->packageConfig('favicons.basic_auth.username', '');
+
+        if ($username === '') {
+            return null;
+        }
+
+        return ['username' => $username, 'password' => (string) $this->packageConfig('favicons.basic_auth.password', '')];
+    }
+
     // -- API --
 
     /**

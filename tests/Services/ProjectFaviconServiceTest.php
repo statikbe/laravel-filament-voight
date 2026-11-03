@@ -107,6 +107,54 @@ it('skips an advertised icon that answers with an error page', function () {
         ->and(Storage::disk('public')->get($project->refresh()->favicon_path))->toBe('small');
 });
 
+it('logs in with the configured basic auth credentials', function () {
+    config()->set('filament-voight.favicons.basic_auth', ['username' => 'statik', 'password' => 'secret']);
+    $authorization = 'Basic ' . base64_encode('statik:secret');
+
+    Http::fake(function (Request $request) use ($authorization) {
+        if ($request->header('Authorization') !== [$authorization]) {
+            return Http::response('<html><head></head></html>', 401, ['WWW-Authenticate' => 'Basic realm="site"']);
+        }
+
+        return match (rtrim($request->url(), '/')) {
+            'https://site.test' => Http::response('<html><head><link rel="icon" href="/icon.png"></head></html>'),
+            'https://site.test/icon.png' => Http::response('protected'),
+            default => Http::response('', 404),
+        };
+    });
+
+    $project = Project::factory()->create();
+    Environment::factory()->for($project)->create(['name' => 'production', 'url' => 'https://site.test']);
+
+    expect(app(ProjectFaviconService::class)->fetch($project))->toBeTrue()
+        ->and(Storage::disk('public')->get($project->refresh()->favicon_path))->toBe('protected');
+});
+
+it('never sends the basic auth credentials to another host', function () {
+    config()->set('filament-voight.favicons.basic_auth', ['username' => 'statik', 'password' => 'secret']);
+    fakeSite('<html><head><link rel="icon" href="https://cdn.test/icon.png"></head></html>');
+    Http::fake(['cdn.test/*' => Http::response('cdn')]);
+
+    $project = Project::factory()->create();
+    Environment::factory()->for($project)->create(['name' => 'production', 'url' => 'https://site.test']);
+
+    app(ProjectFaviconService::class)->fetch($project);
+
+    Http::assertSent(fn (Request $request): bool => $request->url() === 'https://site.test' && $request->hasHeader('Authorization'));
+    Http::assertNotSent(fn (Request $request): bool => str_starts_with($request->url(), 'https://cdn.test') && $request->hasHeader('Authorization'));
+});
+
+it('sends no credentials when basic auth is not configured', function () {
+    fakeSite('<html><head><link rel="icon" href="/icon.png"></head></html>', ['https://site.test/icon.png' => 'png']);
+
+    $project = Project::factory()->create();
+    Environment::factory()->for($project)->create(['name' => 'production', 'url' => 'https://site.test']);
+
+    app(ProjectFaviconService::class)->fetch($project);
+
+    Http::assertNotSent(fn (Request $request): bool => $request->hasHeader('Authorization'));
+});
+
 it('falls back to /favicon.ico when the page has no icon tags', function () {
     fakeSite('<html><head></head></html>', ['https://site.test/favicon.ico' => 'ico']);
 
