@@ -32,7 +32,7 @@
         "spatie/laravel-package-tools": "^1.15.0",
         "spatie/laravel-sluggable": "^3.8",
         "staudenmeir/eloquent-has-many-deep": "^1.21",
-        "symfony/css-selector": "^6.3 || ^7.0"
+        "symfony/css-selector": "^6.3 || ^7.0 || ^8.0"
     },
     "require-dev": {
         "larastan/larastan": "^3.0",
