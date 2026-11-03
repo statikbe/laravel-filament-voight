@@ -11,18 +11,18 @@ beforeEach(function () {
     Storage::fake('public');
 });
 
-function fakeSite(string $html, array $assets = []): void
+function fakeSite(string $html, array $assets = [], int $status = 200, string $missingBody = ''): void
 {
-    Http::fake(function (Request $request) use ($html, $assets) {
+    Http::fake(function (Request $request) use ($html, $assets, $status, $missingBody) {
         $url = rtrim($request->url(), '/');
 
         if ($url === 'https://site.test') {
-            return Http::response($html, 200, ['Content-Type' => 'text/html']);
+            return Http::response($html, $status, ['Content-Type' => 'text/html']);
         }
 
         return array_key_exists($url, $assets)
             ? Http::response($assets[$url], 200)
-            : Http::response('', 404);
+            : Http::response($missingBody, 404);
     });
 }
 
@@ -74,6 +74,37 @@ it('stores the largest icon advertised by the site', function () {
         ->and($project->favicon_fetched_at)->not->toBeNull();
     Storage::disk('public')->assertExists($project->favicon_path);
     expect(Storage::disk('public')->get($project->favicon_path))->toBe('large');
+});
+
+it('reads icon tags from an error page such as a dev lock', function (int $status) {
+    fakeSite(
+        '<html><head><link rel="icon" href="/favicon/icon-32.png" sizes="32x32"></head></html>',
+        ['https://site.test/favicon/icon-32.png' => 'locked'],
+        status: $status,
+    );
+
+    $project = Project::factory()->create();
+    Environment::factory()->for($project)->create(['name' => 'production', 'url' => 'https://site.test']);
+
+    expect(app(ProjectFaviconService::class)->fetch($project))->toBeTrue()
+        ->and(Storage::disk('public')->get($project->refresh()->favicon_path))->toBe('locked');
+})->with([401, 403, 404, 503]);
+
+it('skips an advertised icon that answers with an error page', function () {
+    fakeSite(
+        '<html><head>'
+        . '<link rel="apple-touch-icon" href="/missing.png" sizes="180x180">'
+        . '<link rel="icon" href="/icon-32.png" sizes="32x32">'
+        . '</head></html>',
+        ['https://site.test/icon-32.png' => 'small'],
+        missingBody: '<html>Not found</html>',
+    );
+
+    $project = Project::factory()->create();
+    Environment::factory()->for($project)->create(['name' => 'production', 'url' => 'https://site.test']);
+
+    expect(app(ProjectFaviconService::class)->fetch($project))->toBeTrue()
+        ->and(Storage::disk('public')->get($project->refresh()->favicon_path))->toBe('small');
 });
 
 it('falls back to /favicon.ico when the page has no icon tags', function () {

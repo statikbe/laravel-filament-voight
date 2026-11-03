@@ -2,19 +2,25 @@
 
 namespace Statikbe\FilamentVoight\Services;
 
+use AshAllenDesign\FaviconFetcher\Concerns\MakesHttpRequests;
 use AshAllenDesign\FaviconFetcher\Exceptions\FaviconFetcherException;
 use AshAllenDesign\FaviconFetcher\Facades\Favicon;
 use AshAllenDesign\FaviconFetcher\Favicon as FetchedFavicon;
 use Generator;
+use Illuminate\Http\Client\Response;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Statikbe\FilamentVoight\Enums\EnvironmentStage;
 use Statikbe\FilamentVoight\Facades\FilamentVoight;
 use Statikbe\FilamentVoight\Models\Environment;
 use Statikbe\FilamentVoight\Models\Project;
+use Symfony\Component\DomCrawler\Crawler;
 
 class ProjectFaviconService
 {
+    use MakesHttpRequests;
+
     public function isDue(Project $project): bool
     {
         if (! FilamentVoight::config()->isFaviconFetchingEnabled()) {
@@ -123,8 +129,10 @@ class ProjectFaviconService
      */
     private function candidates(string $url): Generator
     {
-        // fetchAll also picks up apple-touch-icon, which is usually the sharpest option.
-        yield from Favicon::fetchAll($url)
+        $advertised = $this->advertisedFavicons($url);
+
+        // fetchAll guesses /favicon.ico when the page advertises nothing usable.
+        yield from ($advertised->isNotEmpty() ? $advertised : Favicon::fetchAll($url))
             ->sortByDesc(fn (FetchedFavicon $favicon): int => $favicon->getIconSize() ?? 0)
             ->values();
 
@@ -135,5 +143,42 @@ class ProjectFaviconService
                 yield $favicon;
             }
         }
+    }
+
+    /**
+     * Icon tags from the page's head, whatever its status code: dev locks, basic auth
+     * and error pages usually still carry the site's icons, but favicon-fetcher ignores
+     * any non-2xx page. Only icons that themselves load are kept, so an error page is
+     * never stored as the icon.
+     *
+     * @return Collection<int, FetchedFavicon>
+     *
+     * @throws FaviconFetcherException
+     */
+    private function advertisedFavicons(string $url): Collection
+    {
+        $response = $this->withRequestExceptionHandling(fn (): Response => $this->httpClient()->get($url));
+        $pageUrl = (string) ($response->effectiveUri() ?? $url);
+
+        return collect((new Crawler($response->body(), $pageUrl))
+            ->filter('head link[rel="icon"][href], head link[rel="shortcut icon"][href], head link[rel="apple-touch-icon"][href]')
+            ->each(function (Crawler $linkTag) use ($url): FetchedFavicon {
+                $favicon = new FetchedFavicon($url, $linkTag->link()->getUri());
+
+                if ($iconSize = $linkTag->attr('sizes')) {
+                    $favicon->setIconSize((int) $iconSize);
+                }
+
+                return $favicon->setIconType(match ($linkTag->attr('rel')) {
+                    'icon' => FetchedFavicon::TYPE_ICON,
+                    'shortcut icon' => FetchedFavicon::TYPE_SHORTCUT_ICON,
+                    'apple-touch-icon' => FetchedFavicon::TYPE_APPLE_TOUCH_ICON,
+                    default => FetchedFavicon::TYPE_ICON_UNKNOWN,
+                });
+            }))
+            ->filter(fn (FetchedFavicon $favicon): bool => $this->withRequestExceptionHandling(
+                fn (): bool => $this->httpClient()->get($favicon->getFaviconUrl())->successful()
+            ))
+            ->values();
     }
 }
