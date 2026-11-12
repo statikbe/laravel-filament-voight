@@ -215,6 +215,8 @@ Cursor and VS Code return from sign-in through their own URI scheme: allow `curs
 
 The setup page then shows one-click buttons; without OAuth it falls back to token instructions.
 
+A valid token only proves who the user is. To decide who may use the MCP server at all, append your own middleware to `filament-voight.mcp.middleware`. With `spatie/laravel-permission`, add `guardName()` returning `'web'` to the user model: an OAuth request switches the default guard to `api`, where the user's roles and permissions do not exist.
+
 Remote users only see the projects of their teams. Grant some users everything, or replace the team rule, in a service provider:
 
 ```php
