@@ -76,19 +76,18 @@ return [
     | MCP server
     |--------------------------------------------------------------------------
     |
-    | Lets AI clients (Claude Code, Cursor, ...) query Voight. When enabled, a
-    | local server is available through `php artisan mcp:start voight` and a
-    | remote one at `path`. Remote users authenticate with a personal access
-    | token from the "Set up MCP" page (user menu; the user model needs
-    | HasApiTokens) or, with Passport and Mcp::oauthRoutes(), with OAuth: then
-    | use ['auth:sanctum,api', EnsureMcpUserToken::class] as middleware.
+    | Lets AI clients (Claude, ChatGPT, Cursor, ...) query Voight. When enabled,
+    | a local server is available through `php artisan mcp:start voight` and a
+    | remote one at `path`. Remote users sign in with OAuth from the "Set up
+    | MCP" page (user menu): the host installs Passport, defines the `api`
+    | guard and calls Mcp::oauthRoutes().
     | `write_tools` exposes the tools that create projects and project tokens.
     |
     */
     'mcp' => [
         'enabled' => (bool) env('VOIGHT_MCP_ENABLED', false),
         'path' => 'mcp/voight',
-        'middleware' => ['auth:sanctum', EnsureMcpUserToken::class],
+        'middleware' => ['auth:api', EnsureMcpUserToken::class],
         'write_tools' => (bool) env('VOIGHT_MCP_WRITE_TOOLS', true),
     ],
 

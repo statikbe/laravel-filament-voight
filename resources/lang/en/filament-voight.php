@@ -506,11 +506,9 @@ return [
             'clients' => [
                 'heading' => 'Connect a client',
                 'description' => 'Pick your client and follow its button. Voight\'s server URL is shown where you need to paste it.',
-                'oauth_unavailable_heading' => 'Claude and ChatGPT are not available',
-                'oauth_unavailable_body' => 'They can only connect with OAuth, which your administrator has not enabled for Voight. The clients below work with a personal token.',
+                'oauth_unavailable_heading' => 'Connecting AI clients is not available yet',
+                'oauth_unavailable_body' => 'Clients sign in with OAuth, which your administrator has not enabled for Voight.',
                 'oauth_sign_in_hint' => 'Your client opens Voight in the browser to sign in the first time you use it.',
-                'token_hint' => 'Replace <your-token> with a personal token from the section below.',
-                'copy_config' => 'Copy config',
                 'copy_command' => 'Copy command',
                 'claude' => [
                     'name' => 'Claude',
@@ -526,12 +524,10 @@ return [
                 ],
                 'cursor' => [
                     'description' => 'Installs Voight in Cursor with one click.',
-                    'token_description' => 'Add this to ~/.cursor/mcp.json.',
                     'button' => 'Add to Cursor',
                 ],
                 'vscode' => [
                     'description' => 'Installs Voight for Copilot in VS Code with one click.',
-                    'token_description' => 'Add this to ~/.copilot/mcp-config.json.',
                     'button' => 'Add to VS Code',
                 ],
                 'claude_code' => [
@@ -541,29 +537,7 @@ return [
                 'codex' => [
                     'description' => 'Run this in your terminal.',
                     'oauth_hint' => 'Codex opens the browser to sign in. Run codex mcp login voight to sign in again.',
-                    'token_hint' => 'Set :variable to a personal token from the section below before starting Codex.',
                 ],
-            ],
-            'tokens' => [
-                'heading' => 'Personal tokens',
-                'description' => 'For clients or scripts that cannot sign in with OAuth. Send the token as Authorization: Bearer <token>.',
-            ],
-            'missing_tokens_heading' => 'Personal tokens are not available',
-            'missing_tokens_body' => 'Add the Laravel\\Sanctum\\HasApiTokens trait to :model to create MCP tokens.',
-            'no_tokens' => 'No MCP tokens yet',
-            'token_created_body' => 'Copy this token now: it will not be shown again.',
-            'claude_code_snippet' => 'To add Voight to Claude Code, run:',
-            'fields' => [
-                'name' => 'Name',
-                'last_used' => 'Last used',
-                'never_used' => 'Never',
-            ],
-            'actions' => [
-                'create' => 'Create token',
-                'created' => 'MCP token created',
-                'copy' => 'Copy token',
-                'revoke' => 'Revoke',
-                'revoked' => 'Token revoked',
             ],
         ],
     ],

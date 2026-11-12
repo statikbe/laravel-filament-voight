@@ -7,8 +7,8 @@ use Statikbe\FilamentVoight\Facades\FilamentVoight;
 
 /**
  * Builds the per-client setup instructions for the remote MCP server, so the
- * commands and install links live in one place. Install links and commands
- * never contain a real token: without OAuth they carry TOKEN_PLACEHOLDER.
+ * commands and install links live in one place. Every client signs in through
+ * OAuth, so no link or command ever holds a credential.
  *
  * Formats follow each client's docs:
  * - claude.ai: https://claude.com/docs/connectors/custom/remote-mcp
@@ -21,10 +21,6 @@ use Statikbe\FilamentVoight\Facades\FilamentVoight;
 final readonly class McpClientSetup
 {
     public const string SERVER_NAME = 'voight';
-
-    public const string TOKEN_PLACEHOLDER = '<your-token>';
-
-    public const string CODEX_TOKEN_VARIABLE = 'VOIGHT_MCP_TOKEN';
 
     public const string CLAUDE_CONNECTORS_URL = 'https://claude.ai/customize/connectors';
 
@@ -43,44 +39,32 @@ final readonly class McpClientSetup
     }
 
     /**
-     * The cards in display order. Without OAuth, claude.ai and ChatGPT are left
-     * out: they cannot connect with a personal token.
+     * The cards in display order.
      *
      * @return list<McpClient>
      */
     public function clients(): array
     {
-        return array_values(array_filter([
-            $this->oauthAvailable ? $this->claude() : null,
-            $this->oauthAvailable ? $this->chatGpt() : null,
+        return [
+            $this->claude(),
+            $this->chatGpt(),
             $this->cursor(),
             $this->vsCode(),
             $this->claudeCode(),
             $this->codex(),
-        ]));
+        ];
     }
 
-    public function claudeCodeCommand(?string $token = null): string
+    public function claudeCodeCommand(): string
     {
-        $command = 'claude mcp add --transport http ' . self::SERVER_NAME . ' ' . $this->url;
-
-        if ($token === null && $this->oauthAvailable) {
-            return $command;
-        }
-
-        return $command . ' --header "Authorization: Bearer ' . ($token ?? self::TOKEN_PLACEHOLDER) . '"';
+        return 'claude mcp add --transport http ' . self::SERVER_NAME . ' ' . $this->url;
     }
 
     public function codexCommand(): string
     {
-        $command = 'codex mcp add ' . self::SERVER_NAME . ' --url ' . $this->url;
-
-        return $this->oauthAvailable ? $command : $command . ' --bearer-token-env-var ' . self::CODEX_TOKEN_VARIABLE;
+        return 'codex mcp add ' . self::SERVER_NAME . ' --url ' . $this->url;
     }
 
-    /**
-     * Only used with OAuth: the config has no headers, so it never holds a token.
-     */
     public function cursorInstallUrl(): string
     {
         $config = base64_encode((string) json_encode(['url' => $this->url], JSON_UNESCAPED_SLASHES));
@@ -88,30 +72,11 @@ final readonly class McpClientSetup
         return 'cursor://anysphere.cursor-deeplink/mcp/install?name=' . self::SERVER_NAME . '&config=' . rawurlencode($config);
     }
 
-    /**
-     * Only used with OAuth: the config has no headers, so it never holds a token.
-     */
     public function vsCodeInstallUrl(): string
     {
         $config = ['name' => self::SERVER_NAME, 'type' => 'http', 'url' => $this->url];
 
         return 'vscode:mcp/install?' . rawurlencode((string) json_encode($config, JSON_UNESCAPED_SLASHES));
-    }
-
-    /**
-     * The server entry for Cursor's ~/.cursor/mcp.json and VS Code's portable
-     * ~/.copilot/mcp-config.json (both use mcpServers), with the token placeholder.
-     */
-    public function tokenConfigSnippet(): string
-    {
-        return (string) json_encode([
-            'mcpServers' => [
-                self::SERVER_NAME => [
-                    'url' => $this->url,
-                    'headers' => ['Authorization' => 'Bearer ' . self::TOKEN_PLACEHOLDER],
-                ],
-            ],
-        ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
     }
 
     private function claude(): McpClient
@@ -148,57 +113,27 @@ final readonly class McpClientSetup
 
     private function cursor(): McpClient
     {
-        if ($this->oauthAvailable) {
-            return new McpClient(
-                key: 'cursor',
-                name: 'Cursor',
-                description: voightTrans('pages.mcp_access.clients.cursor.description'),
-                icon: Heroicon::OutlinedCodeBracketSquare,
-                buttonLabel: voightTrans('pages.mcp_access.clients.cursor.button'),
-                buttonUrl: $this->cursorInstallUrl(),
-                hint: voightTrans('pages.mcp_access.clients.oauth_sign_in_hint'),
-            );
-        }
-
-        $snippet = $this->tokenConfigSnippet();
-
         return new McpClient(
             key: 'cursor',
             name: 'Cursor',
-            description: voightTrans('pages.mcp_access.clients.cursor.token_description'),
+            description: voightTrans('pages.mcp_access.clients.cursor.description'),
             icon: Heroicon::OutlinedCodeBracketSquare,
-            buttonLabel: voightTrans('pages.mcp_access.clients.copy_config'),
-            copies: $snippet,
-            snippet: $snippet,
-            hint: voightTrans('pages.mcp_access.clients.token_hint'),
+            buttonLabel: voightTrans('pages.mcp_access.clients.cursor.button'),
+            buttonUrl: $this->cursorInstallUrl(),
+            hint: voightTrans('pages.mcp_access.clients.oauth_sign_in_hint'),
         );
     }
 
     private function vsCode(): McpClient
     {
-        if ($this->oauthAvailable) {
-            return new McpClient(
-                key: 'vscode',
-                name: 'VS Code',
-                description: voightTrans('pages.mcp_access.clients.vscode.description'),
-                icon: Heroicon::OutlinedCodeBracket,
-                buttonLabel: voightTrans('pages.mcp_access.clients.vscode.button'),
-                buttonUrl: $this->vsCodeInstallUrl(),
-                hint: voightTrans('pages.mcp_access.clients.oauth_sign_in_hint'),
-            );
-        }
-
-        $snippet = $this->tokenConfigSnippet();
-
         return new McpClient(
             key: 'vscode',
             name: 'VS Code',
-            description: voightTrans('pages.mcp_access.clients.vscode.token_description'),
+            description: voightTrans('pages.mcp_access.clients.vscode.description'),
             icon: Heroicon::OutlinedCodeBracket,
-            buttonLabel: voightTrans('pages.mcp_access.clients.copy_config'),
-            copies: $snippet,
-            snippet: $snippet,
-            hint: voightTrans('pages.mcp_access.clients.token_hint'),
+            buttonLabel: voightTrans('pages.mcp_access.clients.vscode.button'),
+            buttonUrl: $this->vsCodeInstallUrl(),
+            hint: voightTrans('pages.mcp_access.clients.oauth_sign_in_hint'),
         );
     }
 
@@ -214,9 +149,7 @@ final readonly class McpClientSetup
             buttonLabel: voightTrans('pages.mcp_access.clients.copy_command'),
             copies: $command,
             snippet: $command,
-            hint: $this->oauthAvailable
-                ? voightTrans('pages.mcp_access.clients.claude_code.oauth_hint')
-                : voightTrans('pages.mcp_access.clients.token_hint'),
+            hint: voightTrans('pages.mcp_access.clients.claude_code.oauth_hint'),
         );
     }
 
@@ -232,9 +165,7 @@ final readonly class McpClientSetup
             buttonLabel: voightTrans('pages.mcp_access.clients.copy_command'),
             copies: $command,
             snippet: $command,
-            hint: $this->oauthAvailable
-                ? voightTrans('pages.mcp_access.clients.codex.oauth_hint')
-                : voightTrans('pages.mcp_access.clients.codex.token_hint', ['variable' => self::CODEX_TOKEN_VARIABLE]),
+            hint: voightTrans('pages.mcp_access.clients.codex.oauth_hint'),
         );
     }
 }
