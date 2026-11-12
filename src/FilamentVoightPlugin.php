@@ -2,9 +2,11 @@
 
 namespace Statikbe\FilamentVoight;
 
+use Filament\Actions\Action;
 use Filament\Contracts\Plugin;
 use Filament\Navigation\NavigationGroup;
 use Filament\Panel;
+use Filament\Support\Icons\Heroicon;
 use Statikbe\FilamentVoight\Pages\McpAccess;
 use Statikbe\FilamentVoight\Resources\AuditFindingResource;
 use Statikbe\FilamentVoight\Resources\AuditRunResource;
@@ -49,6 +51,14 @@ class FilamentVoightPlugin implements Plugin
         $panel->pages([
             ListEnvironments::class,
             McpAccess::class,
+        ]);
+
+        $panel->userMenuItems([
+            'voight-mcp-access' => Action::make('voight-mcp-access')
+                ->label(fn (): string => voightTrans('pages.mcp_access.title'))
+                ->icon(Heroicon::OutlinedCommandLine)
+                ->url(fn (): string => McpAccess::getUrl(panel: $panel->getId()))
+                ->visible(fn (): bool => McpAccess::canAccess()),
         ]);
 
         $panel->widgets([

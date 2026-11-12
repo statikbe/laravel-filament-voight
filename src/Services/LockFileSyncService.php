@@ -8,6 +8,7 @@ use Statikbe\FilamentVoight\Enums\DependencySyncStatus;
 use Statikbe\FilamentVoight\Events\EnvironmentCreatedViaApi;
 use Statikbe\FilamentVoight\Events\ProjectCreatedViaApi;
 use Statikbe\FilamentVoight\Facades\FilamentVoight;
+use Statikbe\FilamentVoight\Jobs\FetchProjectFaviconJob;
 use Statikbe\FilamentVoight\Jobs\ProcessLockFilesJob;
 use Statikbe\FilamentVoight\Models\DependencySync;
 use Statikbe\FilamentVoight\Models\Environment;
@@ -18,10 +19,14 @@ class LockFileSyncService
     /**
      * @param  array<string, UploadedFile>  $lockfiles
      */
-    public function sync(string $projectCode, string $environmentName, array $lockfiles, ?Project $project = null): DependencySync
+    public function sync(string $projectCode, string $environmentName, array $lockfiles, ?Project $project = null, ?string $url = null): DependencySync
     {
         $project = $project ?? $this->resolveProject($projectCode);
         $environment = $this->resolveEnvironment($project, $environmentName);
+
+        if ($url !== null) {
+            $this->updateEnvironmentUrl($project, $environment, $url);
+        }
 
         $result = $this->storeLockFilesAndComputeHash($project, $environment, $lockfiles);
 
@@ -64,6 +69,19 @@ class LockFileSyncService
         }
 
         return $environment;
+    }
+
+    private function updateEnvironmentUrl(Project $project, Environment $environment, string $url): void
+    {
+        $environment->update(['url' => rtrim($url, '/')]);
+
+        if (! FilamentVoight::config()->isFaviconFetchingEnabled()) {
+            return;
+        }
+
+        if ($environment->wasChanged('url') || app(ProjectFaviconService::class)->isDue($project)) {
+            FetchProjectFaviconJob::dispatch($project);
+        }
     }
 
     /**

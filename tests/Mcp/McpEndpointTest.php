@@ -1,5 +1,7 @@
 <?php
 
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Testing\TestResponse;
 use Laravel\Mcp\Facades\Mcp;
 use Laravel\Mcp\Server\Registrar;
@@ -11,6 +13,7 @@ use Statikbe\FilamentVoight\Mcp\Prompts\TriageProjectPrompt;
 use Statikbe\FilamentVoight\Mcp\VoightLocalServer;
 use Statikbe\FilamentVoight\Models\Project;
 use Statikbe\FilamentVoight\Models\Team;
+use Statikbe\FilamentVoight\Tests\Support\User;
 
 /**
  * A JSON-RPC call to the remote server.
@@ -23,34 +26,77 @@ function callMcpEndpoint(?string $token, string $method = 'tools/list'): TestRes
     ]));
 }
 
-it('accepts a user token with the voight:mcp ability', function () {
-    $token = mcpUser(Team::factory()->create())->createToken('claude', [EnsureMcpUserToken::ABILITY])->plainTextToken;
+/**
+ * Stands in for Passport's "api" guard, which this package does not install: a
+ * bearer token of the form "oauth:<user id>:<scope>" resolves to that user holding a
+ * Passport access token with that scope, as Passport's guard hands it over.
+ */
+beforeEach(function () {
+    Auth::viaRequest('fake-passport', function (Request $request) {
+        if (preg_match('/^oauth:(\d+):(.+)$/', (string) $request->bearerToken(), $matches) !== 1) {
+            return null;
+        }
 
-    callMcpEndpoint($token)->assertOk()->assertJsonPath('result.tools.0.name', 'list_projects');
+        return User::query()->find($matches[1])?->withAccessToken(fakePassportAccessToken([$matches[2]]));
+    });
+
+    config(['auth.guards.api' => ['driver' => 'fake-passport']]);
 });
 
-it('rejects a user token without the voight:mcp ability', function () {
-    $token = mcpUser()->createToken('other', ['something-else'])->plainTextToken;
+function oauthToken(User $user, string $scope = EnsureMcpUserToken::OAUTH_SCOPE): string
+{
+    return "oauth:{$user->getKey()}:{$scope}";
+}
 
-    callMcpEndpoint($token)->assertForbidden();
+it('accepts an OAuth token with the mcp:use scope', function () {
+    callMcpEndpoint(oauthToken(mcpUser(Team::factory()->create())))
+        ->assertOk()
+        ->assertJsonPath('result.tools.0.name', 'list_projects');
 });
 
-it('rejects a user token with every ability instead of voight:mcp', function () {
-    $token = mcpUser(Team::factory()->create())->createToken('everything')->plainTextToken;
+it('rejects an OAuth token without the mcp:use scope', function () {
+    callMcpEndpoint(oauthToken(mcpUser(), 'other'))->assertForbidden();
+    callMcpEndpoint(oauthToken(mcpUser(), '*'))->assertForbidden();
+});
 
-    callMcpEndpoint($token)->assertForbidden();
+it('rejects a personal access token, also one with the former voight:mcp ability', function () {
+    $user = mcpUser(Team::factory()->create());
+
+    callMcpEndpoint($user->createToken('claude', ['voight:mcp'])->plainTextToken)->assertUnauthorized();
+    callMcpEndpoint($user->createToken('everything')->plainTextToken)->assertUnauthorized();
 });
 
 it('rejects a logged-in session without a token', function () {
     $this->actingAs(mcpUser(Team::factory()->create()), 'web');
 
-    callMcpEndpoint(null)->assertForbidden();
+    callMcpEndpoint(null)->assertUnauthorized();
 });
 
 it('rejects a project sync token', function () {
     $token = Project::factory()->create()->createToken(Project::DEFAULT_API_TOKEN_NAME)->plainTextToken;
 
-    callMcpEndpoint($token)->assertForbidden();
+    callMcpEndpoint($token)->assertUnauthorized();
+});
+
+/**
+ * Runs the middleware alone for whatever the auth middleware resolved as user.
+ */
+function handleWithToken(object $user, object $token): int
+{
+    $request = Request::create('/mcp/voight', 'POST');
+    $request->setUserResolver(fn () => $user->withAccessToken($token));
+
+    return (new EnsureMcpUserToken)->handle($request, fn () => response('passed'))->getStatusCode();
+}
+
+it('turns away a Sanctum token that another guard let through', function () {
+    $user = mcpUser();
+
+    expect(handleWithToken($user, $user->createToken('claude', ['voight:mcp'])->accessToken))->toBe(403);
+});
+
+it('rejects a project resolved through Passport, even with the mcp:use scope', function () {
+    expect(handleWithToken(Project::factory()->create(), fakePassportAccessToken([EnsureMcpUserToken::OAUTH_SCOPE])))->toBe(403);
 });
 
 it('rejects requests without a token', function () {
@@ -60,7 +106,7 @@ it('rejects requests without a token', function () {
 it('registers the local and the web server when enabled', function () {
     expect(Mcp::getLocalServer('voight'))->not->toBeNull()
         ->and(Mcp::getWebServer('mcp/voight'))->not->toBeNull()
-        ->and(Mcp::getWebServer('mcp/voight')->gatherMiddleware())->toContain('auth:sanctum', EnsureMcpUserToken::class);
+        ->and(Mcp::getWebServer('mcp/voight')->gatherMiddleware())->toContain('auth:api', EnsureMcpUserToken::class);
 });
 
 it('registers nothing when disabled', function () {

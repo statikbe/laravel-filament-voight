@@ -15,7 +15,8 @@ class SyncLockFileCommand extends Command
         {--environment= : The environment name}
         {--path= : Path to the directory containing lockfiles}
         {--url= : The API base URL (defaults to APP_URL)}
-        {--token= : The API bearer token for authentication}';
+        {--token= : The API bearer token for authentication}
+        {--site-url= : Public URL of the environment, used to fetch the project favicon}';
 
     public $description = 'Send lockfiles to the Voight sync API for testing';
 
@@ -66,10 +67,11 @@ class SyncLockFileCommand extends Command
             );
         }
 
-        $response = $request->post($url, [
+        $response = $request->post($url, array_filter([
             'project_code' => $projectCode,
             'environment' => $environment,
-        ]);
+            'url' => $this->option('site-url'),
+        ]));
 
         if ($response->successful()) {
             $data = $response->json();

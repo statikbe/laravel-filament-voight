@@ -2,6 +2,7 @@
 
 namespace Statikbe\FilamentVoight\Tests;
 
+use AshAllenDesign\FaviconFetcher\FaviconFetcherProvider;
 use BladeUI\Heroicons\BladeHeroiconsServiceProvider;
 use BladeUI\Icons\BladeIconsServiceProvider;
 use Filament\Actions\ActionsServiceProvider;
@@ -41,6 +42,7 @@ class TestCase extends Orchestra
     protected function getPackageProviders($app)
     {
         $providers = [
+            FaviconFetcherProvider::class,
             ActionsServiceProvider::class,
             BladeHeroiconsServiceProvider::class,
             BladeIconsServiceProvider::class,

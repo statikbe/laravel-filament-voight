@@ -12,6 +12,7 @@ use Statikbe\FilamentVoight\Models\EnvironmentPackage;
 use Statikbe\FilamentVoight\Models\Package;
 use Statikbe\FilamentVoight\Models\Team;
 use Statikbe\FilamentVoight\Models\Vulnerability;
+use Statikbe\FilamentVoight\Tests\Support\Passport\FakePassportAccessToken;
 use Statikbe\FilamentVoight\Tests\Support\User;
 use Statikbe\FilamentVoight\Tests\TestCase;
 
@@ -163,4 +164,21 @@ function structuredContent(TestResponse $response): array
     });
 
     return $content;
+}
+
+/**
+ * A Passport 13 access token as the Passport guard hands it to the user, without
+ * installing Passport.
+ *
+ * @param  array<string>  $scopes
+ */
+function fakePassportAccessToken(array $scopes): object
+{
+    if (! class_exists('Laravel\Passport\AccessToken')) {
+        class_alias(FakePassportAccessToken::class, 'Laravel\Passport\AccessToken');
+    }
+
+    $class = 'Laravel\Passport\AccessToken';
+
+    return new $class(['oauth_access_token_id' => 'token-id', 'oauth_scopes' => $scopes]);
 }

@@ -206,6 +206,8 @@ return [
             'plural' => 'Environments',
             'fields' => [
                 'name' => 'Name',
+                'url' => 'URL',
+                'url_help' => 'Public site URL, used to fetch the project favicon. Sent automatically by voight.sh.',
                 'scan_nightly' => 'Nightly scan',
                 'scanned_at' => 'Last Scanned',
                 'health' => 'Health',
@@ -499,24 +501,43 @@ return [
     // Pages
     'pages' => [
         'mcp_access' => [
-            'title' => 'MCP access',
-            'description' => 'Personal tokens that let AI clients such as Claude Code or Cursor query Voight on your behalf. They see the same projects as you.',
-            'missing_tokens_heading' => 'Personal tokens are not available',
-            'missing_tokens_body' => 'Add the Laravel\\Sanctum\\HasApiTokens trait to :model to create MCP tokens.',
-            'no_tokens' => 'No MCP tokens yet',
-            'token_created_body' => 'Copy this token now: it will not be shown again.',
-            'claude_code_snippet' => 'To add Voight to Claude Code, run:',
-            'fields' => [
-                'name' => 'Name',
-                'last_used' => 'Last used',
-                'never_used' => 'Never',
-            ],
-            'actions' => [
-                'create' => 'Create token',
-                'created' => 'MCP token created',
-                'copy' => 'Copy token',
-                'revoke' => 'Revoke',
-                'revoked' => 'Token revoked',
+            'title' => 'Set up MCP',
+            'description' => 'Connect an AI client such as Claude, ChatGPT or Cursor to Voight. It sees the same projects as you.',
+            'clients' => [
+                'heading' => 'Connect a client',
+                'description' => 'Pick your client and follow its button. Voight\'s server URL is shown where you need to paste it.',
+                'oauth_unavailable_heading' => 'Connecting AI clients is not available yet',
+                'oauth_unavailable_body' => 'Clients sign in with OAuth, which your administrator has not enabled for Voight.',
+                'oauth_sign_in_hint' => 'Your client opens Voight in the browser to sign in the first time you use it.',
+                'copy_command' => 'Copy command',
+                'claude' => [
+                    'name' => 'Claude',
+                    'description' => 'claude.ai and the Claude desktop app, as a custom connector.',
+                    'button' => 'Add to Claude',
+                    'hint' => 'The button copies the URL. In Connectors, choose Add > Add custom connector, paste the URL and sign in. On Team and Enterprise plans an owner adds it under Organization settings > Connectors.',
+                ],
+                'chatgpt' => [
+                    'name' => 'ChatGPT',
+                    'description' => 'ChatGPT on the web, as a custom MCP server plugin.',
+                    'button' => 'Add to ChatGPT',
+                    'hint' => 'The button copies the URL. Choose + > Add custom MCP server, paste it as Server URL, select OAuth and create the plugin.',
+                ],
+                'cursor' => [
+                    'description' => 'Installs Voight in Cursor with one click.',
+                    'button' => 'Add to Cursor',
+                ],
+                'vscode' => [
+                    'description' => 'Installs Voight for Copilot in VS Code with one click.',
+                    'button' => 'Add to VS Code',
+                ],
+                'claude_code' => [
+                    'description' => 'Run this in your terminal.',
+                    'oauth_hint' => 'Then run /mcp in Claude Code and sign in to voight.',
+                ],
+                'codex' => [
+                    'description' => 'Run this in your terminal.',
+                    'oauth_hint' => 'Codex opens the browser to sign in. Run codex mcp login voight to sign in again.',
+                ],
             ],
         ],
     ],

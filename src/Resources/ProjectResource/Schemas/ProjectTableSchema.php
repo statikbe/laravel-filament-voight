@@ -23,6 +23,7 @@ use Statikbe\FilamentVoight\Resources\Components\EnvironmentStageConstraint;
 use Statikbe\FilamentVoight\Resources\Components\ProjectConstraint;
 use Statikbe\FilamentVoight\Resources\Components\SeverityConstraint;
 use Statikbe\FilamentVoight\Resources\ProjectResource;
+use Statikbe\FilamentVoight\Support\ProjectFaviconColumn;
 
 class ProjectTableSchema
 {
@@ -33,6 +34,7 @@ class ProjectTableSchema
     {
         return $table
             ->columns([
+                ProjectFaviconColumn::make(fn (Project $record): Project => $record),
                 TextColumn::make('project_code')
                     ->label(voightTrans('models.project.fields.project_code'))
                     ->searchable()

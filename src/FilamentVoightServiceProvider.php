@@ -147,6 +147,7 @@ class FilamentVoightServiceProvider extends PackageServiceProvider
             Commands\ReapStrandedScansCommand::class,
             Commands\SendAlertDigestsCommand::class,
             Commands\ReprocessLockfilesCommand::class,
+            Commands\FetchFaviconsCommand::class,
         ];
     }
 
@@ -209,6 +210,8 @@ class FilamentVoightServiceProvider extends PackageServiceProvider
             'create_voight_osv_scans_table',
             'create_voight_environment_system_details_table',
             'add_avatar_path_to_voight_teams_table',
+            'add_url_to_voight_environments_table',
+            'add_favicon_to_voight_projects_table',
         ];
     }
 }

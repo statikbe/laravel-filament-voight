@@ -53,43 +53,69 @@ Mcp::web($config->getMcpPath(), VoightServer::class)->middleware($config->getMcp
 |---|---|---|
 | `enabled` | `false` | Registers both servers. |
 | `path` | `mcp/voight` | Web route. |
-| `middleware` | `['auth:sanctum', EnsureMcpUserToken::class]` | Hosts can swap in OAuth (`Mcp::oauthRoutes()` + Passport) without package changes. |
+| `middleware` | `['auth:api', EnsureMcpUserToken::class]` | `api` is the host's Passport guard. |
 | `write_tools` | `true` | Hides the write tools on both servers when `false`. |
 
 Exposed through `FilamentVoightConfig` getters (`getMcpPath()`,
 `getMcpMiddleware()`, `mcpWriteToolsEnabled()`), like the existing settings.
+`mcpOAuthAvailable()` has no config key: it is true when the route
+`mcp.oauth.protected-resource` (or its `.nested` variant) exists, i.e. when the
+host called `Mcp::oauthRoutes()`.
 
 ---
 
 ## Authentication (remote)
 
-Sanctum personal access tokens owned by **users**, with ability `voight:mcp`.
+OAuth only. A remote user signs in through the host's own login and approves the
+client on a consent screen; the client then holds a Passport access token for
+that user. There are no personal access tokens: every connection belongs to a
+user who signed in, and ends when the host revokes or expires it.
 
-- The host's user model (`FilamentVoightConfig::getUserModel()`) must use
-  `Laravel\Sanctum\HasApiTokens`. This is a documented installation step.
-- `EnsureMcpUserToken` middleware runs after `auth:sanctum` and rejects the
-  request unless `$request->user()` is an instance of the configured user model
-  **and** `tokenCan('voight:mcp')`. Sanctum resolves a project token's
-  tokenable (a `Project`) as the "user", so without this check a CI sync token
-  would open the MCP server. The reverse is already safe:
-  `AuthenticateProjectToken` only accepts `Project` tokenables.
-- A session-authenticated Filament user (Sanctum's stateful guard) passes,
-  because `TransientToken::can()` returns true. That is acceptable.
+`EnsureMcpUserToken` runs after the auth middleware and rejects with 403
+whatever is not a **Passport access token with the `mcp:use` scope** (the scope
+`Mcp::oauthRoutes()` registers), listed explicitly: `*` is rejected. Passport's
+guard calls `$user->withAccessToken()`, so the middleware reads the token from
+`currentAccessToken()`: `Laravel\Passport\AccessToken` (Passport 13+) or
+`Laravel\Passport\Token` (older). Passport is not a dependency of the package;
+the classes are referenced by name.
 
-### Token page
+`$request->user()` must also be an instance of the configured user model, so a
+project (the tokenable of a CI sync token) never gets in, whatever guard the
+host configures.
 
-A Filament page **MCP access** in the Voight panel (navigation group: settings):
+### OAuth (host)
 
-- Lists the current user's tokens with ability `voight:mcp` (name, last used,
-  created).
-- **Create token** action: asks for a name, creates the token, shows the plain
-  text once in a persistent notification with a copy action (same pattern as
-  `ProjectInfoListSchema`'s generate token action), plus a ready-to-paste
-  `claude mcp add --transport http voight <url> --header "Authorization: Bearer <token>"`
-  line. The snippet is rendered by a Blade view.
-- **Revoke** action per token.
-- If the user model lacks `HasApiTokens`, the page shows an explanation instead
-  of the actions.
+The remote server needs these host steps; the local server does not:
+
+1. Install and configure Laravel Passport, with an `api` guard using the
+   `passport` driver.
+2. Call `Mcp::oauthRoutes()` in `routes/ai.php` (or a service provider).
+
+Native clients (Cursor, VS Code) register redirect URIs with custom schemes or
+loopback addresses; allow them in `config/mcp.php` (`redirect_domains`,
+`custom_schemes`).
+
+### Setup page
+
+A Filament page **Set up MCP** (`Pages\McpAccess`, slug `mcp-access`), reached
+from a user-menu item registered by `FilamentVoightPlugin` (visible when
+`McpAccess::canAccess()`); it is not in the navigation.
+
+- **Connect a client:** one card per client, built by `Support\McpClientSetup`
+  (server name `voight`, URL `url(getMcpPath())`):
+
+  | Client | Setup |
+  |---|---|
+  | Claude (claude.ai, desktop) | Opens Customize > Connectors, copies the URL |
+  | ChatGPT | Opens chatgpt.com/plugins, copies the URL |
+  | Cursor | `cursor://anysphere.cursor-deeplink/mcp/install` link |
+  | VS Code | `vscode:mcp/install` link |
+  | Claude Code | `claude mcp add --transport http …`, then `/mcp` |
+  | Codex CLI | `codex mcp add voight --url …` |
+
+  No link or command holds a credential: the client signs in when first used.
+- When the host has not registered the OAuth routes (`mcpOAuthAvailable()` is
+  false), a notice replaces the cards.
 - All strings via `voightTrans()`.
 
 ---
@@ -333,8 +359,9 @@ Pest, using `laravel/mcp`'s server test helpers
   returns "not found"; denying `create` / `update` blocks the write tools; a
   policy allowing everything does not reveal projects outside the visibility
   scope; the local server ignores policies.
-- **Middleware:** a project token is rejected; a user token without
-  `voight:mcp` is rejected; a user token with it passes.
+- **Middleware:** an OAuth token passes only with `mcp:use` (a stand-in guard
+  and a class aliased to Passport's name); personal access tokens, project
+  tokens and session logins are rejected.
 - **Per tool:** filters, sorting, `limit` / `truncated`, severity thresholds,
   "current findings" ignore older audit runs, `include_dev`.
 - **`get_upgrade_plan`:** transitive vulnerability grouped under its direct
@@ -349,16 +376,15 @@ Pest, using `laravel/mcp`'s server test helpers
   tools are absent when `write_tools` is off.
 - **`ProjectOnboardingService`:** the Filament actions and
   `CreateProjectTokenCommand` still work after switching to it.
-- **Token page:** create shows the token once; revoke removes it; only the
-  current user's `voight:mcp` tokens are listed.
+- **Setup page:** the user-menu item; the client cards with OAuth (a dummy
+  `mcp.oauth.protected-resource` route) and the notice without; nothing about
+  tokens.
 - **Registration:** nothing is registered when `enabled` is `false`.
 
 ---
 
 ## Out of scope
 
-- OAuth / claude.ai web connectors. The configurable middleware leaves room for
-  a host to use `Mcp::oauthRoutes()` with Passport.
 - Team scoping in Filament.
 - Mutating tools beyond onboarding (muting, triggering audits, revoking tokens).
 - MCP resources.

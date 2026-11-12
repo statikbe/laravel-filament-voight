@@ -76,17 +76,18 @@ return [
     | MCP server
     |--------------------------------------------------------------------------
     |
-    | Lets AI clients (Claude Code, Cursor, ...) query Voight. When enabled, a
-    | local server is available through `php artisan mcp:start voight` and a
-    | remote one at `path`. Remote users authenticate with a personal access
-    | token from the "MCP access" page; the user model needs HasApiTokens.
+    | Lets AI clients (Claude, ChatGPT, Cursor, ...) query Voight. When enabled,
+    | a local server is available through `php artisan mcp:start voight` and a
+    | remote one at `path`. Remote users sign in with OAuth from the "Set up
+    | MCP" page (user menu): the host installs Passport, defines the `api`
+    | guard and calls Mcp::oauthRoutes().
     | `write_tools` exposes the tools that create projects and project tokens.
     |
     */
     'mcp' => [
         'enabled' => (bool) env('VOIGHT_MCP_ENABLED', false),
         'path' => 'mcp/voight',
-        'middleware' => ['auth:sanctum', EnsureMcpUserToken::class],
+        'middleware' => ['auth:api', EnsureMcpUserToken::class],
         'write_tools' => (bool) env('VOIGHT_MCP_WRITE_TOOLS', true),
     ],
 
@@ -149,6 +150,36 @@ return [
         'mail_from_name' => env('VOIGHT_ALERT_MAIL_FROM_NAME'),
         'panel_id' => 'voight',
         'queue' => env('VOIGHT_ALERTS_QUEUE'),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Favicons
+    |--------------------------------------------------------------------------
+    |
+    | Projects show their website's favicon in the panel tables. The site URL
+    | is sent along with each lockfile sync (APP_URL in voight.sh), and the
+    | icon is fetched from a production-stage environment (see
+    | `environments.stages`) when one has a URL.
+    |
+    | `fallback_drivers` are favicon-fetcher drivers tried when the site
+    | itself yields nothing (e.g. 'duck-duck-go', 'google-shared-stuff').
+    | These send the domain to a third party, so they are off by default.
+    |
+    | `basic_auth` credentials are sent to the project's own site only, for
+    | sites behind an htaccess login. Leave them empty to send none.
+    |
+    */
+    'favicons' => [
+        'enabled' => env('VOIGHT_FAVICONS_ENABLED', true),
+        'disk' => env('VOIGHT_FAVICONS_DISK', 'public'),
+        'directory' => 'voight/favicons',
+        'refresh_after_days' => 30,
+        'fallback_drivers' => [],
+        'basic_auth' => [
+            'username' => env('VOIGHT_FAVICONS_BASIC_AUTH_USERNAME'),
+            'password' => env('VOIGHT_FAVICONS_BASIC_AUTH_PASSWORD'),
+        ],
     ],
 
     /*

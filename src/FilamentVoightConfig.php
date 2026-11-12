@@ -143,6 +143,50 @@ class FilamentVoightConfig
         return $this->packageConfig('teams.avatar_disk', 'public');
     }
 
+    // -- Favicons --
+
+    public function isFaviconFetchingEnabled(): bool
+    {
+        return (bool) $this->packageConfig('favicons.enabled', true);
+    }
+
+    public function getFaviconsDisk(): string
+    {
+        return $this->packageConfig('favicons.disk', 'public');
+    }
+
+    public function getFaviconsDirectory(): string
+    {
+        return $this->packageConfig('favicons.directory', 'voight/favicons');
+    }
+
+    public function getFaviconRefreshAfterDays(): int
+    {
+        return (int) $this->packageConfig('favicons.refresh_after_days', 30);
+    }
+
+    /**
+     * @return array<string>
+     */
+    public function getFaviconFallbackDrivers(): array
+    {
+        return $this->packageConfig('favicons.fallback_drivers', []);
+    }
+
+    /**
+     * @return array{username: string, password: string}|null
+     */
+    public function getFaviconBasicAuth(): ?array
+    {
+        $username = (string) $this->packageConfig('favicons.basic_auth.username', '');
+
+        if ($username === '') {
+            return null;
+        }
+
+        return ['username' => $username, 'password' => (string) $this->packageConfig('favicons.basic_auth.password', '')];
+    }
+
     // -- API --
 
     /**
@@ -170,12 +214,21 @@ class FilamentVoightConfig
      */
     public function getMcpMiddleware(): array
     {
-        return $this->packageConfig('mcp.middleware', ['auth:sanctum', EnsureMcpUserToken::class]);
+        return $this->packageConfig('mcp.middleware', ['auth:api', EnsureMcpUserToken::class]);
     }
 
     public function mcpWriteToolsEnabled(): bool
     {
         return (bool) $this->packageConfig('mcp.write_tools', true);
+    }
+
+    /**
+     * Whether the host registered Mcp::oauthRoutes(), so clients that only speak
+     * OAuth (claude.ai, ChatGPT) can connect.
+     */
+    public function mcpOAuthAvailable(): bool
+    {
+        return Route::has('mcp.oauth.protected-resource') || Route::has('mcp.oauth.protected-resource.nested');
     }
 
     // -- Models --
