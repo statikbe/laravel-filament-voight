@@ -4,21 +4,17 @@ namespace Statikbe\FilamentVoight\Http\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
-use Laravel\Sanctum\PersonalAccessToken;
 use Statikbe\FilamentVoight\Facades\FilamentVoight;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
- * Runs after the auth middleware. Sanctum resolves a project's CI token to the
- * Project as "user", so without this check a sync token would open the MCP
- * server. Only a user token issued for the MCP server gets through: a Sanctum
- * token with the voight:mcp ability, or a Passport (OAuth) token with the
- * mcp:use scope when the host enables OAuth.
+ * Runs after the auth middleware. The remote MCP server is only open to users who
+ * signed in through OAuth: the request must carry a Passport access token with the
+ * mcp:use scope, owned by the configured user model. Anything else that reaches
+ * this point is turned away, such as a project's sync token or a session login.
  */
 class EnsureMcpUserToken
 {
-    public const string ABILITY = 'voight:mcp';
-
     /**
      * The scope laravel/mcp registers in Mcp::oauthRoutes().
      */
@@ -45,10 +41,8 @@ class EnsureMcpUserToken
     }
 
     /**
-     * Requires a stored token that lists the MCP ability or scope explicitly.
-     * Sanctum's tokenCan() and Passport's can() also pass for "*" tokens, and
-     * session logins get a TransientToken; none of these was issued for the
-     * MCP server.
+     * Requires a token that lists the scope explicitly: Passport's can() also
+     * passes for "*" tokens, which were not issued for the MCP server.
      */
     private function hasMcpToken(object $user): bool
     {
@@ -56,13 +50,7 @@ class EnsureMcpUserToken
             return false;
         }
 
-        $token = $user->currentAccessToken();
-
-        if ($token instanceof PersonalAccessToken) {
-            return in_array(self::ABILITY, $token->abilities ?? [], true);
-        }
-
-        return in_array(self::OAUTH_SCOPE, $this->passportScopes($token), true);
+        return in_array(self::OAUTH_SCOPE, $this->passportScopes($user->currentAccessToken()), true);
     }
 
     /**

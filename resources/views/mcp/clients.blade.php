@@ -15,6 +15,7 @@
         />
     @endunless
 
+    @if ($clients !== [])
     <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         @foreach ($clients as $client)
             <x-filament::section
@@ -59,4 +60,5 @@
             </x-filament::section>
         @endforeach
     </div>
+    @endif
 </div>

@@ -214,7 +214,7 @@ class FilamentVoightConfig
      */
     public function getMcpMiddleware(): array
     {
-        return $this->packageConfig('mcp.middleware', ['auth:sanctum', EnsureMcpUserToken::class]);
+        return $this->packageConfig('mcp.middleware', ['auth:api', EnsureMcpUserToken::class]);
     }
 
     public function mcpWriteToolsEnabled(): bool
