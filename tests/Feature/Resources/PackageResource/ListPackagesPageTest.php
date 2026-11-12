@@ -101,9 +101,13 @@ it('shows only packages with a current finding on the vulnerable in use tab', fu
     $clean = Package::factory()->create();
 
     Livewire::test(ListPackages::class)
-        ->assertSet('activeTab', 'vulnerable_in_use')
+        ->set('activeTab', 'vulnerable_in_use')
         ->assertCanSeeTableRecords([$vulnerable])
         ->assertCanNotSeeTableRecords([$clean]);
+});
+
+it('defaults to the all tab', function () {
+    Livewire::test(ListPackages::class)->assertSet('activeTab', 'all');
 });
 
 it('lists every package on the all tab', function () {
@@ -123,6 +127,7 @@ it('hides a package whose only finding is on a superseded run from the vulnerabl
     AuditRun::factory()->for($environment, 'environment')->create(['started_at' => now()]);
 
     Livewire::test(ListPackages::class)
+        ->set('activeTab', 'vulnerable_in_use')
         ->assertCanNotSeeTableRecords([$stale]);
 });
 

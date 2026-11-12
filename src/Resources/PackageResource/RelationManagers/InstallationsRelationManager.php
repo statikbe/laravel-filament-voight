@@ -14,6 +14,7 @@ use Filament\Tables\Filters\QueryBuilder\Constraints\TextConstraint;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Livewire\Attributes\Url;
 use Statikbe\FilamentVoight\Resources\Components\EnvironmentNameColumn;
 use Statikbe\FilamentVoight\Resources\Components\EnvironmentStageConstraint;
 use Statikbe\FilamentVoight\Resources\Components\ProjectConstraint;
@@ -24,6 +25,22 @@ class InstallationsRelationManager extends RelationManager
     protected static string $relationship = 'environmentPackages';
 
     protected static string | \BackedEnum | null $icon = Heroicon::OutlinedServerStack;
+
+    /**
+     * Persist table state in prefixed query params so it survives a refresh
+     * without clashing with the other relation manager tabs on the page.
+     */
+    #[Url(as: 'installations_filters')]
+    public ?array $tableFilters = null;
+
+    /**
+     * @var ?string
+     */
+    #[Url(as: 'installations_search')]
+    public $tableSearch = '';
+
+    #[Url(as: 'installations_sort')]
+    public ?string $tableSort = null;
 
     public static function getTitle(Model $ownerRecord, string $pageClass): string
     {

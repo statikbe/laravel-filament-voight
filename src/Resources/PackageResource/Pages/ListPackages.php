@@ -21,11 +21,11 @@ class ListPackages extends ListRecords
     public function getTabs(): array
     {
         return [
+            'all' => $this->allTab(),
             'vulnerable_in_use' => $this->countedTab(
                 'tabs.packages.vulnerable_in_use',
                 fn (Builder $query): Builder => $query->whereHas('findings', fn (Builder $f): Builder => AuditFinding::constrainToCurrent($f)),
             ),
-            'all' => $this->allTab(),
         ];
     }
 }
