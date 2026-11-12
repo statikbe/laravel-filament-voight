@@ -1,5 +1,6 @@
 <?php
 
+use Illuminate\Http\Request;
 use Illuminate\Testing\TestResponse;
 use Laravel\Mcp\Facades\Mcp;
 use Laravel\Mcp\Server\Registrar;
@@ -51,6 +52,31 @@ it('rejects a project sync token', function () {
     $token = Project::factory()->create()->createToken(Project::DEFAULT_API_TOKEN_NAME)->plainTextToken;
 
     callMcpEndpoint($token)->assertForbidden();
+});
+
+/**
+ * Runs the middleware alone for a user the Passport guard resolved: it calls
+ * withAccessToken() with Passport's token, which Sanctum's trait then returns.
+ */
+function handleAsPassportUser(object $user, object $token): int
+{
+    $request = Request::create('/mcp/voight', 'POST');
+    $request->setUserResolver(fn () => $user->withAccessToken($token));
+
+    return (new EnsureMcpUserToken)->handle($request, fn () => response('passed'))->getStatusCode();
+}
+
+it('accepts a Passport token with the mcp:use scope', function () {
+    expect(handleAsPassportUser(mcpUser(), fakePassportAccessToken([EnsureMcpUserToken::OAUTH_SCOPE])))->toBe(200);
+});
+
+it('rejects a Passport token without the mcp:use scope', function () {
+    expect(handleAsPassportUser(mcpUser(), fakePassportAccessToken(['other'])))->toBe(403)
+        ->and(handleAsPassportUser(mcpUser(), fakePassportAccessToken(['*'])))->toBe(403);
+});
+
+it('rejects a project resolved through Passport, even with the mcp:use scope', function () {
+    expect(handleAsPassportUser(Project::factory()->create(), fakePassportAccessToken([EnsureMcpUserToken::OAUTH_SCOPE])))->toBe(403);
 });
 
 it('rejects requests without a token', function () {

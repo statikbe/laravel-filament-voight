@@ -79,7 +79,9 @@ return [
     | Lets AI clients (Claude Code, Cursor, ...) query Voight. When enabled, a
     | local server is available through `php artisan mcp:start voight` and a
     | remote one at `path`. Remote users authenticate with a personal access
-    | token from the "MCP access" page; the user model needs HasApiTokens.
+    | token from the "Set up MCP" page (user menu; the user model needs
+    | HasApiTokens) or, with Passport and Mcp::oauthRoutes(), with OAuth: then
+    | use ['auth:sanctum,api', EnsureMcpUserToken::class] as middleware.
     | `write_tools` exposes the tools that create projects and project tokens.
     |
     */

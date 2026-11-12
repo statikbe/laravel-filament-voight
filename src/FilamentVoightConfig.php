@@ -222,6 +222,15 @@ class FilamentVoightConfig
         return (bool) $this->packageConfig('mcp.write_tools', true);
     }
 
+    /**
+     * Whether the host registered Mcp::oauthRoutes(), so clients that only speak
+     * OAuth (claude.ai, ChatGPT) can connect.
+     */
+    public function mcpOAuthAvailable(): bool
+    {
+        return Route::has('mcp.oauth.protected-resource') || Route::has('mcp.oauth.protected-resource.nested');
+    }
+
     // -- Models --
 
     /**

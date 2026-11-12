@@ -1,7 +1,6 @@
 <?php
 
 use Filament\Navigation\NavigationGroup;
-use Statikbe\FilamentVoight\Pages\McpAccess;
 use Statikbe\FilamentVoight\Resources\AuditFindingResource;
 use Statikbe\FilamentVoight\Resources\AuditRunResource;
 use Statikbe\FilamentVoight\Resources\CustomerResource;
@@ -19,8 +18,7 @@ it('places resources in the expected navigation groups', function () {
         ->and(VulnerabilityResource::getNavigationGroup())->toBe(voightTrans('navigation.security'))
         ->and(PackageResource::getNavigationGroup())->toBe(voightTrans('navigation.security'))
         ->and(CustomerResource::getNavigationGroup())->toBe(voightTrans('navigation.organisation'))
-        ->and(TeamResource::getNavigationGroup())->toBe(voightTrans('navigation.organisation'))
-        ->and(McpAccess::getNavigationGroup())->toBe(voightTrans('navigation.settings'));
+        ->and(TeamResource::getNavigationGroup())->toBe(voightTrans('navigation.organisation'));
 });
 
 it('registers the groups in security, monitoring, organisation, settings order', function () {

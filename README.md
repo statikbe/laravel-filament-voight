@@ -192,7 +192,30 @@ VOIGHT_MCP_ENABLED=true
 claude mcp add voight -- php artisan mcp:start voight
 ```
 
-**Remote** at `/mcp/voight`, authenticated with a personal token. Add `Laravel\Sanctum\HasApiTokens` to your user model, then create a token on the **MCP access** page of the Voight panel; it shows the `claude mcp add` command to run.
+**Remote** at `/mcp/voight`. Users open **Set up MCP** from the user menu of the Voight panel: it has a card per client (Claude, ChatGPT, Cursor, VS Code, Claude Code, Codex CLI) and their personal tokens. Add `Laravel\Sanctum\HasApiTokens` to your user model for personal tokens.
+
+claude.ai and ChatGPT need OAuth. To enable it, install [Laravel Passport](https://laravel.com/docs/passport) (keep Sanctum's `HasApiTokens` on the user model), register the OAuth routes and accept both guards:
+
+```php
+// routes/ai.php
+use Laravel\Mcp\Facades\Mcp;
+
+Mcp::oauthRoutes();
+```
+
+```php
+// config/filament-voight.php: keep the other keys of the `mcp` block
+'mcp' => [
+    // ...
+    'middleware' => ['auth:sanctum,api', \Statikbe\FilamentVoight\Http\Middleware\EnsureMcpUserToken::class],
+],
+```
+
+Cursor and VS Code return from sign-in through their own URI scheme: allow `cursor` and `vscode` under `custom_schemes` in `config/mcp.php`.
+
+The setup page then shows one-click buttons; without OAuth it falls back to token instructions.
+
+A valid token only proves who the user is. To decide who may use the MCP server at all, append your own middleware to `filament-voight.mcp.middleware`. With `spatie/laravel-permission`, add `guardName()` returning `'web'` to the user model: an OAuth request switches the default guard to `api`, where the user's roles and permissions do not exist.
 
 Remote users only see the projects of their teams. Grant some users everything, or replace the team rule, in a service provider:
 
