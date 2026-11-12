@@ -8,8 +8,9 @@ use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Schemas\Components\Callout;
 use Filament\Schemas\Components\EmbeddedTable;
+use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\View;
 use Filament\Schemas\Schema;
-use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Contracts\HasTable;
@@ -23,28 +24,24 @@ use Laravel\Sanctum\PersonalAccessToken;
 use Laravel\Sanctum\Sanctum;
 use Statikbe\FilamentVoight\Facades\FilamentVoight;
 use Statikbe\FilamentVoight\Http\Middleware\EnsureMcpUserToken;
+use Statikbe\FilamentVoight\Support\McpClientSetup;
 
 /**
- * Lets the current user manage their personal tokens for the remote MCP server.
+ * Lets the current user connect AI clients to the remote MCP server: one card per
+ * client, plus personal tokens for clients and scripts that cannot do OAuth.
+ * Reached from the user menu (see FilamentVoightPlugin), not the navigation.
  */
 class McpAccess extends Page implements HasTable
 {
     use InteractsWithTable;
 
-    protected static string | \BackedEnum | null $navigationIcon = Heroicon::OutlinedCommandLine;
-
-    protected static ?int $navigationSort = 100;
-
     protected static ?string $slug = 'mcp-access';
+
+    protected static bool $shouldRegisterNavigation = false;
 
     public static function canAccess(): bool
     {
         return FilamentVoight::config()->mcpEnabled() && auth()->check();
-    }
-
-    public static function getNavigationGroup(): ?string
-    {
-        return voightTrans('navigation.settings');
     }
 
     public static function getNavigationLabel(): string
@@ -69,15 +66,29 @@ class McpAccess extends Page implements HasTable
 
     public function content(Schema $schema): Schema
     {
-        if (! static::userCanHaveTokens()) {
-            return $schema->components([
-                Callout::make(voightTrans('pages.mcp_access.missing_tokens_heading'))
-                    ->description(voightTrans('pages.mcp_access.missing_tokens_body', ['model' => FilamentVoight::config()->getUserModel()]))
-                    ->warning(),
-            ]);
-        }
+        $setup = McpClientSetup::make();
 
-        return $schema->components([EmbeddedTable::make()]);
+        return $schema->components([
+            Section::make(voightTrans('pages.mcp_access.clients.heading'))
+                ->description(voightTrans('pages.mcp_access.clients.description'))
+                ->schema([
+                    View::make('filament-voight::mcp.clients')
+                        ->viewData([
+                            'clients' => $setup->clients(),
+                            'oauthAvailable' => $setup->oauthAvailable,
+                        ]),
+                ]),
+            Section::make(voightTrans('pages.mcp_access.tokens.heading'))
+                ->description(voightTrans('pages.mcp_access.tokens.description'))
+                ->id('personal-tokens')
+                ->schema([
+                    static::userCanHaveTokens()
+                        ? EmbeddedTable::make()
+                        : Callout::make(voightTrans('pages.mcp_access.missing_tokens_heading'))
+                            ->description(voightTrans('pages.mcp_access.missing_tokens_body', ['model' => FilamentVoight::config()->getUserModel()]))
+                            ->warning(),
+                ]),
+        ]);
     }
 
     public function table(Table $table): Table
@@ -109,52 +120,44 @@ class McpAccess extends Page implements HasTable
                             ->send();
                     }),
             ])
+            ->headerActions([
+                Action::make('create_token')
+                    ->label(voightTrans('pages.mcp_access.actions.create'))
+                    ->schema([
+                        TextInput::make('name')
+                            ->label(voightTrans('pages.mcp_access.fields.name'))
+                            ->placeholder('Claude Code on my laptop')
+                            ->required()
+                            ->maxLength(255),
+                    ])
+                    ->action(function (array $data): void {
+                        /** @var HasApiTokensContract $user */
+                        $user = auth()->user();
+                        $token = $user->createToken($data['name'], [EnsureMcpUserToken::ABILITY]);
+
+                        Notification::make()
+                            ->title(voightTrans('pages.mcp_access.actions.created'))
+                            ->body(view('filament-voight::mcp.token-created', [
+                                'token' => $token->plainTextToken,
+                                'command' => McpClientSetup::make()->claudeCodeCommand($token->plainTextToken),
+                            ])->render())
+                            ->persistent()
+                            ->actions([
+                                Action::make('copy_token')
+                                    ->label(voightTrans('pages.mcp_access.actions.copy'))
+                                    ->alpineClickHandler(
+                                        'window.navigator.clipboard.writeText(' . Js::from($token->plainTextToken) . '); '
+                                        . '$tooltip(' . Js::from(__('filament-forms::components.text_input.actions.copy.message')) . ', { theme: $store.theme, timeout: 2000 })'
+                                    )
+                                    ->button()
+                                    ->color('primary'),
+                            ])
+                            ->success()
+                            ->send();
+                    }),
+            ])
             ->emptyStateHeading(voightTrans('pages.mcp_access.no_tokens'))
             ->paginated(false);
-    }
-
-    /**
-     * @return array<Action>
-     */
-    protected function getHeaderActions(): array
-    {
-        return [
-            Action::make('create_token')
-                ->label(voightTrans('pages.mcp_access.actions.create'))
-                ->visible(static::userCanHaveTokens())
-                ->schema([
-                    TextInput::make('name')
-                        ->label(voightTrans('pages.mcp_access.fields.name'))
-                        ->placeholder('Claude Code on my laptop')
-                        ->required()
-                        ->maxLength(255),
-                ])
-                ->action(function (array $data): void {
-                    /** @var HasApiTokensContract $user */
-                    $user = auth()->user();
-                    $token = $user->createToken($data['name'], [EnsureMcpUserToken::ABILITY]);
-
-                    Notification::make()
-                        ->title(voightTrans('pages.mcp_access.actions.created'))
-                        ->body(view('filament-voight::mcp.token-created', [
-                            'token' => $token->plainTextToken,
-                            'url' => url(FilamentVoight::config()->getMcpPath()),
-                        ])->render())
-                        ->persistent()
-                        ->actions([
-                            Action::make('copy_token')
-                                ->label(voightTrans('pages.mcp_access.actions.copy'))
-                                ->alpineClickHandler(
-                                    'window.navigator.clipboard.writeText(' . Js::from($token->plainTextToken) . '); '
-                                    . '$tooltip(' . Js::from(__('filament-forms::components.text_input.actions.copy.message')) . ', { theme: $store.theme, timeout: 2000 })'
-                                )
-                                ->button()
-                                ->color('primary'),
-                        ])
-                        ->success()
-                        ->send();
-                }),
-        ];
     }
 
     /**
