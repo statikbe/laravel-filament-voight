@@ -16,8 +16,10 @@ use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Arr;
 use Statikbe\FilamentVoight\Enums\AlertChannel;
 use Statikbe\FilamentVoight\Enums\AlertFrequency;
+use Statikbe\FilamentVoight\Enums\Severity;
 use Statikbe\FilamentVoight\Facades\FilamentVoight;
 use Statikbe\FilamentVoight\Models\AlertSetting;
 use Statikbe\FilamentVoight\Models\Team;
@@ -48,12 +50,12 @@ class AlertSettingsRelationManager extends RelationManager
                     ->options(AlertChannel::options())
                     ->required()
                     ->live(),
-                TextInput::make('severity_threshold')
+                Select::make('severity_threshold')
                     ->label(voightTrans('models.alert_setting.fields.severity_threshold'))
-                    ->numeric()
-                    ->minValue(0.0)
-                    ->maxValue(10.0)
-                    ->step(0.1)
+                    ->options(Arr::except(Severity::options(), Severity::None->value))
+                    ->helperText(voightTrans('models.alert_setting.severity_threshold_help'))
+                    ->formatStateUsing(fn (mixed $state): ?string => $state === null ? null : Severity::fromScore((float) $state)->value)
+                    ->dehydrateStateUsing(fn (string $state): float => Severity::from($state)->minimumScore())
                     ->required(),
                 Select::make('frequency')
                     ->label(voightTrans('models.alert_setting.fields.frequency'))
@@ -110,6 +112,8 @@ class AlertSettingsRelationManager extends RelationManager
                     ->formatStateUsing(fn (AlertChannel $state): string => $state->label()),
                 TextColumn::make('severity_threshold')
                     ->label(voightTrans('models.alert_setting.fields.severity_threshold'))
+                    ->state(fn (AlertSetting $record): Severity => Severity::fromScore((float) $record->severity_threshold))
+                    ->badge()
                     ->sortable(),
                 TextColumn::make('frequency')
                     ->label(voightTrans('models.alert_setting.fields.frequency'))

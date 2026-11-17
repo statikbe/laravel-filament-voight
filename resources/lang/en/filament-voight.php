@@ -469,9 +469,10 @@ return [
         'alert_setting' => [
             'label' => 'Alert Setting',
             'plural' => 'Alert Settings',
+            'severity_threshold_help' => 'Alerts include vulnerabilities at the selected severity or higher, based on CVSS score: Low 0.1+, Medium 4.0+, High 7.0+, Critical 9.0+.',
             'fields' => [
                 'channel' => 'Channel',
-                'severity_threshold' => 'Severity Threshold',
+                'severity_threshold' => 'Minimum severity',
                 'frequency' => 'Frequency',
                 'webhook_url' => 'Webhook URL',
                 'slack_channel' => 'Slack Channel',

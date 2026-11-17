@@ -4,6 +4,7 @@ use Filament\Actions\Testing\TestAction;
 use Livewire\Livewire;
 use Statikbe\FilamentVoight\Enums\AlertChannel;
 use Statikbe\FilamentVoight\Enums\AlertFrequency;
+use Statikbe\FilamentVoight\Enums\Severity;
 use Statikbe\FilamentVoight\Models\AlertRecipient;
 use Statikbe\FilamentVoight\Models\AlertSetting;
 use Statikbe\FilamentVoight\Models\Project;
@@ -37,7 +38,7 @@ it('creates an email alert setting with user and team recipients', function () {
     ])
         ->callAction(TestAction::make('create')->table(), [
             'channel' => AlertChannel::Email->value,
-            'severity_threshold' => 7.0,
+            'severity_threshold' => Severity::High->value,
             'frequency' => AlertFrequency::Immediate->value,
             'recipient_users' => [$userA->getKey(), $userB->getKey()],
             'recipient_teams' => [$team->getKey()],
@@ -46,7 +47,8 @@ it('creates an email alert setting with user and team recipients', function () {
 
     $setting = AlertSetting::query()->where('project_id', $project->getKey())->sole();
 
-    expect($setting->channel)->toBe(AlertChannel::Email);
+    expect($setting->channel)->toBe(AlertChannel::Email)
+        ->and((float) $setting->severity_threshold)->toBe(7.0);
 
     $recipients = $setting->recipients()->get();
 
@@ -105,7 +107,7 @@ it('creates a slack alert setting with a slack channel and offers no webhook url
         ->assertSchemaComponentDoesNotExist('webhook_url')
         ->setActionData([
             'channel' => AlertChannel::Slack->value,
-            'severity_threshold' => 8.5,
+            'severity_threshold' => Severity::Critical->value,
             'frequency' => AlertFrequency::Daily->value,
             'slack_channel' => '#security-alerts',
         ])
@@ -115,6 +117,7 @@ it('creates a slack alert setting with a slack channel and offers no webhook url
     $setting = AlertSetting::query()->where('project_id', $project->getKey())->sole();
 
     expect($setting->channel)->toBe(AlertChannel::Slack)
+        ->and((float) $setting->severity_threshold)->toBe(9.0)
         ->and($setting->slack_channel)->toBe('#security-alerts')
         ->and($setting->recipients()->count())->toBe(0);
 });
