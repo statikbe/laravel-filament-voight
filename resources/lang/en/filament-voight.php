@@ -470,8 +470,10 @@ return [
             'label' => 'Alert Setting',
             'plural' => 'Alert Settings',
             'severity_threshold_help' => 'Alerts include vulnerabilities at the selected severity or higher, based on CVSS score: Low 0.1+, Medium 4.0+, High 7.0+, Critical 9.0+.',
+            'package_types_help' => 'Only vulnerabilities in the selected package types trigger alerts.',
             'fields' => [
                 'channel' => 'Channel',
+                'package_types' => 'Package types',
                 'severity_threshold' => 'Minimum severity',
                 'frequency' => 'Frequency',
                 'webhook_url' => 'Webhook URL',

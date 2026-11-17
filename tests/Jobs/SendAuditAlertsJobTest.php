@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Notification;
+use Statikbe\FilamentVoight\Enums\PackageType;
 use Statikbe\FilamentVoight\Jobs\SendAuditAlertsJob;
 use Statikbe\FilamentVoight\Models\AlertNotificationLog;
 use Statikbe\FilamentVoight\Models\AlertRecipient;
@@ -273,3 +274,28 @@ it('does not fire settings scoped to another project', function () {
 
     Notification::assertNothingSent();
 });
+
+it('only alerts on the package types the setting selected', function (?array $packageTypes, int $expectedFindings) {
+    $project = Project::factory()->create();
+    $run = createAuditRunWithFinding(9.5, $project);
+    $run->auditFindings()->first()->package->update(['type' => PackageType::Composer]);
+    $npmPackage = Package::factory()->create(['type' => PackageType::Npm]);
+    AuditFinding::factory()->for($run, 'auditRun')->for($npmPackage, 'package')->create([
+        'vulnerability_id' => Vulnerability::factory()->create(['vulnerability_score' => 9.5])->id,
+    ]);
+    $setting = AlertSetting::factory()->immediate()->for($project)->create(['package_types' => $packageTypes]);
+    $user = attachAlertEmailRecipient($setting);
+
+    SendAuditAlertsJob::dispatchSync($run);
+
+    Notification::assertSentTo(
+        $user,
+        AuditRunSummaryNotification::class,
+        fn (AuditRunSummaryNotification $notification): bool => $notification->summary->totalFindings === $expectedFindings
+            && ($packageTypes === null || array_keys($notification->summary->sections) === $packageTypes),
+    );
+})->with([
+    'null means all types' => [null, 2],
+    'npm only' => [[PackageType::Npm->value], 1],
+    'composer only' => [[PackageType::Composer->value], 1],
+]);

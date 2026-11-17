@@ -1,11 +1,13 @@
 <?php
 
 use Illuminate\Support\Facades\Notification;
+use Statikbe\FilamentVoight\Enums\PackageType;
 use Statikbe\FilamentVoight\Models\AlertRecipient;
 use Statikbe\FilamentVoight\Models\AlertSetting;
 use Statikbe\FilamentVoight\Models\AuditFinding;
 use Statikbe\FilamentVoight\Models\AuditRun;
 use Statikbe\FilamentVoight\Models\Environment;
+use Statikbe\FilamentVoight\Models\Package;
 use Statikbe\FilamentVoight\Models\Project;
 use Statikbe\FilamentVoight\Models\Vulnerability;
 use Statikbe\FilamentVoight\Notifications\AuditDigestNotification;
@@ -152,3 +154,26 @@ it('never picks up immediate settings', function () {
     Notification::assertNothingSent();
     expect($setting->refresh()->last_sent_at)->toBeNull();
 });
+
+it('only includes the package types the setting selected in the digest', function (?array $packageTypes, int $expectedFindings) {
+    $project = createProjectWithOutstandingFinding();
+    $run = AuditRun::query()->latest()->firstOrFail();
+    $run->auditFindings()->first()->package->update(['type' => PackageType::Composer]);
+    AuditFinding::factory()->for($run, 'auditRun')->for(Package::factory()->state(['type' => PackageType::Npm]), 'package')->create([
+        'vulnerability_id' => Vulnerability::factory()->create(['vulnerability_score' => 9.5])->id,
+    ]);
+    $setting = AlertSetting::factory()->for($project)->create(['package_types' => $packageTypes]);
+    $user = attachDigestEmailRecipient($setting);
+
+    $this->artisan('voight:send-alert-digests')->assertExitCode(0);
+
+    Notification::assertSentTo(
+        $user,
+        AuditDigestNotification::class,
+        fn (AuditDigestNotification $notification): bool => $notification->summary->totalFindings === $expectedFindings,
+    );
+})->with([
+    'null means all types' => [null, 2],
+    'npm only' => [[PackageType::Npm->value], 1],
+    'composer only' => [[PackageType::Composer->value], 1],
+]);

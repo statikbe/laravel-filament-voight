@@ -62,7 +62,7 @@ class SendAuditAlertsJob implements ShouldQueue
             ->get();
 
         foreach ($settings as $setting) {
-            $findings = AuditSummary::findingsForRun($this->auditRun, (float) $setting->severity_threshold);
+            $findings = AuditSummary::findingsForRun($this->auditRun, (float) $setting->severity_threshold, $setting->selectedPackageTypes());
             $newFindings = $newFindingFilter->unnotified($setting, $findings);
 
             if ($newFindings->isEmpty()) {

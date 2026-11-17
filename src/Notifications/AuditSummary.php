@@ -43,12 +43,14 @@ final readonly class AuditSummary
      * The run's findings at or above the threshold, ready to be narrowed down
      * before a summary is built from them.
      *
+     * @param  array<int, PackageType>|null  $packageTypes  null means every type
      * @return Collection<int, AuditFinding>
      */
-    public static function findingsForRun(AuditRun $auditRun, float $severityThreshold): Collection
+    public static function findingsForRun(AuditRun $auditRun, float $severityThreshold, ?array $packageTypes = null): Collection
     {
         return $auditRun->auditFindings()
             ->whereHas('vulnerability', fn (Builder $query): Builder => $query->where('vulnerability_score', '>=', $severityThreshold))
+            ->when($packageTypes !== null, fn (Builder $query): Builder => $query->whereHas('package', fn (Builder $query): Builder => $query->whereIn('type', $packageTypes)))
             ->with(['vulnerability', 'package'])
             ->get();
     }
@@ -69,11 +71,15 @@ final readonly class AuditSummary
         );
     }
 
-    public static function fromProjectOutstanding(Project $project, float $severityThreshold): self
+    /**
+     * @param  array<int, PackageType>|null  $packageTypes  null means every type
+     */
+    public static function fromProjectOutstanding(Project $project, float $severityThreshold, ?array $packageTypes = null): self
     {
         $findings = $project->findings()
             ->whereIn('voight_audit_findings.audit_run_id', AuditRun::latestIdsPerEnvironment())
             ->whereHas('vulnerability', fn (Builder $query): Builder => $query->where('vulnerability_score', '>=', $severityThreshold))
+            ->when($packageTypes !== null, fn (Builder $query): Builder => $query->whereHas('package', fn (Builder $query): Builder => $query->whereIn('type', $packageTypes)))
             ->with(['vulnerability', 'package', 'auditRun.environment'])
             ->get();
 

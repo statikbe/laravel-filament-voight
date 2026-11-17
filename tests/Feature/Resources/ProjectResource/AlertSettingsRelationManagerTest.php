@@ -4,6 +4,7 @@ use Filament\Actions\Testing\TestAction;
 use Livewire\Livewire;
 use Statikbe\FilamentVoight\Enums\AlertChannel;
 use Statikbe\FilamentVoight\Enums\AlertFrequency;
+use Statikbe\FilamentVoight\Enums\PackageType;
 use Statikbe\FilamentVoight\Enums\Severity;
 use Statikbe\FilamentVoight\Models\AlertRecipient;
 use Statikbe\FilamentVoight\Models\AlertSetting;
@@ -133,4 +134,49 @@ it('shows create, edit and delete actions on the view project page', function ()
         ->assertActionVisible(TestAction::make('create')->table())
         ->assertActionVisible(TestAction::make('edit')->table($setting))
         ->assertActionVisible(TestAction::make('delete')->table($setting));
+});
+
+it('preselects every package type on the create form and saves them by default', function () {
+    $project = Project::factory()->create();
+    $allTypes = array_column(PackageType::cases(), 'value');
+
+    Livewire::test(AlertSettingsRelationManager::class, [
+        'ownerRecord' => $project,
+        'pageClass' => EditProject::class,
+    ])
+        ->mountAction(TestAction::make('create')->table())
+        ->assertSchemaStateSet(['package_types' => $allTypes]);
+
+    Livewire::test(AlertSettingsRelationManager::class, [
+        'ownerRecord' => $project,
+        'pageClass' => EditProject::class,
+    ])
+        ->callAction(TestAction::make('create')->table(), [
+            'channel' => AlertChannel::Slack->value,
+            'severity_threshold' => Severity::High->value,
+            'frequency' => AlertFrequency::Daily->value,
+        ])
+        ->assertHasNoFormErrors();
+
+    expect(AlertSetting::query()->sole()->selectedPackageTypes())->toBe(PackageType::cases());
+});
+
+it('requires at least one package type', function () {
+    $project = Project::factory()->create();
+
+    Livewire::test(AlertSettingsRelationManager::class, [
+        'ownerRecord' => $project,
+        'pageClass' => EditProject::class,
+    ])
+        ->callAction(TestAction::make('create')->table(), [
+            'channel' => AlertChannel::Slack->value,
+            'severity_threshold' => Severity::High->value,
+            'frequency' => AlertFrequency::Daily->value,
+            'package_types' => [],
+        ])
+        ->assertHasFormErrors(['package_types' => 'required']);
+});
+
+it('treats a null package_types as every type', function () {
+    expect(AlertSetting::factory()->make(['package_types' => null])->selectedPackageTypes())->toBe(PackageType::cases());
 });

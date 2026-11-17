@@ -54,7 +54,7 @@ class SendAlertDigestsCommand extends Command
         $sent = 0;
 
         foreach ($projects as $project) {
-            $summary = AuditSummary::fromProjectOutstanding($project, (float) $setting->severity_threshold);
+            $summary = AuditSummary::fromProjectOutstanding($project, (float) $setting->severity_threshold, $setting->selectedPackageTypes());
 
             if (! $summary->hasFindings()) {
                 continue;

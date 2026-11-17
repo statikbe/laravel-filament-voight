@@ -6,6 +6,7 @@ use Filament\Actions\CreateAction;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
+use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
@@ -19,6 +20,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Arr;
 use Statikbe\FilamentVoight\Enums\AlertChannel;
 use Statikbe\FilamentVoight\Enums\AlertFrequency;
+use Statikbe\FilamentVoight\Enums\PackageType;
 use Statikbe\FilamentVoight\Enums\Severity;
 use Statikbe\FilamentVoight\Facades\FilamentVoight;
 use Statikbe\FilamentVoight\Models\AlertSetting;
@@ -43,6 +45,8 @@ class AlertSettingsRelationManager extends RelationManager
 
     public function form(Schema $schema): Schema
     {
+        $allPackageTypes = array_column(PackageType::cases(), 'value');
+
         return $schema
             ->components([
                 Select::make('channel')
@@ -56,6 +60,13 @@ class AlertSettingsRelationManager extends RelationManager
                     ->helperText(voightTrans('models.alert_setting.severity_threshold_help'))
                     ->formatStateUsing(fn (mixed $state): ?string => $state === null ? null : Severity::fromScore((float) $state)->value)
                     ->dehydrateStateUsing(fn (string $state): float => Severity::from($state)->minimumScore())
+                    ->required(),
+                CheckboxList::make('package_types')
+                    ->label(voightTrans('models.alert_setting.fields.package_types'))
+                    ->options(PackageType::options())
+                    ->helperText(voightTrans('models.alert_setting.package_types_help'))
+                    ->default($allPackageTypes)
+                    ->formatStateUsing(fn (?array $state): array => filled($state) ? $state : $allPackageTypes)
                     ->required(),
                 Select::make('frequency')
                     ->label(voightTrans('models.alert_setting.fields.frequency'))
@@ -115,6 +126,10 @@ class AlertSettingsRelationManager extends RelationManager
                     ->state(fn (AlertSetting $record): Severity => Severity::fromScore((float) $record->severity_threshold))
                     ->badge()
                     ->sortable(),
+                TextColumn::make('package_types')
+                    ->label(voightTrans('models.alert_setting.fields.package_types'))
+                    ->state(fn (AlertSetting $record): array => $record->selectedPackageTypes())
+                    ->badge(),
                 TextColumn::make('frequency')
                     ->label(voightTrans('models.alert_setting.fields.frequency'))
                     ->formatStateUsing(fn (AlertFrequency $state): string => $state->label()),

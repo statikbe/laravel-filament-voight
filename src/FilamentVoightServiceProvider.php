@@ -212,6 +212,7 @@ class FilamentVoightServiceProvider extends PackageServiceProvider
             'add_avatar_path_to_voight_teams_table',
             'add_url_to_voight_environments_table',
             'add_favicon_to_voight_projects_table',
+            'add_package_types_to_voight_alert_settings_table',
         ];
     }
 }

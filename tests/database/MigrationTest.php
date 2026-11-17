@@ -1,6 +1,9 @@
 <?php
 
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use Statikbe\FilamentVoight\Enums\PackageType;
+use Statikbe\FilamentVoight\Models\AlertSetting;
 
 it('creates all voight tables', function () {
     $tables = [
@@ -35,7 +38,7 @@ it('has expected columns on voight_alert_recipients', function () {
 
 it('adds slack_channel and last_sent_at columns to voight_alert_settings', function () {
     expect(Schema::hasColumns('voight_alert_settings', [
-        'slack_channel', 'last_sent_at',
+        'slack_channel', 'last_sent_at', 'package_types',
     ]))->toBeTrue();
 });
 
@@ -85,4 +88,15 @@ it('creates the async scan tables', function () {
 
 it('adds an avatar_path column to voight_teams', function () {
     expect(Schema::hasColumn('voight_teams', 'avatar_path'))->toBeTrue();
+});
+
+it('backfills existing alert settings with every package type', function () {
+    $setting = AlertSetting::factory()->global()->create();
+    $migration = require __DIR__ . '/migrations/0001_01_01_000029_add_package_types_to_voight_alert_settings_table.php';
+
+    $migration->down();
+    $migration->up();
+
+    expect(json_decode(DB::table('voight_alert_settings')->where('id', $setting->id)->value('package_types'), true))
+        ->toBe(array_column(PackageType::cases(), 'value'));
 });

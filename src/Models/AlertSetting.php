@@ -13,6 +13,7 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Statikbe\FilamentVoight\Enums\AlertChannel;
 use Statikbe\FilamentVoight\Enums\AlertFrequency;
+use Statikbe\FilamentVoight\Enums\PackageType;
 use Statikbe\FilamentVoight\Facades\FilamentVoight;
 
 /**
@@ -23,6 +24,7 @@ use Statikbe\FilamentVoight\Facades\FilamentVoight;
  * @property AlertFrequency $frequency
  * @property string|null $webhook_url
  * @property string|null $slack_channel
+ * @property array<int, string>|null $package_types PackageType values; null or empty means all types
  * @property bool $is_enabled
  * @property Carbon|null $last_sent_at
  * @property Carbon|null $created_at
@@ -46,6 +48,7 @@ class AlertSetting extends Model
             'channel' => AlertChannel::class,
             'severity_threshold' => 'decimal:1',
             'frequency' => AlertFrequency::class,
+            'package_types' => 'array',
             'is_enabled' => 'boolean',
             'last_sent_at' => 'datetime',
         ];
@@ -73,6 +76,16 @@ class AlertSetting extends Model
     public function notificationLogs(): HasMany
     {
         return $this->hasMany(AlertNotificationLog::class);
+    }
+
+    /**
+     * @return array<int, PackageType>
+     */
+    public function selectedPackageTypes(): array
+    {
+        return filled($this->package_types)
+            ? array_map(PackageType::from(...), $this->package_types)
+            : PackageType::cases();
     }
 
     /**
