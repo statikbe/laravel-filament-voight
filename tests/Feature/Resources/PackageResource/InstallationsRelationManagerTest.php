@@ -81,3 +81,28 @@ it('filters installations by environment stage', function () {
         ->assertCanSeeTableRecords([$production])
         ->assertCanNotSeeTableRecords([$staging]);
 });
+
+it('filters installations by installed version range', function (array $settings, array $expected) {
+    $package = Package::factory()->create();
+    $installations = collect(['2.3.2', '3.0.0', 'v4.1.0', '5.3.1', '6.0.0'])->mapWithKeys(fn (string $version): array => [
+        $version => EnvironmentPackage::factory()->for(Environment::factory()->create())->for($package)->create(['version' => $version]),
+    ]);
+
+    $rules = queryBuilderRule('installed_version', 'inRange', $settings + ['min_version' => null, 'max_version' => null]);
+
+    Livewire::test(InstallationsRelationManager::class, [
+        'ownerRecord' => $package,
+        'pageClass' => ViewPackage::class,
+    ])
+        ->set('tableDeferredFilters.queryBuilder.rules', $rules)
+        ->call('applyTableFilters')
+        ->assertCanSeeTableRecords($installations->only($expected))
+        ->assertCanNotSeeTableRecords($installations->except($expected));
+})->with([
+    'min only' => [['min_operator' => '>', 'min_version' => '3.0.0'], ['v4.1.0', '5.3.1', '6.0.0']],
+    'max only' => [['max_operator' => '<', 'max_version' => '3.0.0'], ['2.3.2']],
+    'exclusive bounds' => [['min_operator' => '>', 'min_version' => '2.3.2', 'max_operator' => '<', 'max_version' => '5.3.1'], ['3.0.0', 'v4.1.0']],
+    'inclusive bounds' => [['min_operator' => '>=', 'min_version' => '2.3.2', 'max_operator' => '<=', 'max_version' => '5.3.1'], ['2.3.2', '3.0.0', 'v4.1.0', '5.3.1']],
+    'v prefix on bound' => [['min_operator' => '>=', 'min_version' => 'v4.1.0', 'max_operator' => '<', 'max_version' => 'v5.3.1'], ['v4.1.0']],
+    'no match' => [['min_operator' => '>', 'min_version' => '9.0.0'], []],
+]);

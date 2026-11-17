@@ -325,6 +325,15 @@ return [
                 'installations' => 'Installations',
                 'findings' => 'Findings',
                 'known_vulnerabilities' => 'Known Vulnerabilities',
+                'installed_version' => 'Installed Version',
+            ],
+            'installed_version' => [
+                'in_range' => 'is in range',
+                'not_in_range' => 'is not in range',
+                'min_operator' => 'Lower bound',
+                'min_version' => 'Lower version',
+                'max_operator' => 'Upper bound',
+                'max_version' => 'Upper version',
             ],
             'actions' => [
                 'open_website' => 'Open Website',

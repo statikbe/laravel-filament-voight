@@ -74,7 +74,7 @@ class PackageUsageService
         ];
     }
 
-    private static function normalize(string $version): string
+    public static function normalize(string $version): string
     {
         return ltrim($version, 'vV');
     }

@@ -10,13 +10,13 @@ use Filament\Tables\Enums\FiltersLayout;
 use Filament\Tables\Filters\QueryBuilder;
 use Filament\Tables\Filters\QueryBuilder\Constraints\BooleanConstraint;
 use Filament\Tables\Filters\QueryBuilder\Constraints\DateConstraint;
-use Filament\Tables\Filters\QueryBuilder\Constraints\TextConstraint;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Livewire\Attributes\Url;
 use Statikbe\FilamentVoight\Resources\Components\EnvironmentNameColumn;
 use Statikbe\FilamentVoight\Resources\Components\EnvironmentStageConstraint;
+use Statikbe\FilamentVoight\Resources\Components\InstalledVersionConstraint;
 use Statikbe\FilamentVoight\Resources\Components\ProjectConstraint;
 use Statikbe\FilamentVoight\Resources\PackageResource\Actions\WhyInstalledAction;
 
@@ -86,8 +86,7 @@ class InstallationsRelationManager extends RelationManager
                     ->constraints([
                         ProjectConstraint::project('environment.project_id'),
                         EnvironmentStageConstraint::make('environment'),
-                        TextConstraint::make('version')
-                            ->label(voightTrans('models.package.view.columns.installed_version')),
+                        InstalledVersionConstraint::make(),
                         BooleanConstraint::make('is_direct')
                             ->label(voightTrans('models.package.view.columns.direct')),
                         BooleanConstraint::make('is_dev')
