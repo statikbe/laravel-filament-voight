@@ -83,6 +83,14 @@ abstract class AuditAlertNotification extends Notification
             });
         }
 
+        $findings = $this->buildSlackFindings();
+
+        if ($findings !== '') {
+            $message->sectionBlock(function (SectionBlock $block) use ($findings): void {
+                $block->text($findings)->markdown();
+            });
+        }
+
         return $message
             ->dividerBlock()
             ->actionsBlock(function (ActionsBlock $block) use ($summary): void {
@@ -126,6 +134,29 @@ abstract class AuditAlertNotification extends Notification
             ->map(fn (array $row): string => $this->escapeSlack(rtrim(collect($row)
                 ->map(fn (string $cell, int $column): string => mb_str_pad($cell, $widths[$column], ' ', $column === 0 ? STR_PAD_RIGHT : STR_PAD_LEFT))
                 ->implode('  '))))
+            ->implode("\n");
+    }
+
+    /**
+     * Lists every top finding, but only when at least one is critical or high; empty otherwise.
+     */
+    private function buildSlackFindings(): string
+    {
+        $findings = collect($this->summary->sections)->flatMap(fn (array $section): array => $section['topFindings']);
+
+        if (! $findings->contains(fn (array $finding): bool => in_array($finding['severity'], [Severity::Critical, Severity::High], true))) {
+            return '';
+        }
+
+        return $findings
+            ->sortByDesc('score')
+            ->map(function (array $finding): string {
+                $package = trim("{$finding['package']} {$finding['installed_version']}");
+                $versions = $finding['fixed_version'] !== null ? "{$package} → {$finding['fixed_version']}" : $package;
+
+                // Capped summary keeps the block far below Slack's 3000 character section limit.
+                return "*{$finding['severity']->label()}* · " . $this->escapeSlack($versions . ' — ' . Str::limit($finding['summary'], 120));
+            })
             ->implode("\n");
     }
 

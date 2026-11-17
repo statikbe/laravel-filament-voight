@@ -96,6 +96,16 @@ class Project extends Model
     }
 
     /**
+     * Only set on queries built with ProjectStackService::withStack().
+     *
+     * @return BelongsTo<Environment, $this>
+     */
+    public function representativeEnvironment(): BelongsTo
+    {
+        return $this->belongsTo(Environment::class, 'representative_environment_id');
+    }
+
+    /**
      * @return HasMany<AlertSetting, $this>
      */
     public function alertSettings(): HasMany

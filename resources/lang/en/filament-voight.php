@@ -115,6 +115,17 @@ return [
             'github_advisory' => 'GitHub Advisory',
             'manual' => 'Manual',
         ],
+        'framework' => [
+            'laravel' => 'Laravel',
+            'filament' => 'Filament',
+            'nova' => 'Nova',
+            'craft' => 'Craft CMS',
+        ],
+        'upgrade_status' => [
+            'needs_upgrade' => 'Needs upgrade',
+            'current' => 'Current',
+            'unknown' => 'Unknown',
+        ],
         'environment_stage' => [
             'production' => 'Production',
             'acceptance' => 'Acceptance',
@@ -174,6 +185,10 @@ return [
                 'team' => 'Team',
                 'is_muted' => 'Muted',
                 'current_severity' => 'Current finding severity',
+                'php_version' => 'PHP',
+                'upgrade_status' => 'Upgrade status',
+                'framework_major' => ':framework major version',
+                'upgrade_line' => ':framework :from → :to',
                 'is_unmuted' => 'Notification enabled',
                 'is_muted_help' => 'Muted projects will not send alert notifications.',
                 'active_tokens' => 'Active Tokens',

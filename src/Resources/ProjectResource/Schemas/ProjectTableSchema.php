@@ -16,13 +16,18 @@ use Filament\Tables\Filters\QueryBuilder\Constraints\TextConstraint;
 use Filament\Tables\Table;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\HtmlString;
+use Statikbe\FilamentVoight\Enums\Framework;
 use Statikbe\FilamentVoight\Enums\Severity;
+use Statikbe\FilamentVoight\Enums\UpgradeStatus;
 use Statikbe\FilamentVoight\Models\AuditFinding;
 use Statikbe\FilamentVoight\Models\Project;
 use Statikbe\FilamentVoight\Resources\Components\EnvironmentStageConstraint;
 use Statikbe\FilamentVoight\Resources\Components\ProjectConstraint;
+use Statikbe\FilamentVoight\Resources\Components\ProjectStackConstraint;
 use Statikbe\FilamentVoight\Resources\Components\SeverityConstraint;
 use Statikbe\FilamentVoight\Resources\ProjectResource;
+use Statikbe\FilamentVoight\Services\ProjectStackService;
 use Statikbe\FilamentVoight\Support\ProjectFaviconColumn;
 
 class ProjectTableSchema
@@ -33,6 +38,7 @@ class ProjectTableSchema
     public static function configure(Table $table, bool $showTeam = true): Table
     {
         return $table
+            ->modifyQueryUsing(fn (Builder $query): Builder => ProjectStackService::withStack($query))
             ->columns([
                 ProjectFaviconColumn::make(fn (Project $record): Project => $record),
                 TextColumn::make('project_code')
@@ -45,6 +51,7 @@ class ProjectTableSchema
                     ->sortable(),
                 TextColumn::make('customer.name')
                     ->label(voightTrans('models.project.fields.customer'))
+                    ->wrap()
                     ->searchable()
                     ->sortable(),
                 TextColumn::make('team.name')
@@ -57,6 +64,29 @@ class ProjectTableSchema
                     ->label(voightTrans('models.environment.plural'))
                     ->counts('environments')
                     ->sortable(),
+                ...collect(Framework::cases())->map(fn (Framework $framework): TextColumn => TextColumn::make(strtolower($framework->name) . '_version')
+                    ->label($framework->label())
+                    ->state(fn (Project $record): ?string => ProjectStackService::version($record, $framework))
+                    ->placeholder('-')
+                    ->sortable(query: fn (Builder $query, string $direction): Builder => ProjectStackService::orderByVersion($query, $framework, $direction))
+                    ->toggleable(isToggledHiddenByDefault: true))->all(),
+                TextColumn::make('php_version')
+                    ->label(voightTrans('models.project.fields.php_version'))
+                    ->state(fn (Project $record): ?string => ProjectStackService::phpVersion($record))
+                    ->placeholder('-')
+                    ->sortable(query: fn (Builder $query, string $direction): Builder => ProjectStackService::orderByPhpVersion($query, $direction))
+                    ->toggleable(),
+                TextColumn::make('upgrade_status')
+                    ->label(voightTrans('models.project.fields.upgrade_status'))
+                    ->state(fn (Project $record): UpgradeStatus => ProjectStackService::upgradeStatus($record))
+                    ->badge()
+                    ->sortable(query: fn (Builder $query, string $direction): Builder => ProjectStackService::orderByUpgradeStatus($query, $direction))
+                    ->description(function (Project $record): ?HtmlString {
+                        $lines = ProjectStackService::upgradeDescription($record);
+
+                        return $lines === null ? null : new HtmlString(nl2br(e($lines)));
+                    }, position: 'below')
+                    ->toggleable(),
                 IconColumn::make('is_muted')
                     ->label(voightTrans('models.project.fields.is_muted'))
                     ->boolean()
@@ -84,6 +114,9 @@ class ProjectTableSchema
                             ->label(voightTrans('models.environment.plural'))
                             ->multiple(),
                         EnvironmentStageConstraint::make('environments'),
+                        ...array_map(ProjectStackConstraint::majorVersion(...), Framework::cases()),
+                        ProjectStackConstraint::phpVersion(),
+                        ProjectStackConstraint::upgradeStatus(),
                         // "Current" means a finding in an environment's latest audit run; matches projects with any such finding of the severity.
                         SeverityConstraint::make('current_severity', fn (Builder $query, Severity $severity) => $query
                             ->whereHas('environments.auditRuns.auditFindings', fn (Builder $finding) => AuditFinding::constrainToCurrent($finding)

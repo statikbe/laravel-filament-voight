@@ -120,7 +120,7 @@ it('builds a slack block kit message with header, table and detail button', func
     expect($header['text']['text'])->toContain('Demo Project')
         ->and($section['text']['type'])->toBe('mrkdwn')
         ->and($section['text']['text'])->toStartWith("```\n")->toEndWith("\n```")
-        ->and($blocks->where('type', 'section'))->toHaveCount(1)
+        ->and($blocks->where('type', 'section'))->toHaveCount(2)
         ->and($actions['elements'][0]['url'])->toBe('https://voight.test/voight/audit-runs/01ARZ3NDEKTSV4RRFFQ69G5FAV')
         ->and($actions['elements'][0]['text']['text'])->toBe('View Audit Run');
 });
@@ -170,13 +170,33 @@ it('omits severity columns without findings and shows 0/total when nothing is fi
         ->and($table)->toContain('High')->toContain('0/3');
 });
 
-it('does not repeat the intro sentence or individual findings in slack', function () {
+it('does not repeat the intro sentence in slack', function () {
     $text = slackBlocks(makeAuditSummary())->pluck('text.text')->implode("\n");
 
-    expect($text)->not->toContain('The latest scan')
-        ->not->toContain('vendor/package')
-        ->not->toContain('Remote code execution')
-        ->not->toContain('more');
+    expect($text)->not->toContain('The latest scan')->not->toContain('more');
+});
+
+it('lists critical and high findings in slack after the table', function () {
+    $sections = twoTypeSummary()->sections;
+    $sections['composer']['topFindings'][0]['fixed_version'] = '1.0.1';
+    $sections['composer']['topFindings'][0]['summary'] = 'A <b> & B';
+    $sections['npm']['topFindings'][1]['severity'] = Severity::Medium;
+
+    $blocks = slackBlocks(summaryWith(['sections' => $sections]))->where('type', 'section')->values();
+
+    expect($blocks)->toHaveCount(2)
+        ->and($blocks[1]['text']['text'])->toContain('*High* · vendor/php-one 1.0.0 → 1.0.1 — A &lt;b&gt; &amp; B')
+        ->toContain('*High* · js-one 1.0.0 — Issue')
+        ->toContain('*Medium* · js-two 1.0.0 — Issue');
+});
+
+it('omits the slack findings block when only medium or lower findings exist', function () {
+    $sections = twoTypeSummary()->sections;
+    foreach ($sections as $type => $section) {
+        $sections[$type]['topFindings'] = array_map(fn (array $finding): array => [...$finding, 'severity' => Severity::Medium], $section['topFindings']);
+    }
+
+    expect(slackBlocks(summaryWith(['sections' => $sections]))->where('type', 'section'))->toHaveCount(1);
 });
 
 it('adds a project button only when it differs from the detail link', function () {
