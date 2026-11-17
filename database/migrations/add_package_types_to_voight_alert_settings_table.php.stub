@@ -10,9 +10,11 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::table('voight_alert_settings', function (Blueprint $table) {
-            $table->json('package_types')->nullable();
-        });
+        if (! Schema::hasColumn('voight_alert_settings', 'package_types')) {
+            Schema::table('voight_alert_settings', function (Blueprint $table) {
+                $table->json('package_types')->nullable();
+            });
+        }
 
         DB::table('voight_alert_settings')
             ->whereNull('package_types')
@@ -21,6 +23,10 @@ return new class extends Migration
 
     public function down(): void
     {
+        if (! Schema::hasColumn('voight_alert_settings', 'package_types')) {
+            return;
+        }
+
         Schema::table('voight_alert_settings', function (Blueprint $table) {
             $table->dropColumn('package_types');
         });
