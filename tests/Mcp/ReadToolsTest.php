@@ -33,6 +33,37 @@ function installFramework(Environment $environment, Framework $framework, string
     )->create(['version' => $version]);
 }
 
+/**
+ * Walks a list tool page by page with the given page size and checks the paging fields on each page:
+ * the same total everywhere, next_offset pointing at the next page, and truncated only before the last.
+ * Returns the rows of all pages, in order.
+ *
+ * @param  class-string  $tool
+ * @return array<int, array<string, mixed>>
+ */
+function walkPages(string $tool, array $arguments, string $rowsKey, int $pageSize): array
+{
+    $rows = [];
+    $offset = 0;
+    $total = null;
+
+    do {
+        $page = structuredContent(VoightLocalServer::tool($tool, [...$arguments, 'limit' => $pageSize, 'offset' => $offset]));
+        $total ??= $page['total'];
+        $rows = [...$rows, ...$page[$rowsKey]];
+
+        expect($page['total'])->toBe($total)
+            ->and($page['truncated'])->toBe($page['next_offset'] !== null)
+            ->and($page['next_offset'])->toBe(count($rows) < $total ? count($rows) : null);
+
+        $offset = $page['next_offset'];
+    } while ($offset !== null);
+
+    expect($rows)->toHaveCount($total);
+
+    return $rows;
+}
+
 describe('list_projects', function () {
     it('counts current findings per severity and sorts by findings', function () {
         $a = mcpEnvironment('A');
@@ -101,6 +132,54 @@ describe('list_projects', function () {
 
     it('rejects a limit above the maximum', function () {
         VoightLocalServer::tool(ListProjectsTool::class, ['limit' => 101])->assertHasErrors();
+    });
+
+    it('pages through every project in order, with the total', function () {
+        foreach (['A', 'B', 'C', 'D', 'E'] as $code) {
+            mcpEnvironment($code);
+        }
+
+        $paged = walkPages(ListProjectsTool::class, ['sort' => 'name'], 'projects', 2);
+        $unpaged = structuredContent(VoightLocalServer::tool(ListProjectsTool::class, ['sort' => 'name']))['projects'];
+
+        expect(array_column($paged, 'code'))->toBe(array_column($unpaged, 'code'))
+            ->and($paged)->toHaveCount(5);
+    });
+
+    it('counts only the filtered projects in the total', function () {
+        mcpFinding(mcpEnvironment('VULN'), Vulnerability::factory()->high()->create());
+        mcpEnvironment('CLEAN');
+
+        $result = structuredContent(VoightLocalServer::tool(ListProjectsTool::class, ['has_findings' => true]));
+
+        expect($result['total'])->toBe(1)
+            ->and($result['next_offset'])->toBeNull()
+            ->and($result['truncated'])->toBeFalse();
+    });
+
+    it('returns an empty last page for an offset past the end', function () {
+        mcpEnvironment('A');
+
+        $result = structuredContent(VoightLocalServer::tool(ListProjectsTool::class, ['offset' => 10]));
+
+        expect($result['projects'])->toBe([])
+            ->and($result['total'])->toBe(1)
+            ->and($result['next_offset'])->toBeNull();
+    });
+
+    it('rejects a negative offset', function () {
+        VoightLocalServer::tool(ListProjectsTool::class, ['offset' => -1])->assertHasErrors();
+    });
+
+    it('reports every missing code on each page', function () {
+        foreach (['A', 'B', 'C'] as $code) {
+            mcpEnvironment($code);
+        }
+
+        $arguments = ['project_codes' => ['A', 'B', 'C', 'NOPE'], 'limit' => 2];
+
+        expect(structuredContent(VoightLocalServer::tool(ListProjectsTool::class, $arguments))['missing_codes'])->toBe(['NOPE'])
+            ->and(structuredContent(VoightLocalServer::tool(ListProjectsTool::class, [...$arguments, 'offset' => 2]))['missing_codes'])->toBe(['NOPE']);
     });
 
     it('describes the stack of the highest-stage environment', function () {
@@ -254,6 +333,17 @@ describe('get_project_vulnerabilities', function () {
 
         expect($result['vulnerabilities'])->toHaveCount(2)->and($result['truncated'])->toBeTrue();
     });
+
+    it('pages through the vulnerabilities, worst first', function () {
+        $production = mcpEnvironment('P');
+        foreach ([9.8, 7.5, 5.0, 2.0, 1.0] as $i => $score) {
+            mcpFinding($production, Vulnerability::factory()->create(['vulnerability_score' => $score]), "package-{$i}");
+        }
+
+        $paged = walkPages(GetProjectVulnerabilitiesTool::class, ['project_code' => 'P'], 'vulnerabilities', 2);
+
+        expect(array_column($paged, 'score'))->toEqual([9.8, 7.5, 5, 2, 1]);
+    });
 });
 
 describe('find_package_usage', function () {
@@ -284,6 +374,17 @@ describe('find_package_usage', function () {
         $usages = structuredContent(VoightLocalServer::tool(FindPackageUsageTool::class, ['package' => 'lodash', 'include_dev' => false]))['usages'];
 
         expect($usages)->toBe([['project_code' => 'A', 'environment' => 'production', 'type' => 'npm', 'version' => '4.17.15', 'is_direct' => true, 'is_dev' => false]]);
+    });
+
+    it('pages through the usages after filtering on version', function () {
+        $lodash = Package::query()->where('name', 'lodash')->firstOrFail();
+        foreach (['C', 'D', 'E'] as $code) {
+            EnvironmentPackage::factory()->for(mcpEnvironment($code))->for($lodash)->create(['version' => '4.0.0']);
+        }
+
+        $paged = walkPages(FindPackageUsageTool::class, ['package' => 'lodash', 'version' => '<4.17.21'], 'usages', 2);
+
+        expect(array_column($paged, 'project_code'))->toBe(['A', 'C', 'D', 'E']);
     });
 
     it('rejects a malformed version filter', function () {
@@ -349,5 +450,13 @@ describe('get_statistics', function () {
         $result = structuredContent(VoightLocalServer::tool(GetStatisticsTool::class, ['group_by' => 'project', 'min_severity' => 'critical', 'limit' => 1]));
 
         expect(array_column($result['groups'], 'key'))->toBe(['A'])->and($result['truncated'])->toBeFalse();
+    });
+
+    it('pages through the groups', function () {
+        $paged = walkPages(GetStatisticsTool::class, ['group_by' => 'project'], 'groups', 1);
+        $unpaged = structuredContent(VoightLocalServer::tool(GetStatisticsTool::class, ['group_by' => 'project']))['groups'];
+
+        expect($paged)->toBe($unpaged)
+            ->and($paged)->toHaveCount(2);
     });
 });

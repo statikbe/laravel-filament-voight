@@ -14,11 +14,11 @@ use Statikbe\FilamentVoight\Mcp\McpToolError;
 class PackageUsageService
 {
     /**
-     * @return array{usages: array<int, array<string, mixed>>, truncated: bool}
+     * @return array{usages: array<int, array<string, mixed>>, total: int, truncated: bool, next_offset: int|null}
      *
      * @throws McpToolError
      */
-    public function find(McpAccess $access, string $packageName, ?string $type, ?string $versionFilter, bool $includeDev, int $limit): array
+    public function find(McpAccess $access, string $packageName, ?string $type, ?string $versionFilter, bool $includeDev, Page $page): array
     {
         $comparison = $versionFilter === null || trim($versionFilter) === '' ? null : self::parseComparison($versionFilter);
 
@@ -52,8 +52,8 @@ class PackageUsageService
             ->values();
 
         return [
-            'usages' => $usages->take($limit)->all(),
-            'truncated' => $usages->count() > $limit,
+            'usages' => $page->slice($usages)->all(),
+            ...$page->meta($usages->count()),
         ];
     }
 

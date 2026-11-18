@@ -54,6 +54,7 @@ class ListProjectsTool extends VoightTool
                 ->description('Only projects with this upgrade status (see `stack.upgrade_status`).'),
             'sort' => $schema->string()->enum(ProjectQueryService::SORTS)->default('findings'),
             'limit' => $this->limitSchema($schema),
+            'offset' => $this->offsetSchema($schema),
         ];
     }
 
@@ -79,7 +80,7 @@ class ListProjectsTool extends VoightTool
                     'upgrade_status' => $schema->string()->enum(array_column(UpgradeStatus::cases(), 'value')),
                 ]),
             ]))->required(),
-            'truncated' => $schema->boolean()->required(),
+            ...$this->pagingOutputSchema($schema),
             'missing_codes' => $schema->array()->items($schema->string())->description('Only when `project_codes` was passed.'),
         ];
     }
@@ -115,7 +116,7 @@ class ListProjectsTool extends VoightTool
             'scanned_before' => $request->get('scanned_before') ? Carbon::parse($request->get('scanned_before')) : null,
             'upgrade_status' => $upgradeStatus === null ? null : UpgradeStatus::from($upgradeStatus),
             'sort' => $request->get('sort'),
-            'limit' => $this->projectsLimit($request, $projectCodes),
+            'page' => $this->page($request, $this->projectsLimit($request, $projectCodes)),
         ]));
     }
 

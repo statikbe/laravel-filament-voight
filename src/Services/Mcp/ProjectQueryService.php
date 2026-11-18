@@ -17,7 +17,7 @@ use Statikbe\FilamentVoight\Models\Project;
 use Statikbe\FilamentVoight\Services\ProjectStackService;
 
 /**
- * @phpstan-type ProjectFilters array{project_codes?: array<int, string>|null, search?: string|null, team?: string|null, customer?: string|null, min_severity?: Severity|null, has_findings?: bool|null, scanned_before?: Carbon|null, upgrade_status?: UpgradeStatus|null, sort?: string|null, limit: int}
+ * @phpstan-type ProjectFilters array{project_codes?: array<int, string>|null, search?: string|null, team?: string|null, customer?: string|null, min_severity?: Severity|null, has_findings?: bool|null, scanned_before?: Carbon|null, upgrade_status?: UpgradeStatus|null, sort?: string|null, page: Page}
  */
 class ProjectQueryService
 {
@@ -25,7 +25,7 @@ class ProjectQueryService
 
     /**
      * @param  ProjectFilters  $filters
-     * @return array{projects: array<int, array<string, mixed>>, truncated: bool, missing_codes?: array<int, string>}
+     * @return array{projects: array<int, array<string, mixed>>, total: int, truncated: bool, next_offset: int|null, missing_codes?: array<int, string>}
      */
     public function listProjects(McpAccess $access, array $filters): array
     {
@@ -91,10 +91,12 @@ class ProjectQueryService
             default => $query->orderByRaw('coalesce(counts.total, 0) desc')->orderByRaw('coalesce(counts.max_score, -1) desc'),
         };
 
-        $projects = $query->orderBy('voight_projects.project_code')->limit($filters['limit'] + 1)->get();
+        $page = $filters['page'];
+        $total = (clone $query)->reorder()->count();
+        $projects = $query->orderBy('voight_projects.project_code')->offset($page->offset)->limit($page->limit)->get();
 
         return [
-            'projects' => $projects->take($filters['limit'])->map(fn (Project $project): array => [
+            'projects' => $projects->map(fn (Project $project): array => [
                 ...$this->describeProject($project),
                 'environments' => $project->environments->map(fn (Environment $environment): array => [
                     'name' => $environment->name,
@@ -103,7 +105,7 @@ class ProjectQueryService
                 ...CurrentFindings::severitySummary((object) $project->getAttributes()),
                 'stack' => $this->describeStack($project),
             ])->values()->all(),
-            'truncated' => $projects->count() > $filters['limit'],
+            ...$page->meta($total),
             ...($projectCodes === null ? [] : ['missing_codes' => $this->missingCodes($access, $projectCodes)]),
         ];
     }
@@ -154,9 +156,9 @@ class ProjectQueryService
     /**
      * Current findings of a project, grouped by vulnerability, worst first.
      *
-     * @return array{project: array<string, mixed>, vulnerabilities: array<int, array<string, mixed>>, truncated: bool}
+     * @return array{project: array<string, mixed>, vulnerabilities: array<int, array<string, mixed>>, total: int, truncated: bool, next_offset: int|null}
      */
-    public function projectVulnerabilities(McpAccess $access, Project $project, ?Environment $environment, ?Severity $minSeverity, bool $includeDev, int $limit): array
+    public function projectVulnerabilities(McpAccess $access, Project $project, ?Environment $environment, ?Severity $minSeverity, bool $includeDev, Page $page): array
     {
         $findings = CurrentFindings::query($access, $minSeverity, $includeDev)
             ->where('p.id', $project->id)
@@ -172,12 +174,13 @@ class ProjectQueryService
 
         $copies = $this->installedCopies($findings);
         $vulnerabilityIds = $findings->pluck('vulnerability_id')->unique()->values();
+        $pageIds = $page->slice($vulnerabilityIds);
         $vulnerabilities = FilamentVoight::config()->getVulnerabilityModel()::query()
-            ->whereIn('id', $vulnerabilityIds->take($limit))
+            ->whereIn('id', $pageIds)
             ->get()
             ->keyBy('id');
 
-        $grouped = $vulnerabilityIds->take($limit)->map(function (string $vulnerabilityId) use ($findings, $vulnerabilities, $copies): array {
+        $grouped = $pageIds->map(function (string $vulnerabilityId) use ($findings, $vulnerabilities, $copies): array {
             $vulnerability = $vulnerabilities[$vulnerabilityId];
 
             return [
@@ -210,8 +213,8 @@ class ProjectQueryService
 
         return [
             'project' => $this->describeProject($project),
-            'vulnerabilities' => $grouped->values()->all(),
-            'truncated' => $vulnerabilityIds->count() > $limit,
+            'vulnerabilities' => $grouped->all(),
+            ...$page->meta($vulnerabilityIds->count()),
         ];
     }
 

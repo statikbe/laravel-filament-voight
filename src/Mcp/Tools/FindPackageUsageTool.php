@@ -38,6 +38,7 @@ class FindPackageUsageTool extends VoightTool
             'version' => $schema->string()->description('One comparison: <, <=, >, >= or = followed by a version. A leading `v` is ignored.'),
             'include_dev' => $schema->boolean()->default(true),
             'limit' => $this->limitSchema($schema),
+            'offset' => $this->offsetSchema($schema),
         ];
     }
 
@@ -52,7 +53,7 @@ class FindPackageUsageTool extends VoightTool
                 'is_direct' => $schema->boolean(),
                 'is_dev' => $schema->boolean(),
             ]))->required(),
-            'truncated' => $schema->boolean()->required(),
+            ...$this->pagingOutputSchema($schema),
         ];
     }
 
@@ -74,7 +75,7 @@ class FindPackageUsageTool extends VoightTool
             $request->get('type'),
             $request->get('version'),
             filter_var($request->get('include_dev', true), FILTER_VALIDATE_BOOLEAN),
-            $this->limit($request),
+            $this->page($request),
         ));
     }
 }

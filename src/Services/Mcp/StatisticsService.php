@@ -15,9 +15,9 @@ class StatisticsService
     public const array GROUPS = ['project', 'team', 'customer', 'package', 'vulnerability'];
 
     /**
-     * @return array{group_by: string, groups: array<int, array<string, mixed>>, truncated: bool}
+     * @return array{group_by: string, groups: array<int, array<string, mixed>>, total: int, truncated: bool, next_offset: int|null}
      */
-    public function statistics(McpAccess $access, string $groupBy, ?Severity $minSeverity, ?string $team, ?string $customer, int $limit): array
+    public function statistics(McpAccess $access, string $groupBy, ?Severity $minSeverity, ?string $team, ?string $customer, Page $page): array
     {
         $query = CurrentFindings::query($access, $minSeverity)
             ->leftJoin('voight_teams as t', 't.id', '=', 'p.team_id')
@@ -33,30 +33,34 @@ class StatisticsService
             default => ['v.source_id', 'v.summary', ['v.source_id', 'v.summary']],
         };
 
-        $rows = $query
+        $query
             ->groupBy($groupColumns)
             ->select([
                 DB::raw($key . ' as group_key'),
                 DB::raw($label . ' as group_label'),
                 ...CurrentFindings::severityColumns(),
                 DB::raw('count(distinct p.id) as affected_projects'),
-            ])
+            ]);
+
+        $total = (clone $query)->getCountForPagination();
+        $rows = $query
             ->orderByDesc('max_score')
             ->orderByDesc('total')
             ->orderByDesc('affected_projects')
             ->orderBy('group_key')
-            ->limit($limit + 1)
+            ->offset($page->offset)
+            ->limit($page->limit)
             ->get();
 
         return [
             'group_by' => $groupBy,
-            'groups' => $rows->take($limit)->map(fn (object $row): array => [
+            'groups' => $rows->map(fn (object $row): array => [
                 'key' => $row->group_key,
                 'label' => $row->group_label,
                 ...CurrentFindings::severitySummary($row),
                 'affected_projects' => (int) $row->affected_projects,
             ])->values()->all(),
-            'truncated' => $rows->count() > $limit,
+            ...$page->meta($total),
         ];
     }
 

@@ -36,6 +36,7 @@ class GetProjectVulnerabilitiesTool extends VoightTool
             'min_severity' => $this->minSeveritySchema($schema),
             'include_dev' => $schema->boolean()->default(true)->description('false hides findings in dev-only dependencies.'),
             'limit' => $this->limitSchema($schema)->description('Maximum number of vulnerabilities (default 25, max 100).'),
+            'offset' => $this->offsetSchema($schema),
         ];
     }
 
@@ -51,7 +52,7 @@ class GetProjectVulnerabilitiesTool extends VoightTool
                 'severity' => $schema->string(),
                 'packages' => $schema->array(),
             ]))->required(),
-            'truncated' => $schema->boolean()->required(),
+            ...$this->pagingOutputSchema($schema),
         ];
     }
 
@@ -73,7 +74,7 @@ class GetProjectVulnerabilitiesTool extends VoightTool
             $this->projects->environment($project, $request->get('environment')),
             $this->minSeverity($request),
             filter_var($request->get('include_dev', true), FILTER_VALIDATE_BOOLEAN),
-            $this->limit($request),
+            $this->page($request),
         ));
     }
 }
