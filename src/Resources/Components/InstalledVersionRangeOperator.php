@@ -108,7 +108,7 @@ class InstalledVersionRangeOperator extends Operator
             ->reorder()
             ->get([$query->qualifyColumn('id'), $query->qualifyColumn('version')])
             ->filter(function (Model $installed) use ($bounds): bool {
-                $version = PackageUsageService::normalize($installed->version);
+                $version = PackageUsageService::normalize((string) $installed->getAttribute('version'));
 
                 return collect($bounds)->every(fn (array $bound): bool => version_compare($version, $bound[1], $bound[0]));
             })
