@@ -135,6 +135,47 @@ describe('list_projects', function () {
         VoightLocalServer::tool(ListProjectsTool::class, ['limit' => 101])->assertHasErrors();
     });
 
+    it('filters on an installed package and its version range', function () {
+        $guzzle = Package::factory()->create(['name' => 'guzzlehttp/guzzle', 'type' => 'composer']);
+        EnvironmentPackage::factory()->for(mcpEnvironment('OLD'))->for($guzzle)->create(['version' => '7.2.0']);
+        EnvironmentPackage::factory()->for(mcpEnvironment('NEW'))->for($guzzle)->create(['version' => 'v7.9.2']);
+        EnvironmentPackage::factory()->for(mcpEnvironment('MIXED', 'staging'))->for($guzzle)->create(['version' => '7.4.0']);
+        EnvironmentPackage::factory()->for(mcpEnvironment('MIXED'))->for($guzzle)->create(['version' => '7.9.0']);
+        mcpEnvironment('NONE');
+
+        $codes = fn (array $arguments): array => array_column(structuredContent(VoightLocalServer::tool(ListProjectsTool::class, [...$arguments, 'sort' => 'name']))['projects'], 'code');
+
+        expect($codes(['package' => 'guzzlehttp/guzzle']))->toEqualCanonicalizing(['OLD', 'NEW', 'MIXED'])
+            ->and($codes(['package' => 'guzzlehttp/guzzle', 'package_version' => '<7.5']))->toEqualCanonicalizing(['OLD', 'MIXED'])
+            ->and($codes(['package' => 'guzzlehttp/guzzle', 'package_version' => '>=7.3 <7.5']))->toBe(['MIXED'])
+            ->and($codes(['package' => 'guzzlehttp/guzzle', 'package_type' => 'npm']))->toBe([])
+            ->and($codes(['package' => 'unknown/package']))->toBe([]);
+    });
+
+    it('counts and pages only the projects with the package', function () {
+        $lodash = Package::factory()->create(['name' => 'lodash', 'type' => 'npm']);
+        foreach (['A', 'B', 'C'] as $code) {
+            EnvironmentPackage::factory()->for(mcpEnvironment($code))->for($lodash)->create(['version' => '4.17.15']);
+        }
+        mcpEnvironment('D');
+
+        $paged = walkPages(ListProjectsTool::class, ['package' => 'lodash', 'package_version' => '<4.17.21'], 'projects', 2);
+
+        expect(array_column($paged, 'code'))->toEqualCanonicalizing(['A', 'B', 'C']);
+    });
+
+    it('requires a package for a package version or type', function (array $arguments) {
+        VoightLocalServer::tool(ListProjectsTool::class, $arguments)->assertHasErrors();
+    })->with([
+        'version' => [['package_version' => '<7.5']],
+        'type' => [['package_type' => 'composer']],
+    ]);
+
+    it('rejects a malformed package version range', function () {
+        VoightLocalServer::tool(ListProjectsTool::class, ['package' => 'lodash', 'package_version' => '^4.0'])
+            ->assertHasErrors(['Invalid version filter']);
+    });
+
     it('pages through every project in order, with the total', function () {
         foreach (['A', 'B', 'C', 'D', 'E'] as $code) {
             mcpEnvironment($code);
@@ -386,6 +427,12 @@ describe('find_package_usage', function () {
         $paged = walkPages(FindPackageUsageTool::class, ['package' => 'lodash', 'version' => '<4.17.21'], 'usages', 2);
 
         expect(array_column($paged, 'project_code'))->toBe(['A', 'C', 'D', 'E']);
+    });
+
+    it('accepts a version range', function () {
+        $usages = structuredContent(VoightLocalServer::tool(FindPackageUsageTool::class, ['package' => 'lodash', 'version' => '>=4.17 <4.17.21']))['usages'];
+
+        expect(array_column($usages, 'project_code'))->toBe(['A']);
     });
 
     it('rejects a malformed version filter', function () {
