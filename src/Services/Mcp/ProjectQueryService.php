@@ -40,6 +40,7 @@ class ProjectQueryService
             ->select(['voight_projects.*', 'counts.critical', 'counts.high', 'counts.medium', 'counts.low', 'counts.none', 'counts.total', 'counts.max_score'])
             ->with(['team', 'customer', 'environments' => fn ($environments) => $environments->orderBy('name')]);
         ProjectStackService::withStack($query);
+
         $projectCodes = $filters['project_codes'] ?? null;
 
         if ($projectCodes !== null) {

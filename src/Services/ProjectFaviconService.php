@@ -105,11 +105,13 @@ class ProjectFaviconService
         $config = FilamentVoight::config();
 
         foreach ($this->candidates($url) as $favicon) {
-            if (! $this->isHttpUrl($favicon->getFaviconUrl())) {
+            $iconUrl = $favicon->getFaviconUrl();
+
+            if (! $this->isHttpUrl($iconUrl)) {
                 continue;
             }
 
-            $response = $this->download($favicon->getFaviconUrl(), $url);
+            $response = $this->download($iconUrl, $url);
             $extension = $response === null ? null : $this->rasterImageExtension($response->body());
 
             if ($extension === null) {

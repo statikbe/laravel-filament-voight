@@ -115,9 +115,21 @@ class ListProjectsTool extends VoightTool
             'scanned_before' => $request->get('scanned_before') ? Carbon::parse($request->get('scanned_before')) : null,
             'upgrade_status' => $upgradeStatus === null ? null : UpgradeStatus::from($upgradeStatus),
             'sort' => $request->get('sort'),
-            'limit' => $request->get('limit') === null && $projectCodes !== null
-                ? max(self::DEFAULT_LIMIT, count($projectCodes))
-                : $this->limit($request),
+            'limit' => $this->projectsLimit($request, $projectCodes),
         ]));
+    }
+
+    /**
+     * Without an explicit limit, a list of codes raises the default so every requested project fits.
+     *
+     * @param  array<int, string>|null  $projectCodes
+     */
+    private function projectsLimit(Request $request, ?array $projectCodes): int
+    {
+        if ($request->get('limit') === null && $projectCodes !== null) {
+            return max(self::DEFAULT_LIMIT, count($projectCodes));
+        }
+
+        return $this->limit($request);
     }
 }
