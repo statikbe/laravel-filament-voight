@@ -94,8 +94,9 @@ class ProjectFaviconService
 
     /**
      * Downloads the icons itself rather than through favicon-fetcher, so the site's
-     * basic auth applies. Error pages and empty files (e.g. a placeholder
-     * /favicon.ico) are skipped; the first icon with content is kept.
+     * basic auth applies. Only http(s) URLs are fetched and only raster images are
+     * kept: icons are served from the app's own domain, where an SVG could run script.
+     * Error pages and empty files (e.g. a placeholder /favicon.ico) are skipped too.
      *
      * @throws FaviconFetcherException
      */
@@ -104,15 +105,19 @@ class ProjectFaviconService
         $config = FilamentVoight::config();
 
         foreach ($this->candidates($url) as $favicon) {
-            $response = $this->download($favicon->getFaviconUrl(), $url);
+            if (! $this->isHttpUrl($favicon->getFaviconUrl())) {
+                continue;
+            }
 
-            if ($response === null || $response->body() === '') {
+            $response = $this->download($favicon->getFaviconUrl(), $url);
+            $extension = $response === null ? null : $this->rasterImageExtension($response->body());
+
+            if ($extension === null) {
                 continue;
             }
 
             // Timestamped filename so browsers don't keep showing a cached old icon.
-            $path = $config->getFaviconsDirectory() . '/' . $project->getKey() . '-' . now()->timestamp
-                . '.' . $this->guessExtension($favicon->getFaviconUrl(), $response);
+            $path = $config->getFaviconsDirectory() . '/' . $project->getKey() . '-' . now()->timestamp . '.' . $extension;
 
             Storage::disk($config->getFaviconsDisk())->put($path, $response->body());
 
@@ -212,21 +217,31 @@ class ProjectFaviconService
         return $client;
     }
 
-    private function guessExtension(string $iconUrl, Response $response): string
+    private function isHttpUrl(string $url): bool
     {
-        $extension = strtolower(pathinfo((string) parse_url($iconUrl, PHP_URL_PATH), PATHINFO_EXTENSION));
+        return in_array(strtolower((string) parse_url($url, PHP_URL_SCHEME)), ['http', 'https'], true);
+    }
 
-        if (in_array($extension, ['ico', 'png', 'svg', 'jpg', 'jpeg', 'gif', 'webp'], true)) {
-            return $extension;
+    /**
+     * The extension for the image type detected from the bytes themselves, or null
+     * when they are not a raster image (SVG, HTML, empty...). The URL and the
+     * Content-Type header are not trusted.
+     */
+    private function rasterImageExtension(string $body): ?string
+    {
+        if ($body === '') {
+            return null;
         }
 
-        return match (strtok((string) $response->header('Content-Type'), ';')) {
-            'image/png', 'image/x-png' => 'png',
-            'image/svg+xml' => 'svg',
-            'image/jpeg', 'image/pjpeg' => 'jpg',
-            'image/gif' => 'gif',
-            'image/webp' => 'webp',
-            default => 'ico',
+        $imageInfo = @getimagesizefromstring($body);
+
+        return match ($imageInfo === false ? null : $imageInfo[2]) {
+            IMAGETYPE_ICO => 'ico',
+            IMAGETYPE_PNG => 'png',
+            IMAGETYPE_JPEG => 'jpg',
+            IMAGETYPE_GIF => 'gif',
+            IMAGETYPE_WEBP => 'webp',
+            default => null,
         };
     }
 }

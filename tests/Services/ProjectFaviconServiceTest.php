@@ -57,8 +57,8 @@ it('stores the largest icon advertised by the site', function () {
         . '<link rel="apple-touch-icon" href="/apple-touch-icon.png" sizes="180x180">'
         . '</head></html>',
         [
-            'https://site.test/favicon-32.png' => 'small',
-            'https://site.test/apple-touch-icon.png' => 'large',
+            'https://site.test/favicon-32.png' => pngIcon(32),
+            'https://site.test/apple-touch-icon.png' => pngIcon(180),
         ],
     );
 
@@ -73,13 +73,13 @@ it('stores the largest icon advertised by the site', function () {
         ->and($project->favicon_path)->toEndWith('.png')
         ->and($project->favicon_fetched_at)->not->toBeNull();
     Storage::disk('public')->assertExists($project->favicon_path);
-    expect(Storage::disk('public')->get($project->favicon_path))->toBe('large');
+    expect(Storage::disk('public')->get($project->favicon_path))->toBe(pngIcon(180));
 });
 
 it('reads icon tags from an error page such as a dev lock', function (int $status) {
     fakeSite(
         '<html><head><link rel="icon" href="/favicon/icon-32.png" sizes="32x32"></head></html>',
-        ['https://site.test/favicon/icon-32.png' => 'locked'],
+        ['https://site.test/favicon/icon-32.png' => pngIcon(32)],
         status: $status,
     );
 
@@ -87,7 +87,7 @@ it('reads icon tags from an error page such as a dev lock', function (int $statu
     Environment::factory()->for($project)->create(['name' => 'production', 'url' => 'https://site.test']);
 
     expect(app(ProjectFaviconService::class)->fetch($project))->toBeTrue()
-        ->and(Storage::disk('public')->get($project->refresh()->favicon_path))->toBe('locked');
+        ->and(Storage::disk('public')->get($project->refresh()->favicon_path))->toBe(pngIcon(32));
 })->with([401, 403, 404, 503]);
 
 it('skips an advertised icon that answers with an error page', function () {
@@ -96,7 +96,7 @@ it('skips an advertised icon that answers with an error page', function () {
         . '<link rel="apple-touch-icon" href="/missing.png" sizes="180x180">'
         . '<link rel="icon" href="/icon-32.png" sizes="32x32">'
         . '</head></html>',
-        ['https://site.test/icon-32.png' => 'small'],
+        ['https://site.test/icon-32.png' => pngIcon(32)],
         missingBody: '<html>Not found</html>',
     );
 
@@ -104,7 +104,7 @@ it('skips an advertised icon that answers with an error page', function () {
     Environment::factory()->for($project)->create(['name' => 'production', 'url' => 'https://site.test']);
 
     expect(app(ProjectFaviconService::class)->fetch($project))->toBeTrue()
-        ->and(Storage::disk('public')->get($project->refresh()->favicon_path))->toBe('small');
+        ->and(Storage::disk('public')->get($project->refresh()->favicon_path))->toBe(pngIcon(32));
 });
 
 it('logs in with the configured basic auth credentials', function () {
@@ -118,7 +118,7 @@ it('logs in with the configured basic auth credentials', function () {
 
         return match (rtrim($request->url(), '/')) {
             'https://site.test' => Http::response('<html><head><link rel="icon" href="/icon.png"></head></html>'),
-            'https://site.test/icon.png' => Http::response('protected'),
+            'https://site.test/icon.png' => Http::response(pngIcon()),
             default => Http::response('', 404),
         };
     });
@@ -127,7 +127,7 @@ it('logs in with the configured basic auth credentials', function () {
     Environment::factory()->for($project)->create(['name' => 'production', 'url' => 'https://site.test']);
 
     expect(app(ProjectFaviconService::class)->fetch($project))->toBeTrue()
-        ->and(Storage::disk('public')->get($project->refresh()->favicon_path))->toBe('protected');
+        ->and(Storage::disk('public')->get($project->refresh()->favicon_path))->toBe(pngIcon());
 });
 
 it('never sends the basic auth credentials to another host', function () {
@@ -156,7 +156,7 @@ it('sends no credentials when basic auth is not configured', function () {
 });
 
 it('falls back to /favicon.ico when the page has no icon tags', function () {
-    fakeSite('<html><head></head></html>', ['https://site.test/favicon.ico' => 'ico']);
+    fakeSite('<html><head></head></html>', ['https://site.test/favicon.ico' => icoIcon()]);
 
     $project = Project::factory()->create();
     Environment::factory()->for($project)->create(['name' => 'production', 'url' => 'https://site.test']);
@@ -173,7 +173,7 @@ it('skips an empty icon and stores the next one', function () {
         . '</head></html>',
         [
             'https://site.test/empty.png' => '',
-            'https://site.test/icon-32.png' => 'small',
+            'https://site.test/icon-32.png' => pngIcon(32),
         ],
     );
 
@@ -181,8 +181,45 @@ it('skips an empty icon and stores the next one', function () {
     Environment::factory()->for($project)->create(['name' => 'production', 'url' => 'https://site.test']);
 
     expect(app(ProjectFaviconService::class)->fetch($project))->toBeTrue();
-    expect(Storage::disk('public')->get($project->refresh()->favicon_path))->toBe('small')
+    expect(Storage::disk('public')->get($project->refresh()->favicon_path))->toBe(pngIcon(32))
         ->and(Storage::disk('public')->allFiles('voight/favicons'))->toHaveCount(1);
+});
+
+it('never stores an svg icon, whatever its url or content type says', function () {
+    $svg = '<svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script></svg>';
+    Http::fake(fn (Request $request) => match (rtrim($request->url(), '/')) {
+        'https://site.test' => Http::response('<html><head><link rel="icon" href="/icon.svg"><link rel="icon" href="/icon.png"></head></html>'),
+        'https://site.test/icon.svg' => Http::response($svg, 200, ['Content-Type' => 'image/svg+xml']),
+        'https://site.test/icon.png' => Http::response($svg, 200, ['Content-Type' => 'image/png']),
+        default => Http::response('', 404),
+    });
+
+    $project = Project::factory()->create();
+    Environment::factory()->for($project)->create(['name' => 'production', 'url' => 'https://site.test']);
+
+    expect(app(ProjectFaviconService::class)->fetch($project))->toBeFalse()
+        ->and(Storage::disk('public')->allFiles('voight/favicons'))->toBeEmpty();
+});
+
+it('names the stored file after the detected image type, not the url', function () {
+    fakeSite('<html><head><link rel="icon" href="/icon.svg"></head></html>', ['https://site.test/icon.svg' => pngIcon()]);
+
+    $project = Project::factory()->create();
+    Environment::factory()->for($project)->create(['name' => 'production', 'url' => 'https://site.test']);
+
+    expect(app(ProjectFaviconService::class)->fetch($project))->toBeTrue()
+        ->and($project->refresh()->favicon_path)->toEndWith('.png');
+});
+
+it('does not request an advertised icon with a non-http url', function () {
+    fakeSite('<html><head><link rel="icon" href="ftp://site.test/icon.png"></head></html>', ['https://site.test/favicon.ico' => icoIcon()]);
+
+    $project = Project::factory()->create();
+    Environment::factory()->for($project)->create(['name' => 'production', 'url' => 'https://site.test']);
+
+    expect(app(ProjectFaviconService::class)->fetch($project))->toBeTrue()
+        ->and($project->refresh()->favicon_path)->toEndWith('.ico');
+    Http::assertNotSent(fn (Request $request): bool => str_starts_with($request->url(), 'ftp://'));
 });
 
 it('stores nothing when every icon is empty', function () {
@@ -212,7 +249,7 @@ it('keeps the previous favicon when the site is unreachable', function () {
 });
 
 it('deletes the previous favicon after storing a new one', function () {
-    fakeSite('<html><head><link rel="icon" href="/icon.png"></head></html>', ['https://site.test/icon.png' => 'new']);
+    fakeSite('<html><head><link rel="icon" href="/icon.png"></head></html>', ['https://site.test/icon.png' => pngIcon()]);
     Storage::disk('public')->put('voight/favicons/old.png', 'old');
 
     $project = Project::factory()->create(['favicon_path' => 'voight/favicons/old.png']);
