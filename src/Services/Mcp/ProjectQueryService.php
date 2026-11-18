@@ -5,16 +5,19 @@ namespace Statikbe\FilamentVoight\Services\Mcp;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
+use Statikbe\FilamentVoight\Enums\Framework;
 use Statikbe\FilamentVoight\Enums\Severity;
+use Statikbe\FilamentVoight\Enums\UpgradeStatus;
 use Statikbe\FilamentVoight\Facades\FilamentVoight;
 use Statikbe\FilamentVoight\Mcp\McpAccess;
 use Statikbe\FilamentVoight\Mcp\McpToolError;
 use Statikbe\FilamentVoight\Models\Environment;
 use Statikbe\FilamentVoight\Models\EnvironmentPackage;
 use Statikbe\FilamentVoight\Models\Project;
+use Statikbe\FilamentVoight\Services\ProjectStackService;
 
 /**
- * @phpstan-type ProjectFilters array{search?: string|null, team?: string|null, customer?: string|null, min_severity?: Severity|null, has_findings?: bool|null, scanned_before?: Carbon|null, sort?: string|null, limit: int}
+ * @phpstan-type ProjectFilters array{project_codes?: array<int, string>|null, search?: string|null, team?: string|null, customer?: string|null, min_severity?: Severity|null, has_findings?: bool|null, scanned_before?: Carbon|null, upgrade_status?: UpgradeStatus|null, sort?: string|null, limit: int}
  */
 class ProjectQueryService
 {
@@ -22,7 +25,7 @@ class ProjectQueryService
 
     /**
      * @param  ProjectFilters  $filters
-     * @return array{projects: array<int, array<string, mixed>>, truncated: bool}
+     * @return array{projects: array<int, array<string, mixed>>, truncated: bool, missing_codes?: array<int, string>}
      */
     public function listProjects(McpAccess $access, array $filters): array
     {
@@ -36,6 +39,12 @@ class ProjectQueryService
             ->leftJoinSub($counts, 'counts', 'counts.project_id', '=', 'voight_projects.id')
             ->select(['voight_projects.*', 'counts.critical', 'counts.high', 'counts.medium', 'counts.low', 'counts.none', 'counts.total', 'counts.max_score'])
             ->with(['team', 'customer', 'environments' => fn ($environments) => $environments->orderBy('name')]);
+        ProjectStackService::withStack($query);
+        $projectCodes = $filters['project_codes'] ?? null;
+
+        if ($projectCodes !== null) {
+            $query->whereIn('voight_projects.project_code', $projectCodes);
+        }
 
         if (filled($filters['search'] ?? null)) {
             $search = '%' . $filters['search'] . '%';
@@ -56,6 +65,10 @@ class ProjectQueryService
             $query->where('counts.total', '>', 0);
         } elseif (($filters['has_findings'] ?? null) === false) {
             $query->whereNull('counts.total');
+        }
+
+        if (($filters['upgrade_status'] ?? null) !== null) {
+            ProjectStackService::constrainToUpgradeStatuses($query, $filters['upgrade_status']);
         }
 
         if (($filters['scanned_before'] ?? null) !== null) {
@@ -87,9 +100,54 @@ class ProjectQueryService
                     'scanned_at' => $environment->scanned_at?->toIso8601String(),
                 ])->all(),
                 ...CurrentFindings::severitySummary((object) $project->getAttributes()),
+                'stack' => $this->describeStack($project),
             ])->values()->all(),
             'truncated' => $projects->count() > $filters['limit'],
+            ...($projectCodes === null ? [] : ['missing_codes' => $this->missingCodes($access, $projectCodes)]),
         ];
+    }
+
+    /**
+     * The stack as the Filament project table shows it, read from the project's highest-stage environment.
+     *
+     * @return array{environment: string|null, php_version: string|null, frameworks: array<int, array{package: string, version: string, latest_major: int}>, upgrade_status: string}
+     */
+    private function describeStack(Project $project): array
+    {
+        $frameworks = [];
+
+        foreach (Framework::cases() as $framework) {
+            $version = ProjectStackService::version($project, $framework);
+
+            if ($version !== null) {
+                $frameworks[] = ['package' => $framework->value, 'version' => $version, 'latest_major' => $framework->latestMajor()];
+            }
+        }
+
+        return [
+            'environment' => $project->representativeEnvironment?->name,
+            'php_version' => ProjectStackService::phpVersion($project),
+            'frameworks' => $frameworks,
+            'upgrade_status' => ProjectStackService::upgradeStatus($project)->value,
+        ];
+    }
+
+    /**
+     * Requested codes that match no visible project, whatever the other filters. Unknown and invisible
+     * codes are reported alike, and codes compare case-insensitively as most database collations do.
+     *
+     * @param  array<int, string>  $projectCodes
+     * @return array<int, string>
+     */
+    private function missingCodes(McpAccess $access, array $projectCodes): array
+    {
+        $found = $access->visibleProjects()
+            ->whereIn('project_code', $projectCodes)
+            ->pluck('project_code')
+            ->map(fn (string $code): string => mb_strtolower($code))
+            ->all();
+
+        return array_values(array_filter($projectCodes, fn (string $code): bool => ! in_array(mb_strtolower($code), $found, true)));
     }
 
     /**

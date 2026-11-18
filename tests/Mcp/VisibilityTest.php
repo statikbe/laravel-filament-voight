@@ -58,6 +58,13 @@ it('reports an invisible project exactly like an unknown one', function (string 
     $unknown->assertHasErrors(['Project `NOPE` not found.']);
 })->with([GetProjectVulnerabilitiesTool::class, GetUpgradePlanTool::class, CreateProjectTokenTool::class]);
 
+it('reports a requested invisible project code as missing, like an unknown one', function () {
+    $result = structuredContent(VoightServer::actingAs($this->user)->tool(ListProjectsTool::class, ['project_codes' => ['MINE', 'THEIRS', 'NOPE']]));
+
+    expect(array_column($result['projects'], 'code'))->toBe(['MINE'])
+        ->and($result['missing_codes'])->toBe(['THEIRS', 'NOPE']);
+});
+
 it('hides teamless projects from non-admins', function () {
     VoightServer::actingAs($this->user)->tool(GetProjectVulnerabilitiesTool::class, ['project_code' => 'TEAMLESS'])
         ->assertHasErrors(['not found']);
