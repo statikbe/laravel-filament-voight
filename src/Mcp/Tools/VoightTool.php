@@ -12,6 +12,7 @@ use Laravel\Mcp\Server\Tool;
 use Statikbe\FilamentVoight\Enums\Severity;
 use Statikbe\FilamentVoight\Mcp\McpAccess;
 use Statikbe\FilamentVoight\Mcp\McpToolError;
+use Statikbe\FilamentVoight\Services\Mcp\Page;
 
 /**
  * Tools stay thin: validate, authorize, call a service, shape the response.
@@ -44,6 +45,26 @@ abstract class VoightTool extends Tool
             ->description('Maximum number of results (default ' . self::DEFAULT_LIMIT . ', max ' . self::MAX_LIMIT . '). `truncated: true` means more exist.');
     }
 
+    protected function offsetSchema(JsonSchema $schema): Type
+    {
+        return $schema->integer()->min(0)->default(0)
+            ->description('Number of results to skip. Pass the previous response\'s `next_offset` to get the next page.');
+    }
+
+    /**
+     * The paging fields every list tool returns next to its rows.
+     *
+     * @return array<string, Type>
+     */
+    protected function pagingOutputSchema(JsonSchema $schema): array
+    {
+        return [
+            'total' => $schema->integer()->required()->description('Number of results across all pages.'),
+            'truncated' => $schema->boolean()->required()->description('true when more results follow this page.'),
+            'next_offset' => $schema->integer()->nullable()->required()->description('The `offset` of the next page; null on the last page.'),
+        ];
+    }
+
     protected function minSeveritySchema(JsonSchema $schema): Type
     {
         return $schema->string()->enum(self::SEVERITIES)
@@ -57,6 +78,7 @@ abstract class VoightTool extends Tool
     {
         return [
             'limit' => ['nullable', 'integer', 'min:1', 'max:' . self::MAX_LIMIT],
+            'offset' => ['nullable', 'integer', 'min:0'],
             'min_severity' => ['nullable', 'string', Rule::in(self::SEVERITIES)],
         ];
     }
@@ -64,6 +86,11 @@ abstract class VoightTool extends Tool
     protected function limit(Request $request): int
     {
         return (int) ($request->get('limit') ?? self::DEFAULT_LIMIT);
+    }
+
+    protected function page(Request $request, ?int $limit = null): Page
+    {
+        return new Page((int) ($request->get('offset') ?? 0), $limit ?? $this->limit($request));
     }
 
     protected function minSeverity(Request $request): ?Severity

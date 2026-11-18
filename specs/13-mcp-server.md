@@ -225,8 +225,14 @@ Shared conventions:
 
 - Inputs declared with `schema()`; results returned as `Response::structured()`
   with an `outputSchema()`, so clients get both JSON text and structured content.
-- List tools take `limit` (default 25, max 100) and return `truncated: true` when
-  more rows exist.
+- List tools (`list_projects`, `get_project_vulnerabilities`,
+  `find_package_usage`, `get_statistics`) are paged by offset: they take `limit`
+  (default 25, max 100) and `offset` (default 0), and return `total` (rows across
+  all pages), `truncated` (more rows follow this page) and `next_offset` (the
+  next page's `offset`, `null` on the last page). Offsets rather than cursors:
+  the default sorts are on computed values, and data only changes on a CI sync.
+  `Services\Mcp\Page` holds the offset and limit and builds these fields; SQL
+  tools count and page in the query, tools that filter in PHP slice the result.
 - Project arguments are `project_code`; environment arguments are the
   environment `name`.
 - Errors use `Response::error()` with a message the model can act on (e.g.
