@@ -104,7 +104,7 @@ class ProjectQueryService
                 ])->all(),
                 ...CurrentFindings::severitySummary((object) $project->getAttributes()),
                 'stack' => $this->describeStack($project),
-            ])->values()->all(),
+            ])->all(),
             ...$page->meta($total),
             ...($projectCodes === null ? [] : ['missing_codes' => $this->missingCodes($access, $projectCodes)]),
         ];

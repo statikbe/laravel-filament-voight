@@ -39,6 +39,7 @@ function installFramework(Environment $environment, Framework $framework, string
  * Returns the rows of all pages, in order.
  *
  * @param  class-string  $tool
+ * @param  array<string, mixed>  $arguments
  * @return array<int, array<string, mixed>>
  */
 function walkPages(string $tool, array $arguments, string $rowsKey, int $pageSize): array

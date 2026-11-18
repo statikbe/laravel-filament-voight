@@ -59,7 +59,7 @@ class StatisticsService
                 'label' => $row->group_label,
                 ...CurrentFindings::severitySummary($row),
                 'affected_projects' => (int) $row->affected_projects,
-            ])->values()->all(),
+            ])->all(),
             ...$page->meta($total),
         ];
     }
