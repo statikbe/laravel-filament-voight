@@ -10,9 +10,11 @@ use Laravel\Mcp\Response;
 use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Tools\Annotations\IsIdempotent;
 use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
+use Statikbe\FilamentVoight\Enums\PackageType;
 use Statikbe\FilamentVoight\Enums\UpgradeStatus;
 use Statikbe\FilamentVoight\Facades\FilamentVoight;
 use Statikbe\FilamentVoight\Mcp\McpAccess;
+use Statikbe\FilamentVoight\Services\Mcp\PackageUsageService;
 use Statikbe\FilamentVoight\Services\Mcp\ProjectQueryService;
 
 #[IsReadOnly]
@@ -35,6 +37,10 @@ class ListProjectsTool extends VoightTool
 
         To check a list of known codes (e.g. from a spreadsheet), pass `project_codes`: every matching project is
         returned, and `missing_codes` lists the codes that are unknown or not visible to you.
+
+        To find the projects using a dependency, pass `package` (exact name), optionally with `package_version`, a
+        range such as `>=7.0 <7.4`: projects with the package installed in that range in any environment.
+        `find_package_usage` lists the matching versions per environment.
     MARKDOWN;
 
     public function __construct(private readonly ProjectQueryService $projects) {}
@@ -44,6 +50,9 @@ class ListProjectsTool extends VoightTool
         return [
             'project_codes' => $schema->array()->items($schema->string())->max(self::MAX_LIMIT)
                 ->description('Exact project codes (max ' . self::MAX_LIMIT . '). The limit defaults to the number of codes; `missing_codes` lists those not found.'),
+            'package' => $schema->string()->description('Exact package name, e.g. `guzzlehttp/guzzle` or `lodash`. Only projects with it installed in any environment.'),
+            'package_type' => $schema->string()->enum(array_column(PackageType::cases(), 'value'))->description('Requires `package`.'),
+            'package_version' => $schema->string()->description('Requires `package`. One or more comparisons (<, <=, >, >=, =) separated by spaces, all of which must hold, e.g. `<7.4.5` or `>=7.0 <7.4`. A leading `v` is ignored.'),
             'search' => $schema->string()->description('Matches part of the project code or name.'),
             'team' => $schema->string()->description('Team name.'),
             'customer' => $schema->string()->description('Customer name.'),
@@ -92,6 +101,9 @@ class ListProjectsTool extends VoightTool
             'project_codes' => ['nullable', 'array', 'max:' . self::MAX_LIMIT],
             'project_codes.*' => ['required', 'string'],
             'upgrade_status' => ['nullable', Rule::enum(UpgradeStatus::class)],
+            'package' => ['nullable', 'string', 'required_with:package_type,package_version'],
+            'package_type' => ['nullable', Rule::enum(PackageType::class)],
+            'package_version' => ['nullable', 'string'],
             'search' => ['nullable', 'string'],
             'team' => ['nullable', 'string'],
             'customer' => ['nullable', 'string'],
@@ -108,6 +120,9 @@ class ListProjectsTool extends VoightTool
 
         return Response::structured($this->projects->listProjects($access, [
             'project_codes' => $projectCodes,
+            'package' => $request->get('package'),
+            'package_type' => $request->get('package_type'),
+            'package_version' => PackageUsageService::versionConstraint($request->get('package_version')),
             'search' => $request->get('search'),
             'team' => $request->get('team'),
             'customer' => $request->get('customer'),

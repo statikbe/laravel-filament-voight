@@ -15,13 +15,16 @@ use Statikbe\FilamentVoight\Models\Environment;
 use Statikbe\FilamentVoight\Models\EnvironmentPackage;
 use Statikbe\FilamentVoight\Models\Project;
 use Statikbe\FilamentVoight\Services\ProjectStackService;
+use Statikbe\FilamentVoight\Support\VersionConstraint;
 
 /**
- * @phpstan-type ProjectFilters array{project_codes?: array<int, string>|null, search?: string|null, team?: string|null, customer?: string|null, min_severity?: Severity|null, has_findings?: bool|null, scanned_before?: Carbon|null, upgrade_status?: UpgradeStatus|null, sort?: string|null, page: Page}
+ * @phpstan-type ProjectFilters array{project_codes?: array<int, string>|null, package?: string|null, package_type?: string|null, package_version?: VersionConstraint|null, search?: string|null, team?: string|null, customer?: string|null, min_severity?: Severity|null, has_findings?: bool|null, scanned_before?: Carbon|null, upgrade_status?: UpgradeStatus|null, sort?: string|null, page: Page}
  */
 class ProjectQueryService
 {
     public const array SORTS = ['findings', 'max_score', 'name', 'last_scanned'];
+
+    public function __construct(private readonly PackageUsageService $packageUsage) {}
 
     /**
      * @param  ProjectFilters  $filters
@@ -45,6 +48,14 @@ class ProjectQueryService
 
         if ($projectCodes !== null) {
             $query->whereIn('voight_projects.project_code', $projectCodes);
+        }
+
+        if (filled($filters['package'] ?? null)) {
+            $query->whereIn('voight_projects.id', $this->packageUsage->projectIdsWithPackage(
+                $filters['package'],
+                $filters['package_type'] ?? null,
+                $filters['package_version'] ?? null,
+            ));
         }
 
         if (filled($filters['search'] ?? null)) {

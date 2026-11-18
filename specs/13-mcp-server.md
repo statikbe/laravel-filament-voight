@@ -241,7 +241,10 @@ Shared conventions:
 ### Read tools — `#[IsReadOnly]`, `#[IsIdempotent]`
 
 **`list_projects`**
-- In: `project_codes?` (exact codes, max 100), `search?` (code or name), `team?`,
+- In: `project_codes?` (exact codes, max 100), `package?` (exact name) with
+  `package_type?` and `package_version?` (a version constraint, see below): only
+  projects with that package installed in a matching version in any
+  environment; `search?` (code or name), `team?`,
   `customer?`, `min_severity?`, `has_findings?`, `scanned_before?` (ISO date,
   finds stale scans), `upgrade_status?` = `needs_upgrade` | `current` | `unknown`,
   `sort` = `findings` (default) | `max_score` | `name` | `last_scanned`, `limit`
@@ -292,12 +295,21 @@ Shared conventions:
   major bump of the parent is needed"). The tool description says so.
 
 **`find_package_usage`**
-- In: `package`, `type?` (`composer` | `npm`), `version?` — a single comparison
-  `<`, `<=`, `>`, `>=`, `=` followed by a version (e.g. `<4.17.21`), compared
-  with `version_compare()` after stripping a leading `v`; `include_dev`
-  (default `true`); `limit`.
+- In: `package`, `type?` (`composer` | `npm`), `version?` — a version
+  constraint (see below, e.g. `<4.17.21` or `>=7.0 <7.4`); `include_dev`
+  (default `true`); `limit`, `offset`.
 - Out: per match: `project_code`, `environment`, `version`, `is_direct`,
   `is_dev`.
+
+**Version constraints** (`find_package_usage.version`,
+`list_projects.package_version`): one or more comparisons (`<`, `<=`, `>`, `>=`,
+`=`; a bare version means `=`), separated by spaces or commas, all of which must
+hold. `Support\VersionConstraint` parses and matches them with
+`version_compare()` after stripping a leading `v`; the Filament installed-version
+range filter uses the same class. Versions cannot be ordered in SQL, so the
+installations of the one named package are fetched and matched in PHP, and
+`list_projects` restricts its query to the matching project ids — counting and
+paging stay in SQL.
 
 **`get_vulnerability`**
 - In: `id` — matched on `source_id` or any entry in `aliases` (CVE, GHSA).
