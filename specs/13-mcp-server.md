@@ -235,11 +235,19 @@ Shared conventions:
 ### Read tools — `#[IsReadOnly]`, `#[IsIdempotent]`
 
 **`list_projects`**
-- In: `search?` (code or name), `team?`, `customer?`, `min_severity?`,
-  `has_findings?`, `scanned_before?` (ISO date, finds stale scans),
-  `sort` = `findings` (default) | `max_score` | `name` | `last_scanned`, `limit`.
+- In: `project_codes?` (exact codes, max 100), `search?` (code or name), `team?`,
+  `customer?`, `min_severity?`, `has_findings?`, `scanned_before?` (ISO date,
+  finds stale scans), `upgrade_status?` = `needs_upgrade` | `current` | `unknown`,
+  `sort` = `findings` (default) | `max_score` | `name` | `last_scanned`, `limit`
+  (defaults to the number of `project_codes` when those are passed).
 - Out: per project: `code`, `name`, `team`, `customer`, `environments[]`
-  (`name`, `scanned_at`), current finding counts per severity, `max_score`.
+  (`name`, `scanned_at`), current finding counts per severity, `max_score`, and
+  `stack`: the representative `environment`, `php_version`, `frameworks[]`
+  (`package`, `version`, `latest_major`) and `upgrade_status`. The stack comes
+  from `ProjectStackService`, the same code as the Filament project table.
+- With `project_codes`, also `missing_codes`: requested codes that match no
+  visible project, regardless of the other filters. Unknown and invisible codes
+  are reported alike. Use it to reconcile an external project list.
 
 **`get_project_vulnerabilities`**
 - In: `project_code`, `environment?`, `min_severity?`, `include_dev` (default

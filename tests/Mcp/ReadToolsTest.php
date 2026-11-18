@@ -1,5 +1,6 @@
 <?php
 
+use Statikbe\FilamentVoight\Enums\Framework;
 use Statikbe\FilamentVoight\Mcp\Tools\FindPackageUsageTool;
 use Statikbe\FilamentVoight\Mcp\Tools\GetProjectVulnerabilitiesTool;
 use Statikbe\FilamentVoight\Mcp\Tools\GetStatisticsTool;
@@ -10,6 +11,7 @@ use Statikbe\FilamentVoight\Models\AuditRun;
 use Statikbe\FilamentVoight\Models\Customer;
 use Statikbe\FilamentVoight\Models\Environment;
 use Statikbe\FilamentVoight\Models\EnvironmentPackage;
+use Statikbe\FilamentVoight\Models\EnvironmentSystemDetail;
 use Statikbe\FilamentVoight\Models\Package;
 use Statikbe\FilamentVoight\Models\Project;
 use Statikbe\FilamentVoight\Models\Team;
@@ -22,6 +24,13 @@ function mcpEnvironment(string $projectCode, string $name = 'production', array 
         ?? Project::factory()->create(['project_code' => $projectCode, ...$projectAttributes]);
 
     return Environment::factory()->for($project)->create(['name' => $name]);
+}
+
+function installFramework(Environment $environment, Framework $framework, string $version): void
+{
+    EnvironmentPackage::factory()->for($environment)->for(
+        Package::query()->firstOrCreate(['name' => $framework->value, 'type' => 'composer']),
+    )->create(['version' => $version]);
 }
 
 describe('list_projects', function () {
@@ -92,6 +101,94 @@ describe('list_projects', function () {
 
     it('rejects a limit above the maximum', function () {
         VoightLocalServer::tool(ListProjectsTool::class, ['limit' => 101])->assertHasErrors();
+    });
+
+    it('describes the stack of the highest-stage environment', function () {
+        $production = mcpEnvironment('SHOP');
+        installFramework($production, Framework::Laravel, 'v11.31.0');
+        installFramework($production, Framework::Filament, '5.0.2');
+        EnvironmentSystemDetail::factory()->for($production)->create(['php_version' => '8.3.12']);
+        installFramework(mcpEnvironment('SHOP', 'staging'), Framework::Laravel, '13.0.0');
+        mcpEnvironment('BLOG');
+
+        $projects = collect(structuredContent(VoightLocalServer::tool(ListProjectsTool::class))['projects'])->keyBy('code');
+
+        expect($projects['SHOP']['stack'])->toBe([
+            'environment' => 'production',
+            'php_version' => '8.3.12',
+            'frameworks' => [
+                ['package' => 'laravel/framework', 'version' => 'v11.31.0', 'latest_major' => Framework::Laravel->latestMajor()],
+                ['package' => 'filament/filament', 'version' => '5.0.2', 'latest_major' => Framework::Filament->latestMajor()],
+            ],
+            'upgrade_status' => 'needs_upgrade',
+        ])->and($projects['BLOG']['stack'])->toBe([
+            'environment' => 'production',
+            'php_version' => null,
+            'frameworks' => [],
+            'upgrade_status' => 'unknown',
+        ]);
+    });
+
+    it('filters on upgrade status', function () {
+        installFramework(mcpEnvironment('OLD'), Framework::Laravel, '11.0.0');
+        installFramework(mcpEnvironment('NEW'), Framework::Laravel, Framework::Laravel->latestMajor() . '.1.0');
+        mcpEnvironment('NODE');
+
+        $codes = fn (string $status): array => array_column(structuredContent(VoightLocalServer::tool(ListProjectsTool::class, ['upgrade_status' => $status]))['projects'], 'code');
+
+        expect($codes('needs_upgrade'))->toBe(['OLD'])
+            ->and($codes('current'))->toBe(['NEW'])
+            ->and($codes('unknown'))->toBe(['NODE']);
+    });
+
+    it('rejects an unknown upgrade status', function () {
+        VoightLocalServer::tool(ListProjectsTool::class, ['upgrade_status' => 'ancient'])->assertHasErrors();
+    });
+
+    it('lists the requested project codes and reports the missing ones', function () {
+        foreach (['KULCOB', 'STIPLA', 'OTHER'] as $code) {
+            mcpEnvironment($code);
+        }
+
+        $result = structuredContent(VoightLocalServer::tool(ListProjectsTool::class, ['project_codes' => ['STIPLA', 'KULXMS', 'KULCOB', 'COLTRA']]));
+
+        expect(array_column($result['projects'], 'code'))->toEqualCanonicalizing(['KULCOB', 'STIPLA'])
+            ->and($result['missing_codes'])->toBe(['KULXMS', 'COLTRA']);
+    });
+
+    it('does not report a requested code as missing when another filter excludes it', function () {
+        mcpFinding(mcpEnvironment('VULN'), Vulnerability::factory()->high()->create());
+        mcpEnvironment('CLEAN');
+
+        $result = structuredContent(VoightLocalServer::tool(ListProjectsTool::class, ['project_codes' => ['VULN', 'CLEAN'], 'has_findings' => true]));
+
+        expect(array_column($result['projects'], 'code'))->toBe(['VULN'])
+            ->and($result['missing_codes'])->toBe([]);
+    });
+
+    it('omits missing codes when no project codes are requested', function () {
+        mcpEnvironment('A');
+
+        expect(structuredContent(VoightLocalServer::tool(ListProjectsTool::class)))->not->toHaveKey('missing_codes');
+    });
+
+    it('returns every requested project without a limit', function () {
+        $codes = array_map(fn (int $number): string => "P{$number}", range(1, 30));
+
+        foreach ($codes as $code) {
+            mcpEnvironment($code);
+        }
+
+        $result = structuredContent(VoightLocalServer::tool(ListProjectsTool::class, ['project_codes' => $codes]));
+
+        expect($result['projects'])->toHaveCount(30)
+            ->and($result['truncated'])->toBeFalse();
+    });
+
+    it('rejects more than the maximum number of project codes', function () {
+        $codes = array_map(fn (int $number): string => "P{$number}", range(1, 101));
+
+        VoightLocalServer::tool(ListProjectsTool::class, ['project_codes' => $codes])->assertHasErrors();
     });
 });
 

@@ -9,7 +9,7 @@ beforeEach(function () {
     Storage::fake('public');
     Http::fake([
         'https://site.test' => Http::response('<html><head><link rel="icon" href="/icon.png"></head></html>'),
-        'https://site.test/icon.png' => Http::response('png'),
+        'https://site.test/icon.png' => Http::response(pngIcon()),
     ]);
 });
 

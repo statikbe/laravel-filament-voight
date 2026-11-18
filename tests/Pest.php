@@ -182,3 +182,25 @@ function fakePassportAccessToken(array $scopes): object
 
     return new $class(['oauth_access_token_id' => 'token-id', 'oauth_scopes' => $scopes]);
 }
+
+/**
+ * A real PNG of the given size: favicons are only stored when their bytes are a raster image.
+ */
+function pngIcon(int $size = 1): string
+{
+    $image = imagecreatetruecolor($size, $size);
+    ob_start();
+    imagepng($image);
+
+    return (string) ob_get_clean();
+}
+
+/**
+ * A real ICO file wrapping a 1x1 PNG.
+ */
+function icoIcon(): string
+{
+    $png = pngIcon();
+
+    return pack('vvv', 0, 1, 1) . pack('CCCCvvVV', 1, 1, 0, 0, 1, 32, strlen($png), 22) . $png;
+}

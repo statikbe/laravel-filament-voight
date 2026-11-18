@@ -162,6 +162,10 @@ return [
     | icon is fetched from a production-stage environment (see
     | `environments.stages`) when one has a URL.
     |
+    | That URL is trusted input: whoever holds a project's sync token decides
+    | which address the server requests. Only raster images (ICO, PNG, JPEG,
+    | GIF, WebP) are stored, so an SVG or any other response is never served.
+    |
     | `fallback_drivers` are favicon-fetcher drivers tried when the site
     | itself yields nothing (e.g. 'duck-duck-go', 'google-shared-stuff').
     | These send the domain to a third party, so they are off by default.
