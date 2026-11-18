@@ -87,7 +87,6 @@ class PackageUsageService
             ->filter(fn (object $row): bool => $constraint === null || $constraint->matches($row->version))
             ->pluck('project_id')
             ->unique()
-            ->values()
             ->all();
     }
 

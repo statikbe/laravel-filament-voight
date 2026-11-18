@@ -49,13 +49,8 @@ final readonly class VersionConstraint
     {
         return new self(array_map(
             fn (array $bound): array => self::comparison($bound[0], $bound[1]),
-            array_values(array_filter([$lower, $upper])),
+            array_filter([$lower, $upper]),
         ));
-    }
-
-    public static function normalize(string $version): string
-    {
-        return ltrim($version, 'vV');
     }
 
     public function matches(string $version): bool
@@ -77,5 +72,10 @@ final readonly class VersionConstraint
     private static function comparison(string $operator, string $version): array
     {
         return [$operator === '=' ? '==' : $operator, self::normalize($version)];
+    }
+
+    private static function normalize(string $version): string
+    {
+        return ltrim($version, 'vV');
     }
 }
