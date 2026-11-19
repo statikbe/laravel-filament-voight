@@ -63,7 +63,8 @@ class EnvironmentTableSchema
                     ->url(fn (Environment $record): ?string => $record->url, shouldOpenInNewTab: true)
                     ->placeholder('—')
                     ->toggleable(),
-                SpatieTagsColumn::make('hostings')
+                // Reads the eager-loaded tags relation and filters by type, so no extra query per row.
+                SpatieTagsColumn::make('tags')
                     ->label(voightTrans('models.environment.fields.hosting'))
                     ->type(HostingTag::TYPE)
                     ->placeholder(voightTrans('models.environment.unknown_hosting'))

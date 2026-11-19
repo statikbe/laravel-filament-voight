@@ -1,5 +1,6 @@
 <?php
 
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Auth\User;
 use Livewire\Livewire;
 use Statikbe\FilamentVoight\Models\Environment;
@@ -48,6 +49,8 @@ it('asks for the hostings when an environment is created, reusing existing tags 
 });
 
 it('shows each environment\'s hostings, or unknown', function () {
+    // Host apps may forbid lazy loading; the column must use eager-loaded tags.
+    Model::preventLazyLoading();
     $project = Project::factory()->create();
     $hosted = Environment::factory()->for($project)->create(['name' => 'production']);
     $hosted->syncHostings(['Combell']);
@@ -57,6 +60,6 @@ it('shows each environment\'s hostings, or unknown', function () {
         'ownerRecord' => $project,
         'pageClass' => ViewProject::class,
     ])
-        ->assertTableColumnStateSet('hostings', ['Combell'], $hosted)
+        ->assertTableColumnStateSet('tags', ['Combell'], $hosted)
         ->assertSeeText(voightTrans('models.environment.unknown_hosting'));
-});
+})->after(fn () => Model::preventLazyLoading(false));
