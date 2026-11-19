@@ -5,7 +5,7 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
 use Statikbe\FilamentVoight\Models\Environment;
-use Statikbe\FilamentVoight\Models\Hosting;
+use Statikbe\FilamentVoight\Models\HostingTag;
 use Statikbe\FilamentVoight\Models\Project;
 
 beforeEach(function () {
@@ -31,37 +31,42 @@ function syncWithHosting(?string $hosting)
     ]));
 }
 
-it('creates an unknown hosting and assigns it to the environment', function () {
-    syncWithHosting('Combell')->assertStatus(202);
+function hostingNames(): array
+{
+    return Environment::query()->sole()->hostings->pluck('name')->sort()->values()->all();
+}
 
-    expect(Environment::query()->sole()->hosting->name)->toBe('Combell');
+it('tags the environment with the hostings, creating unknown ones', function () {
+    syncWithHosting('Combell, Shared server')->assertStatus(202);
+
+    expect(hostingNames())->toBe(['Combell', 'Shared server']);
 });
 
 it('reuses an existing hosting whatever the case', function () {
-    $combell = Hosting::factory()->create(['name' => 'Combell']);
+    HostingTag::factory()->create(['name' => ['en' => 'Combell']]);
 
     syncWithHosting('combell')->assertStatus(202);
 
-    expect(Environment::query()->sole()->hosting_id)->toBe($combell->getKey())
-        ->and(Hosting::query()->count())->toBe(1);
+    expect(hostingNames())->toBe(['Combell'])
+        ->and(HostingTag::query()->count())->toBe(1);
 });
 
-it('overwrites a hosting set by hand', function () {
-    Environment::factory()->for($this->project)->for(Hosting::factory()->state(['name' => 'Own server']))->create(['name' => 'production']);
+it('replaces hostings set by hand', function () {
+    Environment::factory()->for($this->project)->create(['name' => 'production'])->syncHostings(['Own server', 'Combell']);
 
     syncWithHosting('Level27')->assertStatus(202);
 
-    expect(Environment::query()->sole()->hosting->name)->toBe('Level27');
+    expect(hostingNames())->toBe(['Level27']);
 });
 
-it('leaves the hosting untouched when none is sent', function () {
-    $environment = Environment::factory()->for($this->project)->for(Hosting::factory())->create(['name' => 'production']);
+it('leaves the hostings untouched when none are sent', function () {
+    Environment::factory()->for($this->project)->create(['name' => 'production'])->syncHostings(['Combell']);
 
     syncWithHosting(null)->assertStatus(202);
 
-    expect($environment->fresh()->hosting_id)->toBe($environment->hosting_id);
+    expect(hostingNames())->toBe(['Combell']);
 });
 
-it('rejects an overly long hosting name', function () {
-    syncWithHosting(str_repeat('a', 256))->assertSessionHasErrors('hosting');
+it('rejects an overly long hosting list', function () {
+    syncWithHosting(str_repeat('a', 1001))->assertSessionHasErrors('hosting');
 });

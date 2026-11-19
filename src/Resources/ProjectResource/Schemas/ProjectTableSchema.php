@@ -115,7 +115,7 @@ class ProjectTableSchema
                             ->label(voightTrans('models.environment.plural'))
                             ->multiple(),
                         EnvironmentStageConstraint::make('environments'),
-                        HostingConstraint::make('environments.hosting_id'),
+                        HostingConstraint::make('environments'),
                         ...array_map(ProjectStackConstraint::majorVersion(...), Framework::cases()),
                         ProjectStackConstraint::phpVersion(),
                         ProjectStackConstraint::upgradeStatus(),

@@ -17,7 +17,7 @@ class SyncLockFileCommand extends Command
         {--url= : The API base URL (defaults to APP_URL)}
         {--token= : The API bearer token for authentication}
         {--site-url= : Public URL of the environment, used to fetch the project favicon}
-        {--hosting= : Where the environment is hosted, e.g. Combell}';
+        {--hosting= : Where the environment is hosted, comma-separated, e.g. "Combell" or "Combell,Shared server"}';
 
     public $description = 'Send lockfiles to the Voight sync API for testing';
 

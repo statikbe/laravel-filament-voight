@@ -43,7 +43,7 @@ class ListProjectsTool extends VoightTool
         `find_package_usage` lists the matching versions per environment.
 
         `hosting` (e.g. `Combell`, case-insensitive) returns the projects with at least one environment on that
-        hosting; each environment's `hosting` says which. A null `hosting` is not known yet.
+        hosting; each environment's `hostings` lists where it runs (an environment can have several, or none yet).
     MARKDOWN;
 
     public function __construct(private readonly ProjectQueryService $projects) {}
@@ -81,7 +81,7 @@ class ListProjectsTool extends VoightTool
                 'customer' => $schema->string()->nullable(),
                 'environments' => $schema->array()->items($schema->object([
                     'name' => $schema->string(),
-                    'hosting' => $schema->string()->nullable(),
+                    'hostings' => $schema->array()->items($schema->string()),
                     'scanned_at' => $schema->string()->nullable(),
                 ])),
                 'findings' => $schema->object()->description('Current finding counts: critical, high, medium, low, none, total.'),

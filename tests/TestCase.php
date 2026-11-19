@@ -21,6 +21,7 @@ use Laravel\Sanctum\SanctumServiceProvider;
 use Livewire\LivewireServiceProvider;
 use Orchestra\Testbench\Concerns\WithWorkbench;
 use Orchestra\Testbench\TestCase as Orchestra;
+use Spatie\Tags\TagsServiceProvider;
 use Statikbe\FilamentVoight\FilamentVoightServiceProvider;
 use Statikbe\FilamentVoight\Tests\Support\TestPanelProvider;
 use Statikbe\FilamentVoight\Tests\Support\User;
@@ -53,6 +54,7 @@ class TestCase extends Orchestra
             McpServiceProvider::class,
             NotificationsServiceProvider::class,
             SanctumServiceProvider::class,
+            TagsServiceProvider::class,
             SchemasServiceProvider::class,
             SupportServiceProvider::class,
             TablesServiceProvider::class,

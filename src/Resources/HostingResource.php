@@ -6,14 +6,17 @@ use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
-use Statikbe\FilamentVoight\Models\Hosting;
+use Statikbe\FilamentVoight\Models\HostingTag;
 use Statikbe\FilamentVoight\Resources\HostingResource\Pages\ManageHostings;
 use Statikbe\FilamentVoight\Resources\HostingResource\Schemas\HostingFormSchema;
 use Statikbe\FilamentVoight\Resources\HostingResource\Schemas\HostingTableSchema;
 
+/**
+ * The `hosting` tags (spatie/laravel-tags), so they can be renamed or removed in one place.
+ */
 class HostingResource extends Resource
 {
-    protected static ?string $model = Hosting::class;
+    protected static ?string $model = HostingTag::class;
 
     protected static string | \BackedEnum | null $navigationIcon = Heroicon::OutlinedCloud;
 

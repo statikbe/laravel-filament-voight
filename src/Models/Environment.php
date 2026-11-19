@@ -9,7 +9,9 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Support\Carbon;
+use Spatie\Tags\HasTags;
 use Statikbe\FilamentVoight\Enums\AuditRunStatus;
 use Statikbe\FilamentVoight\Enums\DependencySyncStatus;
 use Statikbe\FilamentVoight\Enums\EnvironmentStage;
@@ -20,7 +22,6 @@ use Statikbe\FilamentVoight\Facades\FilamentVoight;
  * @property int $project_id
  * @property string $name
  * @property string|null $url
- * @property string|null $hosting_id
  * @property bool $scan_nightly
  * @property Carbon|null $scanned_at
  * @property Carbon|null $created_at
@@ -29,6 +30,7 @@ use Statikbe\FilamentVoight\Facades\FilamentVoight;
 class Environment extends Model
 {
     use HasFactory;
+    use HasTags;
     use HasUlids;
 
     protected $table = 'voight_environments';
@@ -62,11 +64,30 @@ class Environment extends Model
     }
 
     /**
-     * @return BelongsTo<Hosting, $this>
+     * The `hosting` tags: where this environment runs.
+     *
+     * @return MorphToMany<HostingTag, $this>
      */
-    public function hosting(): BelongsTo
+    public function hostings(): MorphToMany
     {
-        return $this->belongsTo(Hosting::class);
+        return $this->morphToMany(HostingTag::class, 'taggable', 'taggables', 'taggable_id', 'tag_id')->orderBy('tags.order_column');
+    }
+
+    /**
+     * Replaces the environment's hostings. Names match existing hostings case-insensitively; unknown ones are created.
+     *
+     * @param  array<int, string>  $names
+     * @return array<int, string> the names of the hostings that were created
+     */
+    public function syncHostings(array $names): array
+    {
+        ['tags' => $tags, 'created' => $created] = HostingTag::findOrCreateMany($names);
+
+        $this->hostings()->sync($tags->modelKeys());
+        $this->unsetRelation('hostings');
+        $this->unsetRelation('tags');
+
+        return $created;
     }
 
     /**

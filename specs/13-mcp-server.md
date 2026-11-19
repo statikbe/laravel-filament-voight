@@ -172,7 +172,7 @@ project model (`FilamentVoightConfig::getProjectModel()`):
 | `get_project_vulnerabilities`, `get_upgrade_plan` | `view` on the project |
 | `create_project` | `create` on the project model |
 | `create_project_token` | `update` on the project (matches the Filament token actions on the project page) |
-| `set_environment_hosting` | `update` on the project |
+| `set_environment_hostings` | `update` on the project |
 
 Rules:
 
@@ -247,12 +247,12 @@ Shared conventions:
   projects with that package installed in a matching version in any
   environment; `search?` (code or name), `team?`,
   `customer?`, `hosting?` (name, case-insensitive: projects with an environment
-  on that hosting), `min_severity?`, `has_findings?`, `scanned_before?` (ISO date,
+  tagged with that hosting), `min_severity?`, `has_findings?`, `scanned_before?` (ISO date,
   finds stale scans), `upgrade_status?` = `needs_upgrade` | `current` | `unknown`,
   `sort` = `findings` (default) | `max_score` | `name` | `last_scanned`, `limit`
   (defaults to the number of `project_codes` when those are passed).
 - Out: per project: `code`, `name`, `team`, `customer`, `environments[]`
-  (`name`, `hosting` (null when unknown), `scanned_at`), current finding counts per severity, `max_score`, and
+  (`name`, `hostings` (names, empty when unknown), `scanned_at`), current finding counts per severity, `max_score`, and
   `stack`: the representative `environment`, `php_version`, `frameworks[]`
   (`package`, `version`, `latest_major`) and `upgrade_status`. The stack comes
   from `ProjectStackService`, the same code as the Filament project table.
@@ -356,13 +356,15 @@ when `write_tools` is off.
   for that project, and returning it is what makes agent-driven onboarding work.
   The tool description warns that the value will appear in the conversation.
 
-**`set_environment_hosting`** (idempotent)
-- In: `project_code` (visible project), `environment` (name), `hosting` (name).
-- Creates the environment when the project has none by that name. The hosting
-  matches an existing one case-insensitively (`Hosting::findOrCreateByName()`, the
-  same lookup as the lockfile sync's `hosting` field) and is created otherwise.
-- Out: `project_code`, `environment`, `hosting` (stored name),
-  `environment_created`, `hosting_created`.
+**`set_environment_hostings`** (idempotent)
+- In: `project_code` (visible project), `environment` (name), `hostings` (1–10
+  names). Replaces the environment's `hosting` tags (spatie/laravel-tags).
+- Creates the environment when the project has none by that name. Names match
+  existing hostings case-insensitively (`Environment::syncHostings()`, the same
+  code as the environment form and the lockfile sync's `hosting` field); unknown
+  ones are created.
+- Out: `project_code`, `environment`, `hostings` (stored names),
+  `environment_created`, `created_hostings`.
 
 ---
 

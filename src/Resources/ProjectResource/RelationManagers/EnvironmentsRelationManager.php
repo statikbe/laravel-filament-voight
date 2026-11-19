@@ -6,7 +6,7 @@ use Filament\Actions\CreateAction;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
-use Filament\Forms\Components\Select;
+use Filament\Forms\Components\SpatieTagsInput;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Resources\RelationManagers\RelationManager;
@@ -22,8 +22,8 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Statikbe\FilamentVoight\Enums\EnvironmentIssueType;
 use Statikbe\FilamentVoight\Models\Environment;
+use Statikbe\FilamentVoight\Models\HostingTag;
 use Statikbe\FilamentVoight\Resources\EnvironmentResource\Schemas\EnvironmentTableSchema;
-use Statikbe\FilamentVoight\Resources\HostingResource\Schemas\HostingFormSchema;
 use Statikbe\FilamentVoight\Services\EnvironmentHealthService;
 use Statikbe\FilamentVoight\Support\EnvironmentIssue;
 
@@ -58,14 +58,13 @@ class EnvironmentsRelationManager extends RelationManager
                     ->helperText(voightTrans('models.environment.fields.url_help'))
                     ->url()
                     ->maxLength(2048),
-                Select::make('hosting_id')
+                SpatieTagsInput::make('hostings')
                     ->label(voightTrans('models.environment.fields.hosting'))
                     ->helperText(voightTrans('models.environment.fields.hosting_help'))
-                    ->relationship('hosting', 'name')
-                    ->searchable()
-                    ->preload()
+                    ->type(HostingTag::TYPE)
                     ->required()
-                    ->createOptionForm(HostingFormSchema::fields()),
+                    // Like the lockfile sync: match existing hostings case-insensitively instead of spatie's exact match.
+                    ->saveRelationshipsUsing(fn (Environment $record, array $state) => $record->syncHostings($state)),
                 Toggle::make('scan_nightly')
                     ->label(voightTrans('models.environment.fields.scan_nightly'))
                     ->default(true),

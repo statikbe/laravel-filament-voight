@@ -12,14 +12,13 @@ use Statikbe\FilamentVoight\Jobs\FetchProjectFaviconJob;
 use Statikbe\FilamentVoight\Jobs\ProcessLockFilesJob;
 use Statikbe\FilamentVoight\Models\DependencySync;
 use Statikbe\FilamentVoight\Models\Environment;
-use Statikbe\FilamentVoight\Models\Hosting;
 use Statikbe\FilamentVoight\Models\Project;
 
 class LockFileSyncService
 {
     /**
      * @param  array<string, UploadedFile>  $lockfiles
-     * @param  string|null  $hosting  Hosting name; an unknown one is created. Null leaves the environment's hosting as it is.
+     * @param  string|null  $hosting  Comma-separated hosting names, replacing the environment's hostings; unknown ones are created. Null leaves them as they are.
      */
     public function sync(string $projectCode, string $environmentName, array $lockfiles, ?Project $project = null, ?string $url = null, ?string $hosting = null): DependencySync
     {
@@ -31,7 +30,7 @@ class LockFileSyncService
         }
 
         if (filled($hosting)) {
-            $environment->update(['hosting_id' => Hosting::findOrCreateByName($hosting)->getKey()]);
+            $environment->syncHostings(explode(',', $hosting));
         }
 
         $result = $this->storeLockFilesAndComputeHash($project, $environment, $lockfiles);

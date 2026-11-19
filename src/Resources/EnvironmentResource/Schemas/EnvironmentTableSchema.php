@@ -3,6 +3,7 @@
 namespace Statikbe\FilamentVoight\Resources\EnvironmentResource\Schemas;
 
 use Closure;
+use Filament\Tables\Columns\SpatieTagsColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Enums\FiltersLayout;
 use Filament\Tables\Filters\QueryBuilder;
@@ -17,6 +18,7 @@ use Statikbe\FilamentVoight\Enums\DependencySyncStatus;
 use Statikbe\FilamentVoight\Facades\FilamentVoight;
 use Statikbe\FilamentVoight\Models\Environment;
 use Statikbe\FilamentVoight\Models\EnvironmentSystemDetail;
+use Statikbe\FilamentVoight\Models\HostingTag;
 use Statikbe\FilamentVoight\Models\Project;
 use Statikbe\FilamentVoight\Resources\Components\EnvironmentNameColumn;
 use Statikbe\FilamentVoight\Resources\Components\EnvironmentStageConstraint;
@@ -45,7 +47,7 @@ class EnvironmentTableSchema
         );
 
         return $table
-            ->modifyQueryUsing(fn (Builder $query): Builder => $query->with(['project', 'systemDetails', 'hosting']))
+            ->modifyQueryUsing(fn (Builder $query): Builder => $query->with(['project', 'systemDetails']))
             ->columns([
                 ProjectFaviconColumn::make(fn (Environment $record): Project => $record->project),
                 TextColumn::make('project.name')
@@ -61,12 +63,10 @@ class EnvironmentTableSchema
                     ->url(fn (Environment $record): ?string => $record->url, shouldOpenInNewTab: true)
                     ->placeholder('—')
                     ->toggleable(),
-                TextColumn::make('hosting.name')
+                SpatieTagsColumn::make('hostings')
                     ->label(voightTrans('models.environment.fields.hosting'))
-                    ->badge()
-                    ->color('gray')
+                    ->type(HostingTag::TYPE)
                     ->placeholder(voightTrans('models.environment.unknown_hosting'))
-                    ->sortable()
                     ->toggleable(),
                 TextColumn::make('systemDetails.php_version')
                     ->label(voightTrans('models.environment.fields.php_version'))
@@ -92,8 +92,8 @@ class EnvironmentTableSchema
                             ->searchable()
                             ->multiple(),
                         EnvironmentStageConstraint::make(),
-                        HostingConstraint::make('hosting_id'),
-                        RelationshipConstraint::make('hosting')
+                        HostingConstraint::make(),
+                        RelationshipConstraint::make('hostings')
                             ->label(voightTrans('models.environment.fields.has_hosting'))
                             ->icon('heroicon-m-cloud')
                             ->emptyable(),

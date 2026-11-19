@@ -41,7 +41,7 @@ class ProjectQueryService
         $query = $access->visibleProjects()
             ->leftJoinSub($counts, 'counts', 'counts.project_id', '=', 'voight_projects.id')
             ->select(['voight_projects.*', 'counts.critical', 'counts.high', 'counts.medium', 'counts.low', 'counts.none', 'counts.total', 'counts.max_score'])
-            ->with(['team', 'customer', 'environments' => fn ($environments) => $environments->orderBy('name')->with('hosting')]);
+            ->with(['team', 'customer', 'environments' => fn ($environments) => $environments->orderBy('name')->with('hostings')]);
         ProjectStackService::withStack($query);
 
         $projectCodes = $filters['project_codes'] ?? null;
@@ -74,7 +74,7 @@ class ProjectQueryService
         }
 
         if (filled($filters['hosting'] ?? null)) {
-            $query->whereHas('environments.hosting', fn (Builder $hosting): Builder => $hosting->named($filters['hosting']));
+            $query->whereHas('environments.hostings', fn (Builder $hostings): Builder => $hostings->named($filters['hosting']));
         }
 
         if ($minSeverity !== null || ($filters['has_findings'] ?? null) === true) {
@@ -115,7 +115,7 @@ class ProjectQueryService
                 ...$this->describeProject($project),
                 'environments' => $project->environments->map(fn (Environment $environment): array => [
                     'name' => $environment->name,
-                    'hosting' => $environment->hosting?->name,
+                    'hostings' => $environment->hostings->pluck('name')->all(),
                     'scanned_at' => $environment->scanned_at?->toIso8601String(),
                 ])->all(),
                 ...CurrentFindings::severitySummary((object) $project->getAttributes()),
