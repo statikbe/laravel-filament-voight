@@ -17,6 +17,7 @@ use Statikbe\FilamentVoight\Mcp\Tools\GetStatisticsTool;
 use Statikbe\FilamentVoight\Mcp\Tools\GetUpgradePlanTool;
 use Statikbe\FilamentVoight\Mcp\Tools\GetVulnerabilityTool;
 use Statikbe\FilamentVoight\Mcp\Tools\ListProjectsTool;
+use Statikbe\FilamentVoight\Mcp\Tools\SetEnvironmentHostingsTool;
 
 /**
  * The remote server, over HTTP. Every tool requires an authenticated user; without one,
@@ -32,8 +33,8 @@ class VoightServer extends Server
         Voight tracks the dependencies and known vulnerabilities of software projects.
 
         Domain: a project (identified by `project_code`, optionally with a team and customer) has environments
-        (e.g. production, staging). Each environment has installed packages (composer or npm), synced from its
-        lockfiles, with the dependency graph between them. Audit runs scan an environment's packages against
+        (e.g. production, staging), each tagged with the hostings it runs on (e.g. Combell, Level27). Each environment has
+        installed packages (composer or npm), synced from its lockfiles, with the dependency graph between them. Audit runs scan an environment's packages against
         OSV and record findings: a vulnerability affecting an installed package version.
 
         "Current findings" are the findings of each environment's latest audit run; older runs are history.
@@ -58,6 +59,7 @@ class VoightServer extends Server
         GetStatisticsTool::class,
         CreateProjectTool::class,
         CreateProjectTokenTool::class,
+        SetEnvironmentHostingsTool::class,
     ];
 
     /**

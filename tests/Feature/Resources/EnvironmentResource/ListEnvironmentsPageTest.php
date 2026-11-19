@@ -44,6 +44,34 @@ it('filters environments by stage', function (string $operator, bool $production
     'is not' => ['is.inverse', false],
 ]);
 
+it('filters environments by hosting', function (string $operator, bool $matchVisible) {
+    $match = Environment::factory()->create();
+    $match->syncHostings(['Combell', 'Shared server']);
+    $other = Environment::factory()->create();
+    $other->syncHostings(['Level27']);
+    $combell = $match->hostings->firstWhere('name', 'Combell');
+
+    filterEnvironments('hosting', $operator, ['values' => [$combell->id]])
+        ->assertCanSeeTableRecords($matchVisible ? [$match] : [$other])
+        ->assertCanNotSeeTableRecords($matchVisible ? [$other] : [$match]);
+})->with([
+    'is' => ['is', true],
+    'is not' => ['is.inverse', false],
+]);
+
+it('filters environments by whether their hosting is known', function (string $operator, bool $knownVisible) {
+    $known = Environment::factory()->create();
+    $known->syncHostings(['Combell']);
+    $unknown = Environment::factory()->create();
+
+    filterEnvironments('hostings', $operator, [])
+        ->assertCanSeeTableRecords($knownVisible ? [$known] : [$unknown])
+        ->assertCanNotSeeTableRecords($knownVisible ? [$unknown] : [$known]);
+})->with([
+    'known' => ['isEmpty.inverse', true],
+    'unknown' => ['isEmpty', false],
+]);
+
 it('filters environments by project customer', function () {
     $project = Project::factory()->create();
     $match = Environment::factory()->for($project)->create();

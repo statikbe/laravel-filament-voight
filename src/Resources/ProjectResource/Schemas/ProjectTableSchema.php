@@ -23,6 +23,7 @@ use Statikbe\FilamentVoight\Enums\UpgradeStatus;
 use Statikbe\FilamentVoight\Models\AuditFinding;
 use Statikbe\FilamentVoight\Models\Project;
 use Statikbe\FilamentVoight\Resources\Components\EnvironmentStageConstraint;
+use Statikbe\FilamentVoight\Resources\Components\HostingConstraint;
 use Statikbe\FilamentVoight\Resources\Components\ProjectConstraint;
 use Statikbe\FilamentVoight\Resources\Components\ProjectStackConstraint;
 use Statikbe\FilamentVoight\Resources\Components\SeverityConstraint;
@@ -114,6 +115,7 @@ class ProjectTableSchema
                             ->label(voightTrans('models.environment.plural'))
                             ->multiple(),
                         EnvironmentStageConstraint::make('environments'),
+                        HostingConstraint::make('environments'),
                         ...array_map(ProjectStackConstraint::majorVersion(...), Framework::cases()),
                         ProjectStackConstraint::phpVersion(),
                         ProjectStackConstraint::upgradeStatus(),

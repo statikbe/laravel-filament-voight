@@ -23,6 +23,8 @@ it('creates all voight tables', function () {
         'voight_alert_recipients',
         'voight_alert_notification_logs',
         'voight_environment_system_details',
+        'tags',
+        'taggables',
     ];
 
     foreach ($tables as $table) {
@@ -99,4 +101,10 @@ it('backfills existing alert settings with every package type', function () {
 
     expect(json_decode(DB::table('voight_alert_settings')->where('id', $setting->id)->value('package_types'), true))
         ->toBe(array_column(PackageType::cases(), 'value'));
+});
+
+it('creates the tag tables with room for ULID taggables', function () {
+    expect(Schema::hasColumns('tags', ['id', 'name', 'slug', 'type', 'order_column']))->toBeTrue()
+        ->and(Schema::hasColumns('taggables', ['tag_id', 'taggable_id', 'taggable_type']))->toBeTrue()
+        ->and(Schema::getColumnType('taggables', 'taggable_id'))->not->toBe('integer');
 });

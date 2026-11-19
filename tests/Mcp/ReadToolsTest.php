@@ -121,6 +121,21 @@ describe('list_projects', function () {
             ->and($codes(['scanned_before' => now()->subWeek()->toDateString()]))->toBe(['BLOG']);
     });
 
+    it('shows each environment\'s hostings and filters on any environment\'s hosting', function () {
+        mcpEnvironment('SHOP')->syncHostings(['Combell', 'Shared server']);
+        mcpEnvironment('SHOP', 'staging');
+        mcpEnvironment('BLOG')->syncHostings(['Level27']);
+
+        $result = fn (array $arguments): array => structuredContent(VoightLocalServer::tool(ListProjectsTool::class, $arguments))['projects'];
+
+        expect(array_column($result(['hosting' => 'combell']), 'code'))->toBe(['SHOP'])
+            ->and($result(['hosting' => 'Nowhere']))->toBe([])
+            ->and(array_map(
+                fn (array $environment): array => [$environment['name'], $environment['hostings']],
+                $result(['project_codes' => ['SHOP']])[0]['environments'],
+            ))->toBe([['production', ['Combell', 'Shared server']], ['staging', []]]);
+    });
+
     it('limits and reports truncation', function () {
         foreach (['A', 'B', 'C'] as $code) {
             mcpEnvironment($code);

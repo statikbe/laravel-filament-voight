@@ -1,8 +1,10 @@
 <?php
 
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Auth\User;
 use Livewire\Livewire;
 use Statikbe\FilamentVoight\Models\Environment;
+use Statikbe\FilamentVoight\Models\HostingTag;
 use Statikbe\FilamentVoight\Models\Project;
 use Statikbe\FilamentVoight\Resources\ProjectResource\Pages\ViewProject;
 use Statikbe\FilamentVoight\Resources\ProjectResource\RelationManagers\EnvironmentsRelationManager;
@@ -20,8 +22,44 @@ it('lets environments be edited from the project view page', function () {
         'pageClass' => ViewProject::class,
     ])
         ->assertTableActionVisible('edit', $environment)
-        ->callTableAction('edit', $environment, data: ['url' => 'https://site.test'])
+        ->callTableAction('edit', $environment, data: ['url' => 'https://site.test', 'hostings' => ['Combell']])
         ->assertHasNoTableActionErrors();
 
     expect($environment->refresh()->url)->toBe('https://site.test');
 });
+
+it('asks for the hostings when an environment is created, reusing existing tags whatever the case', function () {
+    $project = Project::factory()->create();
+    HostingTag::factory()->create(['name' => ['en' => 'Combell']]);
+    $relationManager = fn () => Livewire::test(EnvironmentsRelationManager::class, [
+        'ownerRecord' => $project,
+        'pageClass' => ViewProject::class,
+    ]);
+
+    $relationManager()
+        ->callTableAction('create', data: ['name' => 'production', 'hostings' => []])
+        ->assertHasTableActionErrors(['hostings' => 'required']);
+
+    $relationManager()
+        ->callTableAction('create', data: ['name' => 'production', 'hostings' => ['combell', 'Shared server']])
+        ->assertHasNoTableActionErrors();
+
+    expect($project->environments()->sole()->hostings->pluck('name')->sort()->values()->all())->toBe(['Combell', 'Shared server'])
+        ->and(HostingTag::query()->count())->toBe(2);
+});
+
+it('shows each environment\'s hostings, or unknown', function () {
+    // Host apps may forbid lazy loading; the column must use eager-loaded tags.
+    Model::preventLazyLoading();
+    $project = Project::factory()->create();
+    $hosted = Environment::factory()->for($project)->create(['name' => 'production']);
+    $hosted->syncHostings(['Combell']);
+    Environment::factory()->for($project)->create(['name' => 'staging']);
+
+    Livewire::test(EnvironmentsRelationManager::class, [
+        'ownerRecord' => $project,
+        'pageClass' => ViewProject::class,
+    ])
+        ->assertTableColumnStateSet('tags', ['Combell'], $hosted)
+        ->assertSeeText(voightTrans('models.environment.unknown_hosting'));
+})->after(fn () => Model::preventLazyLoading(false));

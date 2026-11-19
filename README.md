@@ -151,6 +151,8 @@ VOIGHT_API_BASE_URL=https://your-voight-app.example.com
 VOIGHT_API_TOKEN=1|your-project-token
 PROJECT_CODE=my-project
 APP_ENV=production
+# Optional: where this environment is hosted, comma-separated (e.g. Combell, Level27, Own server)
+VOIGHT_HOSTING=Combell
 ```
 
 Run it after every install or deploy:
@@ -173,8 +175,19 @@ php artisan voight:sync-lockfile \
   --environment=production \
   --path=/path/to/project \
   --url=https://your-voight-app.example.com \
-  --token=1|your-project-token
+  --token=1|your-project-token \
+  --hosting=Combell
 ```
+
+## Hosting
+
+Each environment is tagged with where it is hosted (Combell, Level27, own server, customer environment, …), so you can find every environment on one host when it needs an update. Hostings are [spatie/laravel-tags](https://github.com/spatie/laravel-tags) tags of type `hosting`, and an environment can have several. The package ships the `tags` and `taggables` migration (`create_tag_tables`) with ULID morphs, because environments use ULID keys; it is skipped when the tables already exist, in which case `taggables.taggable_id` must be able to hold ULIDs.
+
+The environment form asks for at least one hosting, and the projects and environments tables filter on them (a project matches when any of its environments does). On the environments list, **Hosting known** finds the environments still without one. Rename or delete hostings under **Organisation → Hostings**.
+
+CI keeps them up to date: when `voight.sh` has `VOIGHT_HOSTING` set (or `voight:sync-lockfile --hosting=`), every sync replaces the environment's hostings with that comma-separated list, including ones set by hand. Without the variable they are left as they are. Everywhere (form, CI, MCP), names match an existing hosting case-insensitively and unknown names create a new one.
+
+Over MCP, `list_projects` lists each environment's `hostings` and takes a `hosting` filter, and the write tool `set_environment_hostings` replaces them.
 
 ## MCP server
 
@@ -229,6 +242,7 @@ Authenticated via the project bearer token.
 | `project_code` | string | required |
 | `environment` | string | required (`production`, `staging`, …) |
 | `url` | string | optional, public site URL of the environment (used for the project favicon) |
+| `hosting` | string | optional, max 1000; comma-separated hosting names replacing the environment's hostings, matched case-insensitively and created when unknown |
 | `lockfiles[filename]` | file | required, one or more |
 
 Response `202 Accepted`:

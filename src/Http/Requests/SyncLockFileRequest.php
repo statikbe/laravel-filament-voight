@@ -20,6 +20,7 @@ class SyncLockFileRequest extends FormRequest
             'project_code' => ['required', 'string', 'max:255'],
             'environment' => ['required', 'string', 'max:255'],
             'url' => ['nullable', 'url:http,https', 'max:2048'],
+            'hosting' => ['nullable', 'string', 'max:1000'],
             'lockfiles' => ['required', 'array', 'min:1'],
             'lockfiles.*' => ['file'],
         ];

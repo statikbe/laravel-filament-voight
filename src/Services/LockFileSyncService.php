@@ -18,14 +18,19 @@ class LockFileSyncService
 {
     /**
      * @param  array<string, UploadedFile>  $lockfiles
+     * @param  string|null  $hosting  Comma-separated hosting names, replacing the environment's hostings; unknown ones are created. Null leaves them as they are.
      */
-    public function sync(string $projectCode, string $environmentName, array $lockfiles, ?Project $project = null, ?string $url = null): DependencySync
+    public function sync(string $projectCode, string $environmentName, array $lockfiles, ?Project $project = null, ?string $url = null, ?string $hosting = null): DependencySync
     {
         $project = $project ?? $this->resolveProject($projectCode);
         $environment = $this->resolveEnvironment($project, $environmentName);
 
         if ($url !== null) {
             $this->updateEnvironmentUrl($project, $environment, $url);
+        }
+
+        if (filled($hosting)) {
+            $environment->syncHostings(explode(',', $hosting));
         }
 
         $result = $this->storeLockFilesAndComputeHash($project, $environment, $lockfiles);

@@ -26,9 +26,9 @@ class ListProjectsTool extends VoightTool
     protected string $title = 'List projects';
 
     protected string $description = <<<'MARKDOWN'
-        Lists the projects you can see with their environments, when each was last scanned, and their current
-        finding counts per severity. Use it to find project codes, the most vulnerable projects, or stale scans
-        (`scanned_before`: projects with an environment not scanned since that date, or never scanned).
+        Lists the projects you can see with their environments (where each is hosted and when it was last scanned)
+        and their current finding counts per severity. Use it to find project codes, the most vulnerable projects,
+        or stale scans (`scanned_before`: projects with an environment not scanned since that date, or never scanned).
         Sorts: `findings` (most first, default), `max_score` (worst first), `name`, `last_scanned` (least recently first).
 
         Each project has a `stack`, read from its highest-stage environment: PHP version, installed framework versions
@@ -41,6 +41,9 @@ class ListProjectsTool extends VoightTool
         To find the projects using a dependency, pass `package` (exact name), optionally with `package_version`, a
         range such as `>=7.0 <7.4`: projects with the package installed in that range in any environment.
         `find_package_usage` lists the matching versions per environment.
+
+        `hosting` (e.g. `Combell`, case-insensitive) returns the projects with at least one environment on that
+        hosting; each environment's `hostings` lists where it runs (an environment can have several, or none yet).
     MARKDOWN;
 
     public function __construct(private readonly ProjectQueryService $projects) {}
@@ -56,6 +59,7 @@ class ListProjectsTool extends VoightTool
             'search' => $schema->string()->description('Matches part of the project code or name.'),
             'team' => $schema->string()->description('Team name.'),
             'customer' => $schema->string()->description('Customer name.'),
+            'hosting' => $schema->string()->description('Hosting name, e.g. `Combell`. Only projects with an environment hosted there.'),
             'min_severity' => $this->minSeveritySchema($schema),
             'has_findings' => $schema->boolean()->description('true: only projects with current findings; false: only projects without.'),
             'scanned_before' => $schema->string()->format('date')->description('ISO date. Only projects with an environment not scanned since then.'),
@@ -75,7 +79,11 @@ class ListProjectsTool extends VoightTool
                 'name' => $schema->string()->nullable(),
                 'team' => $schema->string()->nullable(),
                 'customer' => $schema->string()->nullable(),
-                'environments' => $schema->array(),
+                'environments' => $schema->array()->items($schema->object([
+                    'name' => $schema->string(),
+                    'hostings' => $schema->array()->items($schema->string()),
+                    'scanned_at' => $schema->string()->nullable(),
+                ])),
                 'findings' => $schema->object()->description('Current finding counts: critical, high, medium, low, none, total.'),
                 'max_score' => $schema->number()->nullable(),
                 'stack' => $schema->object([
@@ -107,6 +115,7 @@ class ListProjectsTool extends VoightTool
             'search' => ['nullable', 'string'],
             'team' => ['nullable', 'string'],
             'customer' => ['nullable', 'string'],
+            'hosting' => ['nullable', 'string'],
             'has_findings' => ['nullable', 'boolean'],
             'scanned_before' => ['nullable', 'date'],
             'sort' => ['nullable', Rule::in(ProjectQueryService::SORTS)],
@@ -126,6 +135,7 @@ class ListProjectsTool extends VoightTool
             'search' => $request->get('search'),
             'team' => $request->get('team'),
             'customer' => $request->get('customer'),
+            'hosting' => $request->get('hosting'),
             'min_severity' => $this->minSeverity($request),
             'has_findings' => $hasFindings === null ? null : filter_var($hasFindings, FILTER_VALIDATE_BOOLEAN),
             'scanned_before' => $request->get('scanned_before') ? Carbon::parse($request->get('scanned_before')) : null,

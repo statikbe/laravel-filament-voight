@@ -17,6 +17,7 @@ class LockFileController extends Controller
             lockfiles: $request->file('lockfiles'),
             project: $request->attributes->get('voight_project'),
             url: $request->validated('url'),
+            hosting: $request->validated('hosting'),
         );
 
         return response()->json([

@@ -162,6 +162,15 @@ return [
                 'slug' => 'Slug',
             ],
         ],
+        'hosting' => [
+            'label' => 'Hosting',
+            'plural' => 'Hostings',
+            'fields' => [
+                'name' => 'Name',
+                'name_help' => 'E.g. Combell, Level27, own server or customer environment.',
+            ],
+            'name_taken' => 'A hosting with this name already exists.',
+        ],
         'team' => [
             'label' => 'Team',
             'plural' => 'Teams',
@@ -223,6 +232,9 @@ return [
                 'name' => 'Name',
                 'url' => 'URL',
                 'url_help' => 'Public site URL, used to fetch the project favicon. Sent automatically by voight.sh.',
+                'hosting' => 'Hosting',
+                'hosting_help' => 'Where this environment runs, e.g. Combell. Add several when it applies. voight.sh replaces these with VOIGHT_HOSTING when it is set.',
+                'has_hosting' => 'Hosting known',
                 'scan_nightly' => 'Nightly scan',
                 'scanned_at' => 'Last Scanned',
                 'health' => 'Health',
@@ -236,6 +248,7 @@ return [
             ],
             'never_scanned' => 'Never scanned',
             'never_reported' => 'Never',
+            'unknown_hosting' => 'Unknown',
             'system_details' => [
                 'last_reported' => 'Last reported',
                 'copy_markdown' => 'Copy as Markdown',
