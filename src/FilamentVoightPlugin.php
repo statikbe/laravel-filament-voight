@@ -13,6 +13,7 @@ use Statikbe\FilamentVoight\Resources\AuditRunResource;
 use Statikbe\FilamentVoight\Resources\CustomerResource;
 use Statikbe\FilamentVoight\Resources\EnvironmentResource;
 use Statikbe\FilamentVoight\Resources\EnvironmentResource\Pages\ListEnvironments;
+use Statikbe\FilamentVoight\Resources\HostingResource;
 use Statikbe\FilamentVoight\Resources\PackageResource;
 use Statikbe\FilamentVoight\Resources\ProjectResource;
 use Statikbe\FilamentVoight\Resources\TeamResource;
@@ -32,6 +33,7 @@ class FilamentVoightPlugin implements Plugin
         $panel->resources([
             CustomerResource::class,
             TeamResource::class,
+            HostingResource::class,
             ProjectResource::class,
             PackageResource::class,
             VulnerabilityResource::class,

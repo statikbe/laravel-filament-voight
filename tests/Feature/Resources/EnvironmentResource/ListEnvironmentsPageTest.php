@@ -10,6 +10,7 @@ use Statikbe\FilamentVoight\Enums\SyncWarning;
 use Statikbe\FilamentVoight\Models\AuditRun;
 use Statikbe\FilamentVoight\Models\DependencySync;
 use Statikbe\FilamentVoight\Models\Environment;
+use Statikbe\FilamentVoight\Models\Hosting;
 use Statikbe\FilamentVoight\Models\Project;
 use Statikbe\FilamentVoight\Resources\EnvironmentResource\Pages\ListEnvironments;
 
@@ -42,6 +43,29 @@ it('filters environments by stage', function (string $operator, bool $production
 })->with([
     'is' => ['is', true],
     'is not' => ['is.inverse', false],
+]);
+
+it('filters environments by hosting', function () {
+    $combell = Hosting::factory()->create();
+    $match = Environment::factory()->for($combell)->create();
+    $other = Environment::factory()->for(Hosting::factory())->create();
+    $unknown = Environment::factory()->create();
+
+    filterEnvironments('hosting_id', 'is', ['values' => [$combell->getKey()]])
+        ->assertCanSeeTableRecords([$match])
+        ->assertCanNotSeeTableRecords([$other, $unknown]);
+});
+
+it('filters environments by whether their hosting is known', function (string $operator, bool $knownVisible) {
+    $known = Environment::factory()->for(Hosting::factory())->create();
+    $unknown = Environment::factory()->create();
+
+    filterEnvironments('hosting', $operator, [])
+        ->assertCanSeeTableRecords($knownVisible ? [$known] : [$unknown])
+        ->assertCanNotSeeTableRecords($knownVisible ? [$unknown] : [$known]);
+})->with([
+    'known' => ['isEmpty.inverse', true],
+    'unknown' => ['isEmpty', false],
 ]);
 
 it('filters environments by project customer', function () {

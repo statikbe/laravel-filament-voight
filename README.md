@@ -151,6 +151,8 @@ VOIGHT_API_BASE_URL=https://your-voight-app.example.com
 VOIGHT_API_TOKEN=1|your-project-token
 PROJECT_CODE=my-project
 APP_ENV=production
+# Optional: where this environment is hosted (e.g. Combell, Level27, Own server)
+VOIGHT_HOSTING=Combell
 ```
 
 Run it after every install or deploy:
@@ -173,8 +175,17 @@ php artisan voight:sync-lockfile \
   --environment=production \
   --path=/path/to/project \
   --url=https://your-voight-app.example.com \
-  --token=1|your-project-token
+  --token=1|your-project-token \
+  --hosting=Combell
 ```
+
+## Hosting
+
+Each environment records where it is hosted (Combell, Level27, own server, customer environment, …), so you can find every environment on one host when it needs an update. Hostings are managed under **Organisation → Hostings**. The environment form asks for one, and the projects and environments tables filter on it (a project matches when any of its environments does). On the environments list, **Hosting known** finds the environments still without one.
+
+CI keeps it up to date: when `voight.sh` has `VOIGHT_HOSTING` set (or `voight:sync-lockfile --hosting=`), every sync sets that hosting on the environment, overwriting a value set by hand. Names match an existing hosting case-insensitively; an unknown name creates a new hosting. Without the variable, the hosting is left as it is.
+
+Over MCP, `list_projects` shows each environment's hosting and takes a `hosting` filter, and the write tool `set_environment_hosting` sets it.
 
 ## MCP server
 
@@ -229,6 +240,7 @@ Authenticated via the project bearer token.
 | `project_code` | string | required |
 | `environment` | string | required (`production`, `staging`, …) |
 | `url` | string | optional, public site URL of the environment (used for the project favicon) |
+| `hosting` | string | optional, max 255; hosting name, matched case-insensitively and created when unknown |
 | `lockfiles[filename]` | file | required, one or more |
 
 Response `202 Accepted`:

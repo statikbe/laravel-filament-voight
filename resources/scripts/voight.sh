@@ -58,6 +58,11 @@ case "$SITE_URL" in
   http://*|https://*) set -- "$@" -F "url=$SITE_URL" ;;
 esac
 
+# Where the environment is hosted (e.g. Combell, Level27); unknown names are created.
+if [ -n "${VOIGHT_HOSTING:-}" ]; then
+  set -- "$@" --form-string "hosting=$VOIGHT_HOSTING"
+fi
+
 for lock in $FOUND_LOCKS; do
   set -- "$@" -F "lockfiles[${lock}]=@${lock};filename=${lock}"
 done

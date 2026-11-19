@@ -18,7 +18,7 @@ use Statikbe\FilamentVoight\Services\ProjectStackService;
 use Statikbe\FilamentVoight\Support\VersionConstraint;
 
 /**
- * @phpstan-type ProjectFilters array{project_codes?: array<int, string>|null, package?: string|null, package_type?: string|null, package_version?: VersionConstraint|null, search?: string|null, team?: string|null, customer?: string|null, min_severity?: Severity|null, has_findings?: bool|null, scanned_before?: Carbon|null, upgrade_status?: UpgradeStatus|null, sort?: string|null, page: Page}
+ * @phpstan-type ProjectFilters array{project_codes?: array<int, string>|null, package?: string|null, package_type?: string|null, package_version?: VersionConstraint|null, search?: string|null, team?: string|null, customer?: string|null, hosting?: string|null, min_severity?: Severity|null, has_findings?: bool|null, scanned_before?: Carbon|null, upgrade_status?: UpgradeStatus|null, sort?: string|null, page: Page}
  */
 class ProjectQueryService
 {
@@ -41,7 +41,7 @@ class ProjectQueryService
         $query = $access->visibleProjects()
             ->leftJoinSub($counts, 'counts', 'counts.project_id', '=', 'voight_projects.id')
             ->select(['voight_projects.*', 'counts.critical', 'counts.high', 'counts.medium', 'counts.low', 'counts.none', 'counts.total', 'counts.max_score'])
-            ->with(['team', 'customer', 'environments' => fn ($environments) => $environments->orderBy('name')]);
+            ->with(['team', 'customer', 'environments' => fn ($environments) => $environments->orderBy('name')->with('hosting')]);
         ProjectStackService::withStack($query);
 
         $projectCodes = $filters['project_codes'] ?? null;
@@ -71,6 +71,10 @@ class ProjectQueryService
 
         if (filled($filters['customer'] ?? null)) {
             $query->whereHas('customer', fn (Builder $customer): Builder => $customer->where('name', $filters['customer']));
+        }
+
+        if (filled($filters['hosting'] ?? null)) {
+            $query->whereHas('environments.hosting', fn (Builder $hosting): Builder => $hosting->named($filters['hosting']));
         }
 
         if ($minSeverity !== null || ($filters['has_findings'] ?? null) === true) {
@@ -111,6 +115,7 @@ class ProjectQueryService
                 ...$this->describeProject($project),
                 'environments' => $project->environments->map(fn (Environment $environment): array => [
                     'name' => $environment->name,
+                    'hosting' => $environment->hosting?->name,
                     'scanned_at' => $environment->scanned_at?->toIso8601String(),
                 ])->all(),
                 ...CurrentFindings::severitySummary((object) $project->getAttributes()),

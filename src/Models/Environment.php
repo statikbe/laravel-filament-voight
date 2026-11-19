@@ -20,6 +20,7 @@ use Statikbe\FilamentVoight\Facades\FilamentVoight;
  * @property int $project_id
  * @property string $name
  * @property string|null $url
+ * @property string|null $hosting_id
  * @property bool $scan_nightly
  * @property Carbon|null $scanned_at
  * @property Carbon|null $created_at
@@ -58,6 +59,14 @@ class Environment extends Model
     public function project(): BelongsTo
     {
         return $this->belongsTo(Project::class);
+    }
+
+    /**
+     * @return BelongsTo<Hosting, $this>
+     */
+    public function hosting(): BelongsTo
+    {
+        return $this->belongsTo(Hosting::class);
     }
 
     /**

@@ -5,6 +5,7 @@ use Statikbe\FilamentVoight\Resources\AuditFindingResource;
 use Statikbe\FilamentVoight\Resources\AuditRunResource;
 use Statikbe\FilamentVoight\Resources\CustomerResource;
 use Statikbe\FilamentVoight\Resources\EnvironmentResource\Pages\ListEnvironments;
+use Statikbe\FilamentVoight\Resources\HostingResource;
 use Statikbe\FilamentVoight\Resources\PackageResource;
 use Statikbe\FilamentVoight\Resources\ProjectResource;
 use Statikbe\FilamentVoight\Resources\TeamResource;
@@ -18,7 +19,8 @@ it('places resources in the expected navigation groups', function () {
         ->and(VulnerabilityResource::getNavigationGroup())->toBe(voightTrans('navigation.security'))
         ->and(PackageResource::getNavigationGroup())->toBe(voightTrans('navigation.security'))
         ->and(CustomerResource::getNavigationGroup())->toBe(voightTrans('navigation.organisation'))
-        ->and(TeamResource::getNavigationGroup())->toBe(voightTrans('navigation.organisation'));
+        ->and(TeamResource::getNavigationGroup())->toBe(voightTrans('navigation.organisation'))
+        ->and(HostingResource::getNavigationGroup())->toBe(voightTrans('navigation.organisation'));
 });
 
 it('registers the groups in security, monitoring, organisation, settings order', function () {

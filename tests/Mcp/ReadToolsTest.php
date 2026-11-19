@@ -12,6 +12,7 @@ use Statikbe\FilamentVoight\Models\Customer;
 use Statikbe\FilamentVoight\Models\Environment;
 use Statikbe\FilamentVoight\Models\EnvironmentPackage;
 use Statikbe\FilamentVoight\Models\EnvironmentSystemDetail;
+use Statikbe\FilamentVoight\Models\Hosting;
 use Statikbe\FilamentVoight\Models\Package;
 use Statikbe\FilamentVoight\Models\Project;
 use Statikbe\FilamentVoight\Models\Team;
@@ -119,6 +120,22 @@ describe('list_projects', function () {
             ->and($codes(['has_findings' => true]))->toBe(['SHOP'])
             ->and($codes(['has_findings' => false]))->toBe(['BLOG'])
             ->and($codes(['scanned_before' => now()->subWeek()->toDateString()]))->toBe(['BLOG']);
+    });
+
+    it('shows each environment\'s hosting and filters on any environment\'s hosting', function () {
+        $combell = Hosting::factory()->create(['name' => 'Combell']);
+        mcpEnvironment('SHOP')->hosting()->associate($combell)->save();
+        mcpEnvironment('SHOP', 'staging');
+        mcpEnvironment('BLOG')->hosting()->associate(Hosting::factory()->create(['name' => 'Level27']))->save();
+
+        $result = fn (array $arguments): array => structuredContent(VoightLocalServer::tool(ListProjectsTool::class, $arguments))['projects'];
+
+        expect(array_column($result(['hosting' => 'combell']), 'code'))->toBe(['SHOP'])
+            ->and($result(['hosting' => 'Nowhere']))->toBe([])
+            ->and(array_map(
+                fn (array $environment): array => [$environment['name'], $environment['hosting']],
+                $result(['project_codes' => ['SHOP']])[0]['environments'],
+            ))->toBe([['production', 'Combell'], ['staging', null]]);
     });
 
     it('limits and reports truncation', function () {

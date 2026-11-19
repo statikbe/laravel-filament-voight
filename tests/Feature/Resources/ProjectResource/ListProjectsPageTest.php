@@ -8,6 +8,7 @@ use Statikbe\FilamentVoight\Enums\Severity;
 use Statikbe\FilamentVoight\Models\AuditFinding;
 use Statikbe\FilamentVoight\Models\AuditRun;
 use Statikbe\FilamentVoight\Models\Environment;
+use Statikbe\FilamentVoight\Models\Hosting;
 use Statikbe\FilamentVoight\Models\Project;
 use Statikbe\FilamentVoight\Models\Team;
 use Statikbe\FilamentVoight\Models\Vulnerability;
@@ -57,6 +58,18 @@ it('filters projects by muted state', function () {
     filterProjects('is_muted', 'isTrue')
         ->assertCanSeeTableRecords([$muted])
         ->assertCanNotSeeTableRecords([$active]);
+});
+
+it('filters projects by the hosting of any environment', function () {
+    $combell = Hosting::factory()->create();
+    $match = Project::factory()->create();
+    Environment::factory()->for($match)->sequence(['name' => 'production', 'hosting_id' => $combell->getKey()], ['name' => 'staging'])->count(2)->create();
+    $other = Project::factory()->create();
+    Environment::factory()->for($other)->for(Hosting::factory())->create();
+
+    filterProjects('hosting_id', 'is', ['values' => [$combell->getKey()]])
+        ->assertCanSeeTableRecords([$match])
+        ->assertCanNotSeeTableRecords([$other]);
 });
 
 it('filters projects by name', function () {
