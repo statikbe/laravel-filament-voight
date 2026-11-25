@@ -18,6 +18,12 @@ All notable changes to `laravel-filament-voight` will be documented in this file
 - A failing scan records one failed audit run instead of one per attempt.
 
 ### Added
+- Yarn Berry (v2+) `yarn.lock` files are parsed: their packages, dependency graph and
+  vulnerabilities are stored instead of being skipped with a "Yarn Berry lockfile"
+  warning. Run `php artisan voight:reprocess-lockfiles` after upgrading to import the
+  Berry lockfiles already stored. `symfony/yaml` is now a direct dependency.
+- `lockfile_unreadable` sync warning for a lockfile that cannot be parsed; only that
+  file is skipped.
 - `voight_osv_scans` and `voight_nightly_sweeps` tables (publish and run migrations).
 - Signed scanner callback route `voight.scans.callback`
   (`VOIGHT_SCANNER_CALLBACK_SECRET` must equal the lambda's `CALLBACK_SECRET`, min 32

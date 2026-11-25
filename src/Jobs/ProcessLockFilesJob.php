@@ -24,6 +24,7 @@ use Statikbe\FilamentVoight\Parsers\ComposerLockParser;
 use Statikbe\FilamentVoight\Parsers\LockfileParser;
 use Statikbe\FilamentVoight\Parsers\PackageLockParser;
 use Statikbe\FilamentVoight\Parsers\UnsupportedLockfileException;
+use Statikbe\FilamentVoight\Parsers\YarnBerryLockParser;
 use Statikbe\FilamentVoight\Parsers\YarnLockParser;
 
 /**
@@ -194,6 +195,10 @@ class ProcessLockFilesJob implements ShouldQueue
     private function parseYarnLock(string $path, string $content, Filesystem $disk): array
     {
         $packageJson = $this->findCompanionFile($path, 'package.json', $disk);
+
+        if (YarnBerryLockParser::detects($content)) {
+            return (new YarnBerryLockParser)->parse($content, $packageJson);
+        }
 
         if ($packageJson !== null && array_key_exists('workspaces', (array) json_decode($packageJson, true))) {
             $this->warnUnsupported(SyncWarning::YarnWorkspacesUnsupported, $path);

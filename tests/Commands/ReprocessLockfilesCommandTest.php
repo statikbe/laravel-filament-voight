@@ -1,8 +1,11 @@
 <?php
 
 use Illuminate\Support\Facades\Queue;
+use Illuminate\Support\Facades\Storage;
 use Statikbe\FilamentVoight\Enums\DependencySyncStatus;
+use Statikbe\FilamentVoight\Enums\SyncWarning;
 use Statikbe\FilamentVoight\Jobs\ProcessLockFilesJob;
+use Statikbe\FilamentVoight\Jobs\RunOsvScanJob;
 use Statikbe\FilamentVoight\Models\AuditFinding;
 use Statikbe\FilamentVoight\Models\AuditRun;
 use Statikbe\FilamentVoight\Models\DependencySync;
@@ -43,6 +46,25 @@ it('limits the selection to a project and an environment', function () {
 
     Queue::assertPushed(ProcessLockFilesJob::class, 1);
     Queue::assertPushed(ProcessLockFilesJob::class, fn (ProcessLockFilesJob $job): bool => $job->sync->environment_id === $production->id);
+});
+
+it('imports a stored berry lockfile that an older sync skipped', function () {
+    Storage::fake('voight-lockfiles');
+    Storage::disk('voight-lockfiles')->put('p/production/yarn.lock', lockfileFixture('yarn-berry/v8/yarn.lock'));
+
+    $environment = Environment::factory()->create();
+    $sync = DependencySync::factory()->for($environment)->create([
+        'lockfile_paths' => ['p/production/yarn.lock'],
+        'warnings' => [['code' => SyncWarning::YarnBerryUnsupported->value, 'context' => ['file' => 'yarn.lock']]],
+    ]);
+
+    $this->artisan('voight:reprocess-lockfiles')->assertSuccessful();
+
+    Queue::pushed(ProcessLockFilesJob::class)->each(fn (ProcessLockFilesJob $job) => $job->handle());
+
+    expect($sync->refresh()->warnings)->toBeNull()
+        ->and(EnvironmentPackage::where('environment_id', $environment->id)->count())->toBe(17);
+    Queue::assertPushed(RunOsvScanJob::class);
 });
 
 it('fails for an unknown project', function () {

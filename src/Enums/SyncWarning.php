@@ -16,9 +16,16 @@ enum SyncWarning: string implements HasColor, HasIcon, HasLabel
 
     case UnsupportedLockfile = 'unsupported_lockfile';
     case NpmLockfileV1Unsupported = 'npm_lockfile_v1_unsupported';
+
+    /**
+     * No longer produced: Berry lockfiles are parsed since spec 16. Only stored on
+     * syncs processed before that; `voight:reprocess-lockfiles` clears it.
+     */
     case YarnBerryUnsupported = 'yarn_berry_unsupported';
+
     case YarnWorkspacesUnsupported = 'yarn_workspaces_unsupported';
     case LockfileMissingOnDisk = 'lockfile_missing_on_disk';
+    case LockfileUnreadable = 'lockfile_unreadable';
 
     public function label(): string
     {

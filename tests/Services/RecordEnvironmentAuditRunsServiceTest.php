@@ -1,9 +1,15 @@
 <?php
 
+use Illuminate\Support\Facades\Bus;
+use Illuminate\Support\Facades\Storage;
 use Statikbe\FilamentVoight\Enums\AuditRunStatus;
 use Statikbe\FilamentVoight\Enums\AuditRunTrigger;
+use Statikbe\FilamentVoight\Enums\DependencySyncStatus;
+use Statikbe\FilamentVoight\Jobs\ProcessLockFilesJob;
+use Statikbe\FilamentVoight\Jobs\RunOsvScanJob;
 use Statikbe\FilamentVoight\Models\AuditFinding;
 use Statikbe\FilamentVoight\Models\AuditRun;
+use Statikbe\FilamentVoight\Models\DependencySync;
 use Statikbe\FilamentVoight\Models\Environment;
 use Statikbe\FilamentVoight\Models\EnvironmentPackage;
 use Statikbe\FilamentVoight\Models\Package;
@@ -241,4 +247,26 @@ it('stores the highest fixed version on the shared package range', function () {
     fixedVersionFor('4.0.0', $raw);
 
     expect(VulnerablePackageRange::first()->fixed_version)->toBe('5.1.5');
+});
+
+it('records scan findings against packages imported from a yarn berry lockfile', function () {
+    Storage::fake('voight-lockfiles');
+    Bus::fake([RunOsvScanJob::class]);
+    Storage::disk('voight-lockfiles')->put('p/production/yarn.lock', lockfileFixture('yarn-berry/v8/yarn.lock'));
+
+    $environment = Environment::factory()->create();
+    ProcessLockFilesJob::dispatchSync(DependencySync::factory()->for($environment)->create([
+        'lockfile_paths' => ['p/production/yarn.lock'],
+        'status' => DependencySyncStatus::Pending,
+    ]));
+
+    $raw = ['GHSA-lodash' => rawVuln('GHSA-lodash', 'lodash', '4.17.22')];
+    $raw['GHSA-lodash']['affected'][0]['package']['ecosystem'] = 'npm';
+    $service = app(RecordEnvironmentAuditRunsService::class);
+    $models = $service->upsertVulnerabilities($raw, ['GHSA-lodash' => '7.5']);
+    $map = ['npm|lodash|4.17.21' => [['vulnerability_id' => 'GHSA-lodash', 'max_severity' => '7.5']]];
+
+    $run = $service->record($environment, $map, $models, $raw, AuditRunTrigger::PostSync);
+
+    expect(AuditFinding::where('audit_run_id', $run->id)->sole()->installed_version)->toBe('4.17.21');
 });
