@@ -5,9 +5,12 @@ use Laravel\Sanctum\PersonalAccessToken;
 use Statikbe\FilamentVoight\Http\Middleware\AuthenticateProjectToken;
 use Statikbe\FilamentVoight\Mcp\Tools\CreateProjectTokenTool;
 use Statikbe\FilamentVoight\Mcp\Tools\CreateProjectTool;
+use Statikbe\FilamentVoight\Mcp\Tools\SetEnvironmentHostingsTool;
 use Statikbe\FilamentVoight\Mcp\VoightLocalServer;
 use Statikbe\FilamentVoight\Mcp\VoightServer;
 use Statikbe\FilamentVoight\Models\Customer;
+use Statikbe\FilamentVoight\Models\Environment;
+use Statikbe\FilamentVoight\Models\HostingTag;
 use Statikbe\FilamentVoight\Models\Project;
 use Statikbe\FilamentVoight\Models\Team;
 
@@ -96,6 +99,47 @@ describe('create_project_token', function () {
     });
 });
 
+describe('set_environment_hostings', function () {
+    it('replaces the hostings of an existing environment, reusing tags whatever the case', function () {
+        $project = Project::factory()->for($this->myTeam)->create(['project_code' => 'MINE']);
+        $environment = Environment::factory()->for($project)->create(['name' => 'production']);
+        $environment->syncHostings(['Own server']);
+        HostingTag::factory()->create(['name' => ['en' => 'Combell']]);
+
+        $result = structuredContent(VoightServer::actingAs($this->user)->tool(SetEnvironmentHostingsTool::class, [
+            'project_code' => 'MINE', 'environment' => 'production', 'hostings' => ['combell', 'Shared server'],
+        ]));
+
+        expect($result)->toBe([
+            'project_code' => 'MINE', 'environment' => 'production', 'hostings' => ['Combell', 'Shared server'],
+            'environment_created' => false, 'created_hostings' => ['Shared server'],
+        ])->and($environment->fresh()->hostings->pluck('name')->all())->toBe(['Combell', 'Shared server']);
+    });
+
+    it('creates the environment when it does not exist', function () {
+        $project = Project::factory()->for($this->myTeam)->create(['project_code' => 'MINE']);
+
+        $result = structuredContent(VoightServer::actingAs($this->user)->tool(SetEnvironmentHostingsTool::class, [
+            'project_code' => 'MINE', 'environment' => 'staging', 'hostings' => ['Level27'],
+        ]));
+
+        expect($result['environment_created'])->toBeTrue()
+            ->and($result['created_hostings'])->toBe(['Level27'])
+            ->and($project->environments()->sole()->hostings->pluck('name')->all())->toBe(['Level27']);
+    });
+
+    it('treats a project the caller cannot see as unknown and changes nothing', function () {
+        Project::factory()->for(Team::query()->where('name', 'Others')->sole())->create(['project_code' => 'THEIRS']);
+
+        VoightServer::actingAs($this->user)->tool(SetEnvironmentHostingsTool::class, [
+            'project_code' => 'THEIRS', 'environment' => 'production', 'hostings' => ['Combell'],
+        ])->assertHasErrors();
+
+        expect(Environment::query()->exists())->toBeFalse()
+            ->and(HostingTag::query()->exists())->toBeFalse();
+    });
+});
+
 /**
  * Names in a tools/list or prompts/list response. The package's assertRegistered() instantiates
  * classes without the container, which tools with constructor dependencies do not support.
@@ -110,14 +154,14 @@ function registeredNames(TestListResponse $response): array
 it('hides the write tools and the onboarding prompt when write tools are off', function () {
     config(['filament-voight.mcp.write_tools' => false]);
 
-    expect(registeredNames(VoightServer::actingAs($this->user)->tools()))->not->toContain('create_project', 'create_project_token')
-        ->and(registeredNames(VoightLocalServer::tools()))->not->toContain('create_project', 'create_project_token')
+    expect(registeredNames(VoightServer::actingAs($this->user)->tools()))->not->toContain('create_project', 'create_project_token', 'set_environment_hostings')
+        ->and(registeredNames(VoightLocalServer::tools()))->not->toContain('create_project', 'create_project_token', 'set_environment_hostings')
         ->and(registeredNames(VoightLocalServer::prompts()))->not->toContain('onboard_project');
 });
 
 it('registers every tool and prompt by default', function () {
     expect(registeredNames(VoightLocalServer::tools()))->toBe([
         'list_projects', 'get_project_vulnerabilities', 'get_upgrade_plan', 'find_package_usage',
-        'get_vulnerability', 'get_statistics', 'create_project', 'create_project_token',
+        'get_vulnerability', 'get_statistics', 'create_project', 'create_project_token', 'set_environment_hostings',
     ])->and(registeredNames(VoightLocalServer::prompts()))->toBe(['triage_project', 'security_digest', 'onboard_project']);
 });

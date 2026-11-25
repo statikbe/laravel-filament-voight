@@ -3,6 +3,7 @@
 namespace Statikbe\FilamentVoight\Resources\EnvironmentResource\Schemas;
 
 use Closure;
+use Filament\Tables\Columns\SpatieTagsColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Enums\FiltersLayout;
 use Filament\Tables\Filters\QueryBuilder;
@@ -17,9 +18,11 @@ use Statikbe\FilamentVoight\Enums\DependencySyncStatus;
 use Statikbe\FilamentVoight\Facades\FilamentVoight;
 use Statikbe\FilamentVoight\Models\Environment;
 use Statikbe\FilamentVoight\Models\EnvironmentSystemDetail;
+use Statikbe\FilamentVoight\Models\HostingTag;
 use Statikbe\FilamentVoight\Models\Project;
 use Statikbe\FilamentVoight\Resources\Components\EnvironmentNameColumn;
 use Statikbe\FilamentVoight\Resources\Components\EnvironmentStageConstraint;
+use Statikbe\FilamentVoight\Resources\Components\HostingConstraint;
 use Statikbe\FilamentVoight\Resources\Components\ProjectConstraint;
 use Statikbe\FilamentVoight\Resources\EnvironmentResource;
 use Statikbe\FilamentVoight\Resources\ProjectResource;
@@ -60,6 +63,12 @@ class EnvironmentTableSchema
                     ->url(fn (Environment $record): ?string => $record->url, shouldOpenInNewTab: true)
                     ->placeholder('—')
                     ->toggleable(),
+                // Reads the eager-loaded tags relation and filters by type, so no extra query per row.
+                SpatieTagsColumn::make('tags')
+                    ->label(voightTrans('models.environment.fields.hosting'))
+                    ->type(HostingTag::TYPE)
+                    ->placeholder(voightTrans('models.environment.unknown_hosting'))
+                    ->toggleable(),
                 TextColumn::make('systemDetails.php_version')
                     ->label(voightTrans('models.environment.fields.php_version'))
                     ->placeholder('—')
@@ -84,6 +93,11 @@ class EnvironmentTableSchema
                             ->searchable()
                             ->multiple(),
                         EnvironmentStageConstraint::make(),
+                        HostingConstraint::make(),
+                        RelationshipConstraint::make('hostings')
+                            ->label(voightTrans('models.environment.fields.has_hosting'))
+                            ->icon('heroicon-m-cloud')
+                            ->emptyable(),
                         ...($showProject ? [
                             ProjectConstraint::project('project_id'),
                             ProjectConstraint::customer('project.customer_id'),

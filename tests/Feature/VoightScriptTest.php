@@ -19,7 +19,8 @@ it('posts framework-neutral system details and never fails the script on an endp
         if (! str_starts_with($path, '/api/voight/')) {
             return false;
         }
-        file_put_contents(getenv('RECORD_DIR') . '/' . basename($path) . '.body', file_get_contents('php://input'));
+        // Multipart bodies are not readable from php://input, so their fields are recorded as JSON.
+        file_put_contents(getenv('RECORD_DIR') . '/' . basename($path) . '.body', $_POST === [] ? file_get_contents('php://input') : json_encode($_POST));
         http_response_code(str_ends_with($path, 'system-details') ? (int) getenv('SYSTEM_DETAILS_STATUS') : 202);
         PHP);
     File::put($dir . '/composer.lock', '{}');
@@ -37,6 +38,7 @@ it('posts framework-neutral system details and never fails the script on an endp
         'APP_DEBUG' => 'true',
         'VOIGHT_COMMIT' => 'abc1234def',
         'APP_URL' => "http://127.0.0.1:{$port}",
+        'VOIGHT_HOSTING' => '@Own server',
     ]);
 
     $server = proc_open(
@@ -66,11 +68,14 @@ it('posts framework-neutral system details and never fails the script on an endp
     }
 
     $payload = json_decode(File::get($dir . '/system-details.body'), true);
+    $lockFileFields = json_decode(File::get($dir . '/lock-file.body'), true);
     $probeFiles = glob($dir . '/*/voight-probe-*.php');
     File::deleteDirectory($dir);
 
     expect($exitCode)->toBe(0, $output)
-        ->and($probeFiles)->toBe([]);
+        ->and($probeFiles)->toBe([])
+        // Sent as a literal string: a leading @ must not make curl upload a file.
+        ->and($lockFileFields)->toMatchArray(['project_code' => 'demo', 'environment' => 'staging', 'hosting' => '@Own server']);
     expect(Validator::make($payload, (new StoreSystemDetailsRequest)->rules())->errors()->all())->toBe([]);
     expect($payload)->toMatchArray(['environment' => 'staging'])
         ->and($payload['app'])->toBe(['environment' => 'staging', 'debug_mode' => true])
