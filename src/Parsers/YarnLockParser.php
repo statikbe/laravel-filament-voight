@@ -4,12 +4,12 @@ namespace Statikbe\FilamentVoight\Parsers;
 
 use Statikbe\FilamentVoight\Enums\DependencyKind;
 use Statikbe\FilamentVoight\Enums\PackageType;
-use Statikbe\FilamentVoight\Enums\SyncWarning;
 use Statikbe\FilamentVoight\Parsers\Concerns\DerivesFlagsFromGraph;
 
 /**
- * Parses yarn.lock v1. Every block is one installed version; its comma-separated
- * descriptors (`name@range`) are what other blocks resolve their requirements through.
+ * Parses yarn.lock v1 (Berry lockfiles go to YarnBerryLockParser). Every block is
+ * one installed version; its comma-separated descriptors (`name@range`) are what
+ * other blocks resolve their requirements through.
  *
  * @phpstan-import-type ParsedPackage from LockfileParser
  * @phpstan-import-type ParsedDependency from LockfileParser
@@ -25,15 +25,9 @@ class YarnLockParser implements LockfileParser
      * @param  string  $content  raw yarn.lock
      * @param  string|null  $manifestContent  raw package.json
      * @return array<int, ParsedPackage>
-     *
-     * @throws UnsupportedLockfileException for a Yarn Berry (v2+) lockfile
      */
     public function parse(string $content, ?string $manifestContent = null): array
     {
-        if (preg_match('/^__metadata:/m', $content) === 1) {
-            throw new UnsupportedLockfileException(SyncWarning::YarnBerryUnsupported);
-        }
-
         $blocks = $this->parseBlocks($content);
         $descriptorKeys = $this->descriptorKeys($blocks);
         $packages = [];

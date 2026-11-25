@@ -85,9 +85,10 @@ warning's `context` (`voightTrans('enums.sync_warning.<value>', $context)`).
 |------------------------------|---------|-------------------------------------------------------------------|
 | `UnsupportedLockfile`        | `file`  | an uploaded lockfile has no parser (e.g. `pnpm-lock.yaml`)        |
 | `NpmLockfileV1Unsupported`   | `file`  | `package-lock.json` without a `packages` key                      |
-| `YarnBerryUnsupported`       | `file`  | `yarn.lock` with `__metadata`                                     |
+| `YarnBerryUnsupported`       | `file`  | `yarn.lock` with `__metadata` (no longer produced, see spec 16)   |
 | `YarnWorkspacesUnsupported`  | `file`  | the `package.json` next to a `yarn.lock` has a `workspaces` key   |
 | `LockfileMissingOnDisk`      | `file`  | a path in `lockfile_paths` cannot be read (today only logged)     |
+| `LockfileUnreadable`         | `file`  | a lockfile the parser cannot read, e.g. invalid YAML (spec 16)    |
 
 New cases are added here as new checks appear.
 
@@ -105,8 +106,8 @@ them on the sync in the same `update()` that sets `Completed`:
   parsers; the package has no `Exceptions` directory), which
   carries a `SyncWarning`. The job catches it, adds the warning with the file
   name, logs it at warning level (as the existing log lines do) and skips the
-  file. Used for npm v1 and yarn berry. A parser never returns `[]` to mean
-  "unsupported" any more.
+  file. Used for npm v1 and unreadable lockfiles (yarn berry until spec 16).
+  A parser never returns `[]` to mean "unsupported" any more.
 - **Detected by the job:** `UnsupportedLockfile` (the `default` arm of the
   `match`, for lockfile names — manifests such as `package.json` and
   `composer.json` are companions, never warnings), `LockfileMissingOnDisk`
@@ -216,8 +217,8 @@ labels, the column label, and the "no issues" tooltip.
 - **`ProcessLockFilesJob`:** each `SyncWarning` case is stored with its `file`
   context and the sync still completes; a `package.json` or `composer.json`
   never produces `UnsupportedLockfile`; a failed sync stores no warnings.
-- **Parsers:** npm v1 and yarn berry throw `UnsupportedLockfileException` with
-  the right case.
+- **Parsers:** npm v1 and unreadable yarn berry (spec 16) throw
+  `UnsupportedLockfileException` with the right case.
 - **`RunOsvScanJob`:** a failed scan stores `error_message`.
 - **`RunNightlyOsvScanJob`:** `failed()` creates one failed run per swept
   environment; a sweep that succeeds on retry creates none.

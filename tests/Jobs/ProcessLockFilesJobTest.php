@@ -238,14 +238,43 @@ it('warns about an npm lockfile v1', function () {
         ]);
 });
 
-it('warns about a yarn berry lockfile', function () {
+it('imports a yarn berry lockfile with its edges and no warning', function () {
     $sync = syncLockfiles([
-        'p/production/yarn.lock' => "__metadata:\n  version: 8\n",
+        'p/production/yarn.lock' => lockfileFixture('yarn-berry/v8/yarn.lock'),
+        'p/production/package.json' => lockfileFixture('yarn-berry/v8/package.json'),
     ]);
 
-    expect($sync->warnings)->toBe([
-        ['code' => SyncWarning::YarnBerryUnsupported->value, 'context' => ['file' => 'yarn.lock']],
+    $chalk = EnvironmentPackage::where('environment_id', $sync->environment_id)
+        ->whereRelation('package', 'name', 'chalk')
+        ->sole();
+
+    expect($sync->status)->toBe(DependencySyncStatus::Completed)
+        ->and($sync->package_count)->toBe(17)
+        ->and($sync->warnings)->toBeNull()
+        ->and($chalk->is_direct)->toBeTrue()
+        ->and(EnvironmentPackageDependency::where('parent_id', $chalk->id)->count())->toBe(2);
+});
+
+it('does not warn about yarn workspaces for a berry lockfile', function () {
+    $sync = syncLockfiles([
+        'p/production/yarn.lock' => lockfileFixture('yarn-berry/v8/yarn.lock'),
+        'p/production/package.json' => json_encode(['workspaces' => ['packages/*']]),
     ]);
+
+    expect($sync->warnings)->toBeNull();
+});
+
+it('warns about an unreadable yarn berry lockfile but still imports the rest', function () {
+    $sync = syncLockfiles([
+        'p/production/yarn.lock' => "__metadata:\n  version: 8\n\"chalk@npm:^4.1.2:\n  version: [4.1.2\n",
+        'p/production/composer.lock' => json_encode(['packages' => [['name' => 'a/b', 'version' => '1.0.0']]]),
+    ]);
+
+    expect($sync->status)->toBe(DependencySyncStatus::Completed)
+        ->and($sync->package_count)->toBe(1)
+        ->and($sync->warnings)->toBe([
+            ['code' => SyncWarning::LockfileUnreadable->value, 'context' => ['file' => 'yarn.lock']],
+        ]);
 });
 
 it('warns about yarn workspaces but still imports the packages', function () {
