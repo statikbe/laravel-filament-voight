@@ -100,7 +100,7 @@ class RunOsvScanJob implements ShouldQueue
         }
 
         $disk = Storage::disk(FilamentVoight::config()->getLockfilesDisk());
-        $scannable = ['composer.lock', 'package-lock.json', 'yarn.lock', 'pnpm-lock.yaml'];
+        $scannable = ['composer.lock', 'package-lock.json', 'yarn.lock', 'pnpm-lock.yaml', 'bun.lock'];
         $files = [];
 
         foreach ($latestSync->lockfile_paths ?? [] as $path) {

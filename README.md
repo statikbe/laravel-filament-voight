@@ -18,9 +18,9 @@ CI/CD project  →  POST /api/voight/lock-file  →  Voight app  →  ProcessLoc
 ```
 
 1. A `voight.sh` (or `voight:sync-lockfile`) runs in each project on deploy/install and POSTs lockfiles to the Voight API.
-2. `ProcessLockFilesJob` parses `composer.lock` / `package-lock.json` and syncs the full dependency tree into the database.
+2. `ProcessLockFilesJob` parses `composer.lock` / `package-lock.json` / `yarn.lock` / `bun.lock` and syncs the full dependency tree into the database.
 3. `RunOsvScanJob` dispatches immediately after every successful sync, submitting that environment's stored lockfiles as an asynchronous scan (`POST /scans`, upload, then callback or polling) and persisting results as `AuditRun`, `AuditFinding`, and `Vulnerability` records.
-4. `RunNightlyOsvScanJob` runs on a daily cron. Instead of re-scanning every environment's lockfiles, it collects the **distinct** `(ecosystem, name, version)` set across all environments flagged `scan_nightly`, scans it as a few asynchronous `packages` batches, and fans the merged results back out to per-environment `AuditRun`s. Environments containing commit-pinned (`dev-*`) dependencies fall back to per-environment scans. See [specs/15-async-osv-scans.md](specs/15-async-osv-scans.md).
+4. `RunNightlyOsvScanJob` runs on a daily cron. Instead of re-scanning every environment's lockfiles, it collects the **distinct** `(ecosystem, name, version)` set across all environments flagged `scan_nightly`, scans it as a few asynchronous `packages` batches, and fans the merged results back out to per-environment `AuditRun`s. Environments containing commit-pinned (`dev-*`) dependencies, or versions that are not registry versions (git or tarball URLs from `bun.lock`, which contain a `:`), fall back to per-environment scans. See [specs/15-async-osv-scans.md](specs/15-async-osv-scans.md).
 5. `voight.sh` also sends a server snapshot (PHP, OS, database, deployment, framework details; for Laravel the `about` output) to `/api/voight/system-details` after the lockfiles, on deploy. Voight keeps the latest snapshot per environment.
 
 ## Installation
@@ -83,7 +83,7 @@ return [
 
     'lockfiles' => [
         'disk'          => env('VOIGHT_LOCKFILES_DISK', 'voight-lockfiles'),
-        'allowed_names' => ['composer.lock', 'package-lock.json', 'yarn.lock', 'pnpm-lock.yaml'],
+        'allowed_names' => ['composer.lock', 'package-lock.json', 'yarn.lock', 'pnpm-lock.yaml', 'bun.lock'],
     ],
 
     'api' => [

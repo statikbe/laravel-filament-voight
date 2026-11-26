@@ -277,6 +277,34 @@ it('warns about an unreadable yarn berry lockfile but still imports the rest', f
         ]);
 });
 
+it('imports a bun lockfile with its edges and no warning', function () {
+    $sync = syncLockfiles(['p/production/bun.lock' => lockfileFixture('bun/bun.lock')]);
+
+    $debug = EnvironmentPackage::where('environment_id', $sync->environment_id)
+        ->whereRelation('package', 'name', 'debug')
+        ->sole();
+    $nestedMs = EnvironmentPackage::find(EnvironmentPackageDependency::where('parent_id', $debug->id)->sole()->child_id);
+
+    expect($sync->status)->toBe(DependencySyncStatus::Completed)
+        ->and($sync->package_count)->toBe(29)
+        ->and($sync->warnings)->toBeNull()
+        ->and($debug->is_dev)->toBeTrue()
+        ->and($nestedMs->version)->toBe('2.1.3');
+});
+
+it('warns about an unreadable bun lockfile but still imports the rest', function () {
+    $sync = syncLockfiles([
+        'p/production/bun.lock' => 'not json',
+        'p/production/composer.lock' => json_encode(['packages' => [['name' => 'a/b', 'version' => '1.0.0']]]),
+    ]);
+
+    expect($sync->status)->toBe(DependencySyncStatus::Completed)
+        ->and($sync->package_count)->toBe(1)
+        ->and($sync->warnings)->toBe([
+            ['code' => SyncWarning::LockfileUnreadable->value, 'context' => ['file' => 'bun.lock']],
+        ]);
+});
+
 it('warns about yarn workspaces but still imports the packages', function () {
     $sync = syncLockfiles([
         'p/production/yarn.lock' => "lodash@^4.17.0:\n  version \"4.17.21\"\n",

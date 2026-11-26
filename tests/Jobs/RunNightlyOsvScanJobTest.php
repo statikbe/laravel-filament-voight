@@ -80,6 +80,22 @@ it('routes environments with commit-pinned packages to the lockfile scan and out
         ->and(inputOf(OsvScan::sole())['packages'])->toBe([['ecosystem' => 'Packagist', 'name' => 'symfony/console', 'version' => '7.1.5']]);
 });
 
+it('routes environments with git-locator versions to the lockfile scan', function () {
+    Bus::fake([RunOsvScanJob::class, SubmitOsvScanJob::class]);
+    $gitPackage = Package::factory()->npm()->create(['name' => 'is-even']);
+    $normal = Package::factory()->npm()->create(['name' => 'chalk']);
+    $gitEnv = Environment::factory()->create();
+    $dedupeEnv = Environment::factory()->create();
+    EnvironmentPackage::factory()->create(['environment_id' => $gitEnv->id, 'package_id' => $gitPackage->id, 'version' => 'github:jonschlinkert/is-even#585f800']);
+    EnvironmentPackage::factory()->create(['environment_id' => $dedupeEnv->id, 'package_id' => $normal->id, 'version' => '4.1.2']);
+
+    RunNightlyOsvScanJob::dispatchSync();
+
+    Bus::assertDispatched(RunOsvScanJob::class, fn ($job) => $job->environment->id === $gitEnv->id);
+    expect(NightlySweep::sole()->environment_ids)->toBe([$dedupeEnv->id])
+        ->and(inputOf(OsvScan::sole())['packages'])->toBe([['ecosystem' => 'npm', 'name' => 'chalk', 'version' => '4.1.2']]);
+});
+
 it('does nothing when there are no scan_nightly environments', function () {
     Bus::fake([SubmitOsvScanJob::class]);
     Environment::factory()->notNightly()->create();

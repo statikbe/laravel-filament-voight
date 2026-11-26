@@ -236,7 +236,8 @@ Add this upgrade step to `CHANGELOG.md`.
 
 ## Out of scope
 
-- **pnpm and bun lockfiles.** Still `SyncWarning::UnsupportedLockfile`.
+- **pnpm lockfiles.** Still `SyncWarning::UnsupportedLockfile`. (Bun is parsed since
+  `18-bun-lockfiles.md`.)
 - **Peer dependency edges** (see [Edges](#edges)).
 - **Dev flags for non-root workspaces.** Would need the uploader to send every
   member's `package.json`.

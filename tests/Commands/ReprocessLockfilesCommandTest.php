@@ -67,6 +67,24 @@ it('imports a stored berry lockfile that an older sync skipped', function () {
     Queue::assertPushed(RunOsvScanJob::class);
 });
 
+it('imports a stored bun lockfile that an older sync skipped', function () {
+    Storage::fake('voight-lockfiles');
+    Storage::disk('voight-lockfiles')->put('p/production/bun.lock', lockfileFixture('bun/bun.lock'));
+
+    $environment = Environment::factory()->create();
+    $sync = DependencySync::factory()->for($environment)->create([
+        'lockfile_paths' => ['p/production/bun.lock'],
+        'warnings' => [['code' => SyncWarning::UnsupportedLockfile->value, 'context' => ['file' => 'bun.lock']]],
+    ]);
+
+    $this->artisan('voight:reprocess-lockfiles')->assertSuccessful();
+
+    Queue::pushed(ProcessLockFilesJob::class)->each(fn (ProcessLockFilesJob $job) => $job->handle());
+
+    expect($sync->refresh()->warnings)->toBeNull()
+        ->and(EnvironmentPackage::where('environment_id', $environment->id)->count())->toBe(29);
+});
+
 it('fails for an unknown project', function () {
     $this->artisan('voight:reprocess-lockfiles --project=missing')->assertFailed();
 
