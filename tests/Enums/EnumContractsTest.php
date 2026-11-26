@@ -13,6 +13,7 @@ use Statikbe\FilamentVoight\Enums\EnvironmentIssueType;
 use Statikbe\FilamentVoight\Enums\PackageType;
 use Statikbe\FilamentVoight\Enums\Severity;
 use Statikbe\FilamentVoight\Enums\SyncWarning;
+use Statikbe\FilamentVoight\Enums\VoightIcon;
 use Statikbe\FilamentVoight\Enums\VulnerabilitySource;
 
 $enums = [
@@ -41,6 +42,17 @@ it('implements the Filament contracts with exhaustive, well-formed color and ico
         // returned values are well-formed. Label copy comes from translations,
         // so it is not asserted here.
         expect($case->getColor())->toBeString()->not->toBe('');
-        expect($case->getIcon())->toStartWith('heroicon-');
+        expect($case->voightIcon())->toBeInstanceOf(VoightIcon::class);
+        expect($case->getIcon())->toBe($case->voightIcon()->resolve());
     }
 })->with($enums);
+
+it('keeps the original default icons', function (HasIcon $case, string $icon) {
+    expect($case->getIcon())->toBe($icon);
+})->with([
+    [Severity::Critical, 'heroicon-o-fire'],
+    [AuditRunTrigger::Nightly, 'heroicon-o-moon'],
+    [PackageType::Npm, 'heroicon-o-cube'],
+    [EnvironmentIssueType::ScanFailed, 'heroicon-o-x-circle'],
+    [SyncWarning::cases()[0], 'heroicon-o-exclamation-triangle'],
+]);

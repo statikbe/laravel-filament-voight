@@ -2,9 +2,11 @@
 
 namespace Statikbe\FilamentVoight\Enums;
 
+use BackedEnum;
 use Filament\Support\Contracts\HasColor;
 use Filament\Support\Contracts\HasIcon;
 use Filament\Support\Contracts\HasLabel;
+use Illuminate\Contracts\Support\Htmlable;
 
 enum Severity: string implements HasColor, HasIcon, HasLabel
 {
@@ -63,15 +65,20 @@ enum Severity: string implements HasColor, HasIcon, HasLabel
         };
     }
 
-    public function icon(): string
+    public function voightIcon(): VoightIcon
     {
         return match ($this) {
-            self::None => 'heroicon-o-shield-check',
-            self::Low => 'heroicon-o-information-circle',
-            self::Medium => 'heroicon-o-exclamation-triangle',
-            self::High => 'heroicon-o-exclamation-triangle',
-            self::Critical => 'heroicon-o-fire',
+            self::None => VoightIcon::SeverityNone,
+            self::Low => VoightIcon::SeverityLow,
+            self::Medium => VoightIcon::SeverityMedium,
+            self::High => VoightIcon::SeverityHigh,
+            self::Critical => VoightIcon::SeverityCritical,
         };
+    }
+
+    public function icon(): string | BackedEnum | Htmlable
+    {
+        return $this->voightIcon()->resolve();
     }
 
     public function getLabel(): string
@@ -84,7 +91,7 @@ enum Severity: string implements HasColor, HasIcon, HasLabel
         return $this->color();
     }
 
-    public function getIcon(): string
+    public function getIcon(): string | BackedEnum | Htmlable
     {
         return $this->icon();
     }
