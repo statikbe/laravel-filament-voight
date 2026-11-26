@@ -77,8 +77,8 @@ scans and edits change the data.
   - Running a rule is a plain query, with no Filament involved and no user
     to run as.
   - It matches exactly what the table showed when the rule was saved.
-  - No tab or filter uses the current date, so nothing goes stale over
-    time.
+  - Relative date filters ("past week") are refused when saving, since the
+    stored SQL would freeze them at the save date.
   - Accepted costs:
     - A release that changes what a filter means leaves old rules on the
       old meaning until re-saved.
