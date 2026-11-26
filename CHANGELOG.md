@@ -4,6 +4,9 @@ All notable changes to `laravel-filament-voight` will be documented in this file
 
 ## Unreleased
 
+### Added 2026-11-26
+- Tags: curated tag types (single or multi value, limited to some models or all) with their tags, on projects, environments, customers, packages and vulnerabilities. Assign them per record or in bulk, filter on them in every table (also through related models), and read and assign them over MCP (`list_tags`, `assign_tags`, `tags` filters). Requires `spatie/laravel-tags` (and `spatie/laravel-translatable`); publish and run the new `create_voight_tag_types_table`, `create_voight_tags_table` and `create_voight_taggables_table` migrations.
+
 ### Changed 2026-11-27
 - Version filters, counts, paging and sorting run in SQL on new sortable version key columns (`voight_environment_packages.version_sort`, `voight_audit_findings.installed_version_sort`, `voight_environment_system_details.php_version_sort`). Publish and run the three new migrations; they fill the keys of existing rows.
 - New `php artisan voight:rebuild-version-keys` recomputes the keys. Run it after any release that changes the version key rules.

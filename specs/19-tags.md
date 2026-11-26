@@ -1,7 +1,7 @@
 # Tags
 
 **Date:** 2026-11-26
-**Status:** draft
+**Status:** implemented
 **Builds on:** `13-mcp-server.md` (MCP tools, write-tool switch),
 `17-configurable-icons.md` (every new icon is a `VoightIcon` case)
 
@@ -182,7 +182,7 @@ Writes for a batch happen in one DB transaction.
 - **Environment, package and vulnerability** have no edit form, so their view
   pages get an **"Edit tags"** header action with the same fields in a modal.
 - **Bulk actions** on all five tables:
-  - "Apply tags": pick a type, then its tags; single-value types replace.
+  - "Apply tags": pick tags from a select grouped by type; single-value types replace, and two tags of one single-value type are refused.
   - "Remove tags".
   - Both work on Filament's "select all" across pages, chunked, through
     `TagAssigner`.
@@ -232,7 +232,7 @@ Writes for a batch happen in one DB transaction.
 
 Returns every tag type:
 - `key`, `name`, `description`, `single`;
-- `applies_to`: model names, or `"all"`;
+- `applies_to`: model names (all five when unrestricted), and `applies_to_all`;
 - its tags: `name`, `slug`, `usage_count`.
 
 ### Tags in existing read tools
