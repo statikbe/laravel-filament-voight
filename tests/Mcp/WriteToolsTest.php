@@ -91,6 +91,16 @@ describe('create_project_token', function () {
             ->and($request->attributes->get('voight_project')->is($project))->toBeTrue();
     });
 
+    it('escapes special characters in the env block', function () {
+        $code = "a\"b\$c`d\\e\nf";
+        Project::factory()->for($this->myTeam)->create(['project_code' => $code]);
+
+        $result = structuredContent(VoightServer::actingAs($this->user)->tool(CreateProjectTokenTool::class, ['project_code' => $code]));
+
+        expect($result['uploader_env'])->toContain('PROJECT_CODE="a\"b\$c\`d\\\\e\nf"')
+            ->and(substr_count($result['uploader_env'], "\n"))->toBe(2);
+    });
+
     it('uses the given token name', function () {
         Project::factory()->for($this->myTeam)->create(['project_code' => 'MINE']);
 

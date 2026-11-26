@@ -74,8 +74,9 @@ class CreateProjectTokenTool extends VoightTool
             'PROJECT_CODE' => $project->project_code,
         ];
 
-        // shortcut: no escaping, values never contain quotes, backslashes or `$`; revisit if project codes allow them.
-        $env = collect($variables)->map(fn (string $value, string $key): string => "{$key}=\"{$value}\"")->implode("\n");
+        // Escape what stays special inside double quotes, plus newlines, so a project code cannot break or inject into the block.
+        $quote = fn (string $value): string => '"' . str_replace("\n", '\n', addcslashes($value, '\\"$`')) . '"';
+        $env = collect($variables)->map(fn (string $value, string $key): string => "{$key}={$quote($value)}")->implode("\n");
 
         return Response::structured([
             'project_code' => $project->project_code,
