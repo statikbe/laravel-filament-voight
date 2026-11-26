@@ -10,7 +10,7 @@
         <x-filament::callout
             :heading="voightTrans('pages.mcp_access.clients.oauth_unavailable_heading')"
             :description="voightTrans('pages.mcp_access.clients.oauth_unavailable_body')"
-            icon="heroicon-o-information-circle"
+            :icon="\Statikbe\FilamentVoight\Enums\VoightIcon::McpOauthUnavailable->resolve()"
             color="info"
         />
     @endunless
@@ -49,7 +49,7 @@
                         @else
                             <x-filament::button
                                 :x-on:click="'window.navigator.clipboard.writeText(' . Js::from($client->copies) . '); $tooltip(' . $copiedMessage . ', { theme: $store.theme, timeout: 2000 })'"
-                                icon="heroicon-o-clipboard-document"
+                                :icon="\Statikbe\FilamentVoight\Enums\VoightIcon::McpCopySnippet->resolve()"
                                 size="sm"
                             >
                                 {{ $client->buttonLabel }}

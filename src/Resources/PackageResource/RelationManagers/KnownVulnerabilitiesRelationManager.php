@@ -4,7 +4,6 @@ namespace Statikbe\FilamentVoight\Resources\PackageResource\RelationManagers;
 
 use BackedEnum;
 use Filament\Resources\RelationManagers\RelationManager;
-use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Enums\FiltersLayout;
 use Filament\Tables\Filters\QueryBuilder;
@@ -108,7 +107,7 @@ class KnownVulnerabilitiesRelationManager extends RelationManager
                     ]),
             ], layout: FiltersLayout::AboveContentCollapsible)
             ->defaultSort('vulnerability.vulnerability_score', 'desc')
-            ->emptyStateIcon(Heroicon::OutlinedShieldCheck)
+            ->emptyStateIcon(VoightIcon::EmptyStateAllClear->resolve())
             ->emptyStateHeading(voightTrans('models.package.view.empty.no_known_vulnerabilities_heading'))
             ->emptyStateDescription(voightTrans('models.package.view.empty.no_known_vulnerabilities_description'));
     }

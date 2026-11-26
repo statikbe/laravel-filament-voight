@@ -2,11 +2,11 @@
 
 namespace Statikbe\FilamentVoight\Widgets;
 
-use Filament\Support\Icons\Heroicon;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 use Illuminate\Support\Carbon;
 use Statikbe\FilamentVoight\Enums\Severity;
+use Statikbe\FilamentVoight\Enums\VoightIcon;
 use Statikbe\FilamentVoight\Facades\FilamentVoight;
 
 class SeverityOverviewWidget extends StatsOverviewWidget
@@ -41,7 +41,7 @@ class SeverityOverviewWidget extends StatsOverviewWidget
                 )
                     ->description(voightTrans('widgets.severity_overview.findings_this_week', ['count' => $weeklyTotal]))
                     ->color($severity->color())
-                    ->icon(Heroicon::OutlinedShieldExclamation)
+                    ->icon(VoightIcon::WidgetSeverityOverview->resolve())
                     ->chart($sparkline);
             })
             ->all();

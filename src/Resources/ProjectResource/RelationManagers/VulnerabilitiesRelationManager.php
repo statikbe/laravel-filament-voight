@@ -4,7 +4,6 @@ namespace Statikbe\FilamentVoight\Resources\ProjectResource\RelationManagers;
 
 use BackedEnum;
 use Filament\Resources\RelationManagers\RelationManager;
-use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
 use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Database\Eloquent\Model;
@@ -33,7 +32,7 @@ class VulnerabilitiesRelationManager extends RelationManager
                 ViewFindingVulnerabilityAction::make(),
             ])
             ->defaultSort('vulnerability.vulnerability_score', 'desc')
-            ->emptyStateIcon(Heroicon::OutlinedShieldCheck)
+            ->emptyStateIcon(VoightIcon::EmptyStateAllClear->resolve())
             ->emptyStateHeading(voightTrans('models.package.view.empty.no_active_findings_heading'))
             ->emptyStateDescription(voightTrans('models.package.view.empty.no_active_findings_description'));
     }

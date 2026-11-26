@@ -2,7 +2,7 @@
 
 namespace Statikbe\FilamentVoight\Support;
 
-use Filament\Support\Icons\Heroicon;
+use Statikbe\FilamentVoight\Enums\VoightIcon;
 use Statikbe\FilamentVoight\Facades\FilamentVoight;
 
 /**
@@ -85,7 +85,7 @@ final readonly class McpClientSetup
             key: 'claude',
             name: voightTrans('pages.mcp_access.clients.claude.name'),
             description: voightTrans('pages.mcp_access.clients.claude.description'),
-            icon: Heroicon::OutlinedChatBubbleLeftRight,
+            icon: VoightIcon::McpClientClaude->resolve(),
             buttonLabel: voightTrans('pages.mcp_access.clients.claude.button'),
             buttonUrl: self::CLAUDE_CONNECTORS_URL,
             copies: $this->url,
@@ -101,7 +101,7 @@ final readonly class McpClientSetup
             key: 'chatgpt',
             name: voightTrans('pages.mcp_access.clients.chatgpt.name'),
             description: voightTrans('pages.mcp_access.clients.chatgpt.description'),
-            icon: Heroicon::OutlinedChatBubbleOvalLeftEllipsis,
+            icon: VoightIcon::McpClientChatGpt->resolve(),
             buttonLabel: voightTrans('pages.mcp_access.clients.chatgpt.button'),
             buttonUrl: self::CHATGPT_PLUGINS_URL,
             copies: $this->url,
@@ -117,7 +117,7 @@ final readonly class McpClientSetup
             key: 'cursor',
             name: 'Cursor',
             description: voightTrans('pages.mcp_access.clients.cursor.description'),
-            icon: Heroicon::OutlinedCodeBracketSquare,
+            icon: VoightIcon::McpClientCursor->resolve(),
             buttonLabel: voightTrans('pages.mcp_access.clients.cursor.button'),
             buttonUrl: $this->cursorInstallUrl(),
             hint: voightTrans('pages.mcp_access.clients.oauth_sign_in_hint'),
@@ -130,7 +130,7 @@ final readonly class McpClientSetup
             key: 'vscode',
             name: 'VS Code',
             description: voightTrans('pages.mcp_access.clients.vscode.description'),
-            icon: Heroicon::OutlinedCodeBracket,
+            icon: VoightIcon::McpClientVsCode->resolve(),
             buttonLabel: voightTrans('pages.mcp_access.clients.vscode.button'),
             buttonUrl: $this->vsCodeInstallUrl(),
             hint: voightTrans('pages.mcp_access.clients.oauth_sign_in_hint'),
@@ -145,7 +145,7 @@ final readonly class McpClientSetup
             key: 'claude-code',
             name: 'Claude Code',
             description: voightTrans('pages.mcp_access.clients.claude_code.description'),
-            icon: Heroicon::OutlinedCommandLine,
+            icon: VoightIcon::McpClientClaudeCode->resolve(),
             buttonLabel: voightTrans('pages.mcp_access.clients.copy_command'),
             copies: $command,
             snippet: $command,
@@ -161,7 +161,7 @@ final readonly class McpClientSetup
             key: 'codex',
             name: 'Codex CLI',
             description: voightTrans('pages.mcp_access.clients.codex.description'),
-            icon: Heroicon::OutlinedCommandLine,
+            icon: VoightIcon::McpClientCodex->resolve(),
             buttonLabel: voightTrans('pages.mcp_access.clients.copy_command'),
             copies: $command,
             snippet: $command,

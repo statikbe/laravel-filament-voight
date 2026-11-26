@@ -6,7 +6,7 @@ use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Support\Enums\IconPosition;
-use Filament\Support\Icons\Heroicon;
+use Statikbe\FilamentVoight\Enums\VoightIcon;
 use Statikbe\FilamentVoight\Models\AuditRun;
 use Statikbe\FilamentVoight\Resources\Components\EnvironmentNameEntry;
 use Statikbe\FilamentVoight\Resources\ProjectResource;
@@ -55,7 +55,7 @@ class AuditRunInfolistSchema
             ->label($label)
             ->url(fn (AuditRun $record): string => self::projectUrl($record))
             ->color('primary')
-            ->icon(Heroicon::OutlinedArrowRight)
+            ->icon(VoightIcon::AuditRunProjectLink->resolve())
             ->iconPosition(IconPosition::After)
             ->extraAttributes(['class' => 'underline']);
     }
