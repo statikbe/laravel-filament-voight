@@ -59,6 +59,9 @@ class TagAssigner
                         $record->syncTagIds(self::keys($typeTags), $first->type, detaching: false);
                     }
                 }
+
+                // Assigning explicitly makes a tag manual, also when a rule had added it.
+                $record->tags()->updateExistingPivot(self::keys($tags), ['is_manual' => true]);
             }
         });
     }

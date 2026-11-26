@@ -224,6 +224,9 @@ class FilamentVoightServiceProvider extends PackageServiceProvider
             'create_voight_tag_types_table',
             'create_voight_tags_table',
             'create_voight_taggables_table',
+            'create_voight_tag_rules_table',
+            'create_voight_tag_rule_matches_table',
+            'add_is_manual_to_voight_taggables_table',
         ];
     }
 }

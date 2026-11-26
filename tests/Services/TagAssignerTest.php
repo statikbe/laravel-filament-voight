@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\DB;
 use Statikbe\FilamentVoight\Models\Package;
 use Statikbe\FilamentVoight\Models\Project;
 use Statikbe\FilamentVoight\Models\Tag;
@@ -112,4 +113,41 @@ it('reports problems without writing', function () {
 
     expect($this->assigner->problems($package, collect([$this->high])))->toHaveCount(1)
         ->and($this->assigner->problems($package, collect([$this->legacy])))->toBe([]);
+});
+
+function markAutomatic(Model $record, Tag $tag): void
+{
+    DB::table('voight_taggables')
+        ->where('tag_id', $tag->id)
+        ->where('taggable_id', (string) $record->getKey())
+        ->update(['is_manual' => false]);
+}
+
+function isManual(Model $record, Tag $tag): bool
+{
+    return (bool) DB::table('voight_taggables')
+        ->where('tag_id', $tag->id)
+        ->where('taggable_id', (string) $record->getKey())
+        ->value('is_manual');
+}
+
+it('makes an automatic tag manual when it is assigned explicitly', function () {
+    $project = Project::factory()->create();
+    $project->attachTag($this->legacy);
+    markAutomatic($project, $this->legacy);
+
+    $this->assigner->assign([$project], collect([$this->legacy]));
+
+    expect(isManual($project, $this->legacy))->toBeTrue();
+});
+
+it('keeps an automatic tag automatic when a form syncs it unchanged', function () {
+    $project = Project::factory()->create();
+    $project->attachTag($this->legacy);
+    markAutomatic($project, $this->legacy);
+
+    $this->assigner->sync($project, $this->labels, collect([$this->legacy, $this->flagship]));
+
+    expect(isManual($project, $this->legacy))->toBeFalse()
+        ->and(isManual($project, $this->flagship))->toBeTrue();
 });

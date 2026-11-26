@@ -376,6 +376,17 @@ enum VoightIcon: string
     #[IconDefinition('heroicon-o-information-circle', 'Environment health issue: no lockfile has ever been synced. Shown in health columns and callouts.')]
     case EnvironmentIssueNeverSynced = 'environment-issue.never-synced';
 
+    // -- Tag rule status --
+
+    #[IconDefinition('heroicon-o-play-circle', 'Auto-tag rule status "active": the rule keeps its tag on matching records.')]
+    case TagRuleStatusActive = 'tag-rule-status.active';
+
+    #[IconDefinition('heroicon-o-pause-circle', 'Auto-tag rule status "paused": the rule is switched off; its tags stay.')]
+    case TagRuleStatusPaused = 'tag-rule-status.paused';
+
+    #[IconDefinition('heroicon-o-exclamation-circle', 'Auto-tag rule status "failed": its stored query errored; it no longer runs until retried or saved again.')]
+    case TagRuleStatusFailed = 'tag-rule-status.failed';
+
     // -- Misc enums --
 
     #[IconDefinition('heroicon-o-exclamation-triangle', 'Warning recorded while syncing a lockfile (e.g. unsupported format, skipped file).')]

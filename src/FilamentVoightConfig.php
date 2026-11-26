@@ -20,6 +20,7 @@ use Statikbe\FilamentVoight\Models\OsvScan;
 use Statikbe\FilamentVoight\Models\Package;
 use Statikbe\FilamentVoight\Models\Project;
 use Statikbe\FilamentVoight\Models\Tag;
+use Statikbe\FilamentVoight\Models\TagRule;
 use Statikbe\FilamentVoight\Models\TagType;
 use Statikbe\FilamentVoight\Models\Team;
 use Statikbe\FilamentVoight\Models\Vulnerability;
@@ -360,6 +361,14 @@ class FilamentVoightConfig
     }
 
     /**
+     * @return class-string<TagRule>
+     */
+    public function getTagRuleModel(): string
+    {
+        return $this->packageConfig('models.tag_rule', TagRule::class);
+    }
+
+    /**
      * @return class-string<Tag>
      */
     public function getTagModel(): string
@@ -457,6 +466,7 @@ class FilamentVoightConfig
             'voight-team' => Team::class,
             'voight-tag-type' => TagType::class,
             'voight-tag' => Tag::class,
+            'voight-tag-rule' => TagRule::class,
         ]);
     }
 

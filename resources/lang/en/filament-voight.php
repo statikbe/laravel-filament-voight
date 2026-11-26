@@ -49,6 +49,11 @@ return [
 
     // Enums
     'enums' => [
+        'tag_rule_status' => [
+            'active' => 'Active',
+            'paused' => 'Paused',
+            'failed' => 'Failed',
+        ],
         'package_type' => [
             'composer' => 'Composer',
             'npm' => 'NPM',

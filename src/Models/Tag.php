@@ -2,8 +2,10 @@
 
 namespace Statikbe\FilamentVoight\Models;
 
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Str;
 use Spatie\Tags\Tag as SpatieTag;
 use Statikbe\FilamentVoight\Database\Factories\TagFactory;
@@ -17,6 +19,7 @@ use Statikbe\FilamentVoight\Facades\FilamentVoight;
  * @property string $slug
  * @property string $type
  * @property-read TagType $tagType
+ * @property-read Collection<int, TagRule> $rules
  */
 class Tag extends SpatieTag
 {
@@ -43,5 +46,13 @@ class Tag extends SpatieTag
     public function tagType(): BelongsTo
     {
         return $this->belongsTo(FilamentVoight::config()->getTagTypeModel(), 'type', 'key');
+    }
+
+    /**
+     * @return HasMany<TagRule, $this>
+     */
+    public function rules(): HasMany
+    {
+        return $this->hasMany(FilamentVoight::config()->getTagRuleModel());
     }
 }
