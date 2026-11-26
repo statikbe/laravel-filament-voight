@@ -13,6 +13,7 @@ use Statikbe\FilamentVoight\Facades\FilamentVoight;
  *
  * @property string $id
  * @property string $name
+ * @property string $slug
  * @property string $type
  * @property-read TagType $tagType
  */

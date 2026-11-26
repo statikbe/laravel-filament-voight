@@ -10,6 +10,7 @@ use Laravel\Mcp\Server\Tools\Annotations\IsIdempotent;
 use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 use Statikbe\FilamentVoight\Mcp\McpAccess;
 use Statikbe\FilamentVoight\Services\Mcp\ProjectQueryService;
+use Statikbe\FilamentVoight\Services\Mcp\TagReferences;
 
 #[IsReadOnly]
 #[IsIdempotent]
@@ -35,6 +36,7 @@ class GetProjectVulnerabilitiesTool extends VoightTool
             'environment' => $schema->string()->description('Environment name; all environments when omitted.'),
             'min_severity' => $this->minSeveritySchema($schema),
             'include_dev' => $schema->boolean()->default(true)->description('false hides findings in dev-only dependencies.'),
+            'tags' => TagReferences::schema($schema)->description('Only vulnerabilities with these vulnerability tags (any of the tags given per type, every type given). ' . TagReferences::DESCRIPTION),
             'limit' => $this->limitSchema($schema)->description('Maximum number of vulnerabilities (default 25, max 100).'),
             'offset' => $this->offsetSchema($schema),
         ];
@@ -50,6 +52,7 @@ class GetProjectVulnerabilitiesTool extends VoightTool
                 'summary' => $schema->string(),
                 'score' => $schema->number(),
                 'severity' => $schema->string(),
+                'tags' => $schema->array()->items($schema->object(['type' => $schema->string(), 'tag' => $schema->string()])),
                 'packages' => $schema->array(),
             ]))->required(),
             ...$this->pagingOutputSchema($schema),
@@ -63,6 +66,7 @@ class GetProjectVulnerabilitiesTool extends VoightTool
             'project_code' => ['required', 'string'],
             'environment' => ['nullable', 'string'],
             'include_dev' => ['nullable', 'boolean'],
+            ...TagReferences::rules('tags'),
         ]);
 
         $project = $access->findProject($request->get('project_code'));
@@ -75,6 +79,7 @@ class GetProjectVulnerabilitiesTool extends VoightTool
             $this->minSeverity($request),
             filter_var($request->get('include_dev', true), FILTER_VALIDATE_BOOLEAN),
             $this->page($request),
+            filled($request->get('tags')) ? TagReferences::resolveOrFail($request->get('tags')) : null,
         ));
     }
 }

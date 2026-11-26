@@ -3,6 +3,7 @@
 namespace Statikbe\FilamentVoight\Services\Mcp;
 
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Statikbe\FilamentVoight\Enums\Framework;
@@ -14,11 +15,12 @@ use Statikbe\FilamentVoight\Mcp\McpToolError;
 use Statikbe\FilamentVoight\Models\Environment;
 use Statikbe\FilamentVoight\Models\EnvironmentPackage;
 use Statikbe\FilamentVoight\Models\Project;
+use Statikbe\FilamentVoight\Models\Tag;
 use Statikbe\FilamentVoight\Services\ProjectStackService;
 use Statikbe\FilamentVoight\Support\VersionConstraint;
 
 /**
- * @phpstan-type ProjectFilters array{project_codes?: array<int, string>|null, package?: string|null, package_type?: string|null, package_version?: VersionConstraint|null, search?: string|null, team?: string|null, customer?: string|null, min_severity?: Severity|null, has_findings?: bool|null, scanned_before?: Carbon|null, upgrade_status?: UpgradeStatus|null, sort?: string|null, page: Page}
+ * @phpstan-type ProjectFilters array{project_codes?: array<int, string>|null, package?: string|null, package_type?: string|null, package_version?: VersionConstraint|null, search?: string|null, team?: string|null, customer?: string|null, min_severity?: Severity|null, has_findings?: bool|null, scanned_before?: Carbon|null, upgrade_status?: UpgradeStatus|null, tags?: EloquentCollection<int, Tag>|null, sort?: string|null, page: Page}
  */
 class ProjectQueryService
 {
@@ -41,7 +43,7 @@ class ProjectQueryService
         $query = $access->visibleProjects()
             ->leftJoinSub($counts, 'counts', 'counts.project_id', '=', 'voight_projects.id')
             ->select(['voight_projects.*', 'counts.critical', 'counts.high', 'counts.medium', 'counts.low', 'counts.none', 'counts.total', 'counts.max_score'])
-            ->with(['team', 'customer', 'environments' => fn ($environments) => $environments->orderBy('name')]);
+            ->with(['team', 'customer', 'tags', 'environments' => fn ($environments) => $environments->orderBy('name')]);
         ProjectStackService::withStack($query);
 
         $projectCodes = $filters['project_codes'] ?? null;
@@ -77,6 +79,10 @@ class ProjectQueryService
             $query->where('counts.total', '>', 0);
         } elseif (($filters['has_findings'] ?? null) === false) {
             $query->whereNull('counts.total');
+        }
+
+        if (($filters['tags'] ?? null) !== null) {
+            TagReferences::constrain($query, $filters['tags']);
         }
 
         if (($filters['upgrade_status'] ?? null) !== null) {
@@ -169,11 +175,14 @@ class ProjectQueryService
      *
      * @return array{project: array<string, mixed>, vulnerabilities: array<int, array<string, mixed>>, total: int, truncated: bool, next_offset: int|null}
      */
-    public function projectVulnerabilities(McpAccess $access, Project $project, ?Environment $environment, ?Severity $minSeverity, bool $includeDev, Page $page): array
+    public function projectVulnerabilities(McpAccess $access, Project $project, ?Environment $environment, ?Severity $minSeverity, bool $includeDev, Page $page, ?EloquentCollection $vulnerabilityTags = null): array
     {
+        $vulnerabilityModel = FilamentVoight::config()->getVulnerabilityModel();
+
         $findings = CurrentFindings::query($access, $minSeverity, $includeDev)
             ->where('p.id', $project->id)
             ->when($environment, fn ($query) => $query->where('e.id', $environment->id))
+            ->when($vulnerabilityTags, fn ($query) => $query->whereIn('f.vulnerability_id', TagReferences::constrain($vulnerabilityModel::query(), $vulnerabilityTags)->select('id')))
             ->orderByDesc('v.vulnerability_score')
             ->orderBy('v.source_id')
             ->orderBy('pk.name')
@@ -186,7 +195,8 @@ class ProjectQueryService
         $copies = $this->installedCopies($findings);
         $vulnerabilityIds = $findings->pluck('vulnerability_id')->unique()->values();
         $pageIds = $page->slice($vulnerabilityIds);
-        $vulnerabilities = FilamentVoight::config()->getVulnerabilityModel()::query()
+        $vulnerabilities = $vulnerabilityModel::query()
+            ->with('tags')
             ->whereIn('id', $pageIds)
             ->get()
             ->keyBy('id');
@@ -200,6 +210,7 @@ class ProjectQueryService
                 'summary' => $vulnerability->summary,
                 'score' => (float) $vulnerability->vulnerability_score,
                 'severity' => $vulnerability->severity->value,
+                'tags' => TagReferences::of($vulnerability),
                 'packages' => $findings
                     ->where('vulnerability_id', $vulnerabilityId)
                     ->groupBy(fn (object $finding): string => $finding->package_id . '|' . $finding->installed_version)
@@ -259,7 +270,7 @@ class ProjectQueryService
     }
 
     /**
-     * @return array{code: string, name: string|null, team: string|null, customer: string|null}
+     * @return array{code: string, name: string|null, team: string|null, customer: string|null, tags: list<array{type: string, tag: string}>}
      */
     public function describeProject(Project $project): array
     {
@@ -268,6 +279,7 @@ class ProjectQueryService
             'name' => $project->name,
             'team' => $project->team?->name,
             'customer' => $project->customer?->name,
+            'tags' => TagReferences::of($project),
         ];
     }
 

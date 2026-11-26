@@ -17,6 +17,7 @@ use Statikbe\FilamentVoight\Mcp\Tools\GetStatisticsTool;
 use Statikbe\FilamentVoight\Mcp\Tools\GetUpgradePlanTool;
 use Statikbe\FilamentVoight\Mcp\Tools\GetVulnerabilityTool;
 use Statikbe\FilamentVoight\Mcp\Tools\ListProjectsTool;
+use Statikbe\FilamentVoight\Mcp\Tools\ListTagsTool;
 
 /**
  * The remote server, over HTTP. Every tool requires an authenticated user; without one,
@@ -58,6 +59,7 @@ class VoightServer extends Server
         GetStatisticsTool::class,
         CreateProjectTool::class,
         CreateProjectTokenTool::class,
+        ListTagsTool::class,
     ];
 
     /**

@@ -28,7 +28,7 @@ describe('create_project', function () {
             'customer' => 'Acme',
         ]));
 
-        expect($result['project'])->toBe(['code' => 'NEW', 'name' => 'New project', 'team' => 'Mine', 'customer' => 'Acme'])
+        expect($result['project'])->toBe(['code' => 'NEW', 'name' => 'New project', 'team' => 'Mine', 'customer' => 'Acme', 'tags' => []])
             ->and($result['next_step'])->toContain('create_project_token')
             ->and(Project::query()->where('project_code', 'NEW')->value('repo_url'))->toBe('https://github.com/statikbe/new');
     });
@@ -131,6 +131,6 @@ it('hides the write tools and the onboarding prompt when write tools are off', f
 it('registers every tool and prompt by default', function () {
     expect(registeredNames(VoightLocalServer::tools()))->toBe([
         'list_projects', 'get_project_vulnerabilities', 'get_upgrade_plan', 'find_package_usage',
-        'get_vulnerability', 'get_statistics', 'create_project', 'create_project_token',
+        'get_vulnerability', 'get_statistics', 'create_project', 'create_project_token', 'list_tags',
     ])->and(registeredNames(VoightLocalServer::prompts()))->toBe(['triage_project', 'security_digest', 'onboard_project']);
 });
