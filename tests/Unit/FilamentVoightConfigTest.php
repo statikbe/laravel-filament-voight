@@ -191,3 +191,15 @@ it('stores team avatars on the public disk by default', function () {
 
     expect(FilamentVoight::config()->getTeamAvatarDisk())->toBe('public');
 });
+
+it('returns no icon overrides when none are configured', function () {
+    config()->set('filament-voight.icons', null);
+
+    expect(FilamentVoight::config()->getIconOverrides())->toBe([]);
+});
+
+it('returns the configured icon overrides', function () {
+    config()->set('filament-voight.icons', ['severity.critical' => 'heroicon-o-star']);
+
+    expect(FilamentVoight::config()->getIconOverrides())->toBe(['severity.critical' => 'heroicon-o-star']);
+});

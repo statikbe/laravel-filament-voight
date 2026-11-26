@@ -2,10 +2,12 @@
 
 namespace Statikbe\FilamentVoight\Resources\ProjectResource\RelationManagers;
 
+use BackedEnum;
 use Filament\Resources\RelationManagers\RelationManager;
-use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
+use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Database\Eloquent\Model;
+use Statikbe\FilamentVoight\Enums\VoightIcon;
 use Statikbe\FilamentVoight\Resources\AuditRunResource;
 use Statikbe\FilamentVoight\Resources\AuditRunResource\Schemas\AuditRunTableSchema;
 
@@ -20,7 +22,10 @@ class AuditRunsRelationManager extends RelationManager
      */
     protected static ?string $relatedResource = AuditRunResource::class;
 
-    protected static string | \BackedEnum | null $icon = Heroicon::OutlinedClipboardDocumentCheck;
+    public static function getIcon(Model $ownerRecord, string $pageClass): string | BackedEnum | Htmlable | null
+    {
+        return VoightIcon::TabProjectAuditRuns->resolve();
+    }
 
     public static function getTitle(Model $ownerRecord, string $pageClass): string
     {

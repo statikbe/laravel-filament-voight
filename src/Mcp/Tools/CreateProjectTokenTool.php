@@ -50,6 +50,7 @@ class CreateProjectTokenTool extends VoightTool
                 'VOIGHT_API_TOKEN' => $schema->string(),
                 'PROJECT_CODE' => $schema->string(),
             ])->required(),
+            'uploader_env' => $schema->string()->required()->description('Paste-ready .env lines, values double-quoted.'),
             'instructions' => $schema->string()->required(),
         ];
     }
@@ -67,17 +68,24 @@ class CreateProjectTokenTool extends VoightTool
         $tokenName = $request->get('name') ?: Project::DEFAULT_API_TOKEN_NAME;
         $token = $this->onboarding->createToken($project, $tokenName);
 
+        $variables = [
+            'VOIGHT_API_BASE_URL' => url('/'),
+            'VOIGHT_API_TOKEN' => $token->plainTextToken,
+            'PROJECT_CODE' => $project->project_code,
+        ];
+
+        // shortcut: no escaping, values never contain quotes, backslashes or `$`; revisit if project codes allow them.
+        $env = collect($variables)->map(fn (string $value, string $key): string => "{$key}=\"{$value}\"")->implode("\n");
+
         return Response::structured([
             'project_code' => $project->project_code,
             'token_name' => $tokenName,
             'token' => $token->plainTextToken,
             'sync_endpoint' => url('api/voight/lock-file'),
-            'uploader_variables' => [
-                'VOIGHT_API_BASE_URL' => url('/'),
-                'VOIGHT_API_TOKEN' => $token->plainTextToken,
-                'PROJECT_CODE' => $project->project_code,
-            ],
+            'uploader_variables' => $variables,
+            'uploader_env' => $env,
             'instructions' => 'Store VOIGHT_API_TOKEN as a CI secret (or in an untracked .env). Never commit it to the repository. '
+                . 'Use uploader_env as the paste-ready block: its values are quoted because the token contains a pipe. '
                 . 'The uploader script (' . url('scripts/voight.sh') . ') also needs APP_ENV: the environment name, e.g. production.',
         ]);
     }

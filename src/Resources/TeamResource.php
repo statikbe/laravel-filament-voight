@@ -2,10 +2,12 @@
 
 namespace Statikbe\FilamentVoight\Resources;
 
+use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
-use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
+use Illuminate\Contracts\Support\Htmlable;
+use Statikbe\FilamentVoight\Enums\VoightIcon;
 use Statikbe\FilamentVoight\Models\Team;
 use Statikbe\FilamentVoight\Resources\TeamResource\Pages\CreateTeam;
 use Statikbe\FilamentVoight\Resources\TeamResource\Pages\EditTeam;
@@ -20,11 +22,14 @@ class TeamResource extends Resource
 {
     protected static ?string $model = Team::class;
 
-    protected static string | \BackedEnum | null $navigationIcon = Heroicon::OutlinedUserGroup;
-
     protected static ?string $recordTitleAttribute = 'name';
 
     protected static ?int $navigationSort = 2;
+
+    public static function getNavigationIcon(): string | BackedEnum | Htmlable | null
+    {
+        return VoightIcon::NavigationTeams->resolve();
+    }
 
     public static function getNavigationGroup(): ?string
     {

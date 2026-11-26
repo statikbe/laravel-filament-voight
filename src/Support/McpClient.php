@@ -2,7 +2,8 @@
 
 namespace Statikbe\FilamentVoight\Support;
 
-use Filament\Support\Icons\Heroicon;
+use BackedEnum;
+use Illuminate\Contracts\Support\Htmlable;
 
 /**
  * One card on the MCP setup page. The button either opens $buttonUrl, copying
@@ -14,7 +15,7 @@ final readonly class McpClient
         public string $key,
         public string $name,
         public string $description,
-        public Heroicon $icon,
+        public string | BackedEnum | Htmlable $icon,
         public string $buttonLabel,
         public ?string $buttonUrl = null,
         public ?string $copies = null,

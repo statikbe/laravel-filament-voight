@@ -11,12 +11,12 @@ use Filament\Schemas\Components\EmbeddedTable;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
-use Filament\Support\Icons\Heroicon;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Js;
 use Statikbe\FilamentVoight\Enums\PackageType;
 use Statikbe\FilamentVoight\Enums\Severity;
+use Statikbe\FilamentVoight\Enums\VoightIcon;
 use Statikbe\FilamentVoight\Mcp\McpAccess;
 use Statikbe\FilamentVoight\Models\Project;
 use Statikbe\FilamentVoight\Resources\CustomerResource;
@@ -32,7 +32,7 @@ class ProjectInfoListSchema
         return $schema->components([
             EnvironmentHealthCallouts::make(),
             Section::make(voightTrans('models.project.sections.environments'))
-                ->icon(Heroicon::OutlinedServerStack)
+                ->icon(VoightIcon::ProjectSectionEnvironments->resolve())
                 ->description(voightTrans('models.project.sections.environments_description'))
                 ->components([
                     Callout::make(fn (Project $record, ViewProject $livewire): string => self::npmHint($record, $livewire->includesNpm()) ?? '')
@@ -42,7 +42,7 @@ class ProjectInfoListSchema
                 ])
                 ->columnSpanFull(),
             Section::make(voightTrans('models.project.sections.general'))
-                ->icon(Heroicon::OutlinedInformationCircle)
+                ->icon(VoightIcon::ProjectSectionGeneral->resolve())
                 ->description(voightTrans('models.project.sections.general_description'))
                 ->components([
                     TextEntry::make('project_code')
@@ -65,7 +65,7 @@ class ProjectInfoListSchema
             Grid::make(['default' => 1, 'lg' => 2])
                 ->components([
                     Section::make(voightTrans('models.project.sections.alerts'))
-                        ->icon(Heroicon::OutlinedBell)
+                        ->icon(VoightIcon::ProjectSectionAlerts->resolve())
                         ->description(voightTrans('models.project.sections.alerts_description'))
                         ->components([
                             TextEntry::make('is_muted')
@@ -83,7 +83,7 @@ class ProjectInfoListSchema
                         ->columns(2),
                     Section::make(voightTrans('models.project.sections.api_token'))
                         ->key('api_token')
-                        ->icon(Heroicon::OutlinedKey)
+                        ->icon(VoightIcon::ProjectSectionApiToken->resolve())
                         ->description(voightTrans('models.project.sections.api_token_description'))
                         ->visible(fn (?Project $record): bool => $record !== null)
                         ->components([

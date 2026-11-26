@@ -2,8 +2,8 @@
 
 namespace Statikbe\FilamentVoight\Resources\PackageResource\RelationManagers;
 
+use BackedEnum;
 use Filament\Resources\RelationManagers\RelationManager;
-use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Enums\FiltersLayout;
@@ -11,9 +11,11 @@ use Filament\Tables\Filters\QueryBuilder;
 use Filament\Tables\Filters\QueryBuilder\Constraints\BooleanConstraint;
 use Filament\Tables\Filters\QueryBuilder\Constraints\DateConstraint;
 use Filament\Tables\Table;
+use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Livewire\Attributes\Url;
+use Statikbe\FilamentVoight\Enums\VoightIcon;
 use Statikbe\FilamentVoight\Resources\Components\EnvironmentNameColumn;
 use Statikbe\FilamentVoight\Resources\Components\EnvironmentStageConstraint;
 use Statikbe\FilamentVoight\Resources\Components\InstalledVersionConstraint;
@@ -23,8 +25,6 @@ use Statikbe\FilamentVoight\Resources\PackageResource\Actions\WhyInstalledAction
 class InstallationsRelationManager extends RelationManager
 {
     protected static string $relationship = 'environmentPackages';
-
-    protected static string | \BackedEnum | null $icon = Heroicon::OutlinedServerStack;
 
     /**
      * Persist table state in prefixed query params so it survives a refresh
@@ -41,6 +41,11 @@ class InstallationsRelationManager extends RelationManager
 
     #[Url(as: 'installations_sort')]
     public ?string $tableSort = null;
+
+    public static function getIcon(Model $ownerRecord, string $pageClass): string | BackedEnum | Htmlable | null
+    {
+        return VoightIcon::TabPackageInstallations->resolve();
+    }
 
     public static function getTitle(Model $ownerRecord, string $pageClass): string
     {

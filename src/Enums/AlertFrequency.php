@@ -2,9 +2,11 @@
 
 namespace Statikbe\FilamentVoight\Enums;
 
+use BackedEnum;
 use Filament\Support\Contracts\HasColor;
 use Filament\Support\Contracts\HasIcon;
 use Filament\Support\Contracts\HasLabel;
+use Illuminate\Contracts\Support\Htmlable;
 
 enum AlertFrequency: string implements HasColor, HasIcon, HasLabel
 {
@@ -27,13 +29,18 @@ enum AlertFrequency: string implements HasColor, HasIcon, HasLabel
         };
     }
 
-    public function icon(): string
+    public function voightIcon(): VoightIcon
     {
         return match ($this) {
-            self::Immediate => 'heroicon-o-bolt',
-            self::Daily => 'heroicon-o-calendar-days',
-            self::Weekly => 'heroicon-o-calendar',
+            self::Immediate => VoightIcon::AlertFrequencyImmediate,
+            self::Daily => VoightIcon::AlertFrequencyDaily,
+            self::Weekly => VoightIcon::AlertFrequencyWeekly,
         };
+    }
+
+    public function icon(): string | BackedEnum | Htmlable
+    {
+        return $this->voightIcon()->resolve();
     }
 
     public function getLabel(): string
@@ -46,7 +53,7 @@ enum AlertFrequency: string implements HasColor, HasIcon, HasLabel
         return $this->color();
     }
 
-    public function getIcon(): string
+    public function getIcon(): string | BackedEnum | Htmlable
     {
         return $this->icon();
     }

@@ -6,12 +6,14 @@ use Filament\Support\Assets\Asset;
 use Filament\Support\Facades\FilamentAsset;
 use Filament\Support\Facades\FilamentIcon;
 use Illuminate\Console\Scheduling\Schedule;
+use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Filesystem\Filesystem;
 use Laravel\Mcp\Facades\Mcp;
 use Spatie\LaravelPackageTools\Commands\InstallCommand;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
+use Statikbe\FilamentVoight\Enums\VoightIcon;
 use Statikbe\FilamentVoight\Facades\FilamentVoight;
 use Statikbe\FilamentVoight\FilamentVoight as FilamentVoightManager;
 use Statikbe\FilamentVoight\Mcp\VoightLocalServer;
@@ -58,6 +60,9 @@ class FilamentVoightServiceProvider extends PackageServiceProvider
     {
         // A singleton, so the MCP visibility hooks registered by the host survive.
         $this->app->singleton(FilamentVoightManager::class);
+
+        // Registered before app providers run, so a host's own FilamentIcon::register() always wins over config.
+        FilamentIcon::register($this->getIcons());
     }
 
     public function packageBooted(): void
@@ -74,8 +79,6 @@ class FilamentVoightServiceProvider extends PackageServiceProvider
             $this->getScriptData(),
             $this->getAssetPackageName()
         );
-
-        FilamentIcon::register($this->getIcons());
 
         $this->registerMcpServers();
 
@@ -148,15 +151,16 @@ class FilamentVoightServiceProvider extends PackageServiceProvider
             Commands\SendAlertDigestsCommand::class,
             Commands\ReprocessLockfilesCommand::class,
             Commands\FetchFaviconsCommand::class,
+            Commands\ListIconsCommand::class,
         ];
     }
 
     /**
-     * @return array<string>
+     * @return array<string, string|\BackedEnum|Htmlable>
      */
     protected function getIcons(): array
     {
-        return [];
+        return VoightIcon::configOverrides();
     }
 
     /**

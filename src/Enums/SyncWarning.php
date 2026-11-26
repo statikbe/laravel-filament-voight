@@ -2,9 +2,11 @@
 
 namespace Statikbe\FilamentVoight\Enums;
 
+use BackedEnum;
 use Filament\Support\Contracts\HasColor;
 use Filament\Support\Contracts\HasIcon;
 use Filament\Support\Contracts\HasLabel;
+use Illuminate\Contracts\Support\Htmlable;
 
 /**
  * Something a dependency sync could not (fully) understand. Stored on the sync as
@@ -45,9 +47,14 @@ enum SyncWarning: string implements HasColor, HasIcon, HasLabel
         return 'warning';
     }
 
-    public function icon(): string
+    public function voightIcon(): VoightIcon
     {
-        return 'heroicon-o-exclamation-triangle';
+        return VoightIcon::SyncWarning;
+    }
+
+    public function icon(): string | BackedEnum | Htmlable
+    {
+        return $this->voightIcon()->resolve();
     }
 
     public function getLabel(): string
@@ -60,7 +67,7 @@ enum SyncWarning: string implements HasColor, HasIcon, HasLabel
         return $this->color();
     }
 
-    public function getIcon(): string
+    public function getIcon(): string | BackedEnum | Htmlable
     {
         return $this->icon();
     }

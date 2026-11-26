@@ -2,7 +2,6 @@
 
 namespace Statikbe\FilamentVoight\Resources\EnvironmentResource\Schemas;
 
-use BackedEnum;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Group;
@@ -13,25 +12,33 @@ use Filament\Schemas\Components\Text;
 use Filament\Schemas\Schema;
 use Filament\Support\Enums\FontFamily;
 use Filament\Support\Enums\TextSize;
-use Filament\Support\Icons\Heroicon;
 use Illuminate\Support\Arr;
+use Statikbe\FilamentVoight\Enums\VoightIcon;
 use Statikbe\FilamentVoight\Models\Environment;
 use Statikbe\FilamentVoight\Support\SystemDetailsPresenter;
 
 class EnvironmentInfolistSchema
 {
-    /** @var array<string, Heroicon> */
+    /** @var array<string, VoightIcon> */
     private const array GROUP_ICONS = [
-        'environment' => Heroicon::Cog6Tooth,
-        'cache' => Heroicon::Bolt,
-        'drivers' => Heroicon::CpuChip,
-        'php' => Heroicon::CodeBracket,
-        'system' => Heroicon::ComputerDesktop,
-        'deployment' => Heroicon::RocketLaunch,
-        'database' => Heroicon::CircleStack,
-        'opcache' => Heroicon::Bolt,
-        'ssl' => Heroicon::LockClosed,
+        'environment' => VoightIcon::EnvironmentGroupEnvironment,
+        'cache' => VoightIcon::EnvironmentGroupCache,
+        'drivers' => VoightIcon::EnvironmentGroupDrivers,
+        'php' => VoightIcon::EnvironmentGroupPhp,
+        'system' => VoightIcon::EnvironmentGroupSystem,
+        'deployment' => VoightIcon::EnvironmentGroupDeployment,
+        'database' => VoightIcon::EnvironmentGroupDatabase,
+        'opcache' => VoightIcon::EnvironmentGroupOpcache,
+        'ssl' => VoightIcon::EnvironmentGroupSsl,
     ];
+
+    /**
+     * The section icon for a system details group, with a generic fallback for groups the package does not know.
+     */
+    public static function groupIcon(string $group): VoightIcon
+    {
+        return self::GROUP_ICONS[$group] ?? VoightIcon::EnvironmentGroupFallback;
+    }
 
     public static function configure(Schema $schema): Schema
     {
@@ -42,15 +49,15 @@ class EnvironmentInfolistSchema
                 ->columnSpanFull()
                 ->visible($hasSnapshot)
                 ->components([
-                    self::stat('php', Heroicon::CodeBracket, fn (Environment $record): ?string => $record->systemDetails?->php_version),
-                    self::stat('database', Heroicon::CircleStack, fn (Environment $record): ?string => SystemDetailsPresenter::database($record)),
-                    self::stat('environment', Heroicon::GlobeAlt, fn (Environment $record): string => (string) (SystemDetailsPresenter::appValue($record, 'environment') ?? $record->name)),
+                    self::stat('php', VoightIcon::EnvironmentStatPhp, fn (Environment $record): ?string => $record->systemDetails?->php_version),
+                    self::stat('database', VoightIcon::EnvironmentStatDatabase, fn (Environment $record): ?string => SystemDetailsPresenter::database($record)),
+                    self::stat('environment', VoightIcon::EnvironmentStatEnvironment, fn (Environment $record): string => (string) (SystemDetailsPresenter::appValue($record, 'environment') ?? $record->name)),
                     Section::make()
                         ->compact()
                         ->components([
                             TextEntry::make('stat_debug_mode')
                                 ->label(voightTrans('models.environment.system_details.stats.debug_mode'))
-                                ->icon(Heroicon::BugAnt)
+                                ->icon(VoightIcon::EnvironmentStatDebugMode->resolve())
                                 ->state(fn (Environment $record): ?bool => is_bool($debug = SystemDetailsPresenter::appValue($record, 'debug_mode')) ? $debug : null)
                                 ->formatStateUsing(fn (?bool $state): string => $state === null ? '—' : voightTrans('models.environment.system_details.' . ($state ? 'yes' : 'no')))
                                 ->badge()
@@ -71,14 +78,14 @@ class EnvironmentInfolistSchema
         ]);
     }
 
-    private static function stat(string $name, BackedEnum $icon, \Closure $state): Section
+    private static function stat(string $name, VoightIcon $icon, \Closure $state): Section
     {
         return Section::make()
             ->compact()
             ->components([
                 TextEntry::make("stat_{$name}")
                     ->label(voightTrans("models.environment.system_details.stats.{$name}"))
-                    ->icon($icon)
+                    ->icon($icon->resolve())
                     ->fontFamily(FontFamily::Mono)
                     ->state($state)
                     ->placeholder('—'),
@@ -94,19 +101,19 @@ class EnvironmentInfolistSchema
         if ($framework !== []) {
             $tabs[] = Tab::make(SystemDetailsPresenter::frameworkTitle($record))
                 ->id('framework')
-                ->icon(Heroicon::Cube)
+                ->icon(VoightIcon::TabEnvironmentFramework->resolve())
                 ->components([self::frameworkColumns($framework)]);
         }
 
         $tabs[] = Tab::make(voightTrans('models.environment.system_details.tabs.server'))
             ->id('server')
-            ->icon(Heroicon::ServerStack)
+            ->icon(VoightIcon::TabEnvironmentServer->resolve())
             ->components([self::serverColumns(SystemDetailsPresenter::server($record))]);
 
         if ($extensions !== []) {
             $tabs[] = Tab::make(voightTrans('models.environment.system_details.tabs.extensions'))
                 ->id('extensions')
-                ->icon(Heroicon::PuzzlePiece)
+                ->icon(VoightIcon::TabEnvironmentExtensions->resolve())
                 ->badge(count($extensions))
                 ->components([
                     Text::make(voightTrans('models.environment.system_details.extensions_description', [
@@ -185,7 +192,7 @@ class EnvironmentInfolistSchema
 
         foreach ($groups as $group => $data) {
             $sections[] = Section::make($data['title'])
-                ->icon(self::GROUP_ICONS[$group] ?? Heroicon::Squares2x2)
+                ->icon(self::groupIcon($group)->resolve())
                 ->compact()
                 ->components(array_map(
                     fn (array $row): TextEntry => self::entry("{$prefix}.{$group}.{$row['key']}", $row),
@@ -219,7 +226,7 @@ class EnvironmentInfolistSchema
                     ->state($row['label'])
                     ->fontFamily(FontFamily::Mono)
                     ->color($color)
-                    ->icon($row['value'] ? Heroicon::CheckCircle : Heroicon::ExclamationTriangle)
+                    ->icon(($row['value'] ? VoightIcon::EnvironmentStorageLinked : VoightIcon::EnvironmentStorageNotLinked)->resolve())
                     ->iconColor($color)
                     ->tooltip($answer)
                     ->wrap();
@@ -236,7 +243,7 @@ class EnvironmentInfolistSchema
         if (is_string($row['value']) && str_starts_with($row['value'], '/')) {
             return $entry
                 ->color('gray')
-                ->icon(pathinfo($row['value'], PATHINFO_EXTENSION) !== '' ? Heroicon::DocumentText : Heroicon::Folder)
+                ->icon((pathinfo($row['value'], PATHINFO_EXTENSION) !== '' ? VoightIcon::EnvironmentFilePath : VoightIcon::EnvironmentDirectoryPath)->resolve())
                 ->copyable()
                 ->wrap();
         }

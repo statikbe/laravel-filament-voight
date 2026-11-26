@@ -2,8 +2,8 @@
 
 namespace Statikbe\FilamentVoight\Resources\PackageResource\RelationManagers;
 
+use BackedEnum;
 use Filament\Resources\RelationManagers\RelationManager;
-use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Enums\FiltersLayout;
 use Filament\Tables\Filters\QueryBuilder;
@@ -11,9 +11,11 @@ use Filament\Tables\Filters\QueryBuilder\Constraints\DateConstraint;
 use Filament\Tables\Filters\QueryBuilder\Constraints\SelectConstraint;
 use Filament\Tables\Filters\QueryBuilder\Constraints\TextConstraint;
 use Filament\Tables\Table;
+use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Statikbe\FilamentVoight\Enums\Severity;
+use Statikbe\FilamentVoight\Enums\VoightIcon;
 use Statikbe\FilamentVoight\Enums\VulnerabilitySource;
 use Statikbe\FilamentVoight\Resources\Components\SeverityConstraint;
 use Statikbe\FilamentVoight\Resources\VulnerabilityResource;
@@ -22,7 +24,10 @@ class KnownVulnerabilitiesRelationManager extends RelationManager
 {
     protected static string $relationship = 'vulnerablePackageRanges';
 
-    protected static string | \BackedEnum | null $icon = Heroicon::OutlinedBookOpen;
+    public static function getIcon(Model $ownerRecord, string $pageClass): string | BackedEnum | Htmlable | null
+    {
+        return VoightIcon::TabPackageKnownVulnerabilities->resolve();
+    }
 
     public static function getTitle(Model $ownerRecord, string $pageClass): string
     {
@@ -102,7 +107,7 @@ class KnownVulnerabilitiesRelationManager extends RelationManager
                     ]),
             ], layout: FiltersLayout::AboveContentCollapsible)
             ->defaultSort('vulnerability.vulnerability_score', 'desc')
-            ->emptyStateIcon(Heroicon::OutlinedShieldCheck)
+            ->emptyStateIcon(VoightIcon::EmptyStateAllClear->resolve())
             ->emptyStateHeading(voightTrans('models.package.view.empty.no_known_vulnerabilities_heading'))
             ->emptyStateDescription(voightTrans('models.package.view.empty.no_known_vulnerabilities_description'));
     }

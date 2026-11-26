@@ -3,8 +3,8 @@
 namespace Statikbe\FilamentVoight\Resources\PackageResource\Actions;
 
 use Filament\Actions\Action;
-use Filament\Support\Icons\Heroicon;
 use Illuminate\Contracts\View\View;
+use Statikbe\FilamentVoight\Enums\VoightIcon;
 use Statikbe\FilamentVoight\Models\AuditFinding;
 use Statikbe\FilamentVoight\Models\EnvironmentPackage;
 use Statikbe\FilamentVoight\Services\DependencyGraphService;
@@ -29,7 +29,7 @@ class WhyInstalledAction extends Action
         parent::setUp();
 
         $this->label(voightTrans('models.package.why_installed.label'));
-        $this->icon(Heroicon::OutlinedQuestionMarkCircle);
+        $this->icon(VoightIcon::ActionWhyInstalled->resolve());
         $this->modalHeading(voightTrans('models.package.why_installed.label'));
         $this->modalSubmitAction(false);
         $this->modalCancelActionLabel(voightTrans('models.package.why_installed.close'));

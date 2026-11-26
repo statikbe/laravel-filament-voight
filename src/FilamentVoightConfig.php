@@ -143,6 +143,18 @@ class FilamentVoightConfig
         return $this->packageConfig('teams.avatar_disk', 'public');
     }
 
+    // -- Icons --
+
+    /**
+     * Icon overrides keyed by VoightIcon value (e.g. "severity.critical").
+     *
+     * @return array<string, mixed>
+     */
+    public function getIconOverrides(): array
+    {
+        return (array) $this->packageConfig('icons', []);
+    }
+
     // -- Favicons --
 
     public function isFaviconFetchingEnabled(): bool
