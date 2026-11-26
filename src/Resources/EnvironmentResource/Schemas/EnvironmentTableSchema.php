@@ -15,6 +15,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Statikbe\FilamentVoight\Enums\AuditRunStatus;
 use Statikbe\FilamentVoight\Enums\DependencySyncStatus;
 use Statikbe\FilamentVoight\Facades\FilamentVoight;
+use Statikbe\FilamentVoight\Models\Customer;
 use Statikbe\FilamentVoight\Models\Environment;
 use Statikbe\FilamentVoight\Models\EnvironmentSystemDetail;
 use Statikbe\FilamentVoight\Models\Project;
@@ -23,6 +24,7 @@ use Statikbe\FilamentVoight\Resources\Components\EnvironmentNameColumn;
 use Statikbe\FilamentVoight\Resources\Components\EnvironmentStageConstraint;
 use Statikbe\FilamentVoight\Resources\Components\ProjectConstraint;
 use Statikbe\FilamentVoight\Resources\Components\RemoveTagsBulkAction;
+use Statikbe\FilamentVoight\Resources\Components\TagConstraint;
 use Statikbe\FilamentVoight\Resources\Components\TagsColumn;
 use Statikbe\FilamentVoight\Resources\EnvironmentResource;
 use Statikbe\FilamentVoight\Resources\ProjectResource;
@@ -94,6 +96,9 @@ class EnvironmentTableSchema
                             ->searchable()
                             ->multiple(),
                         EnvironmentStageConstraint::make(),
+                        ...TagConstraint::forModel(Environment::class),
+                        ...TagConstraint::forModel(Project::class, 'project', 'project'),
+                        ...TagConstraint::forModel(Customer::class, 'project.customer', 'customer'),
                         ...($showProject ? [
                             ProjectConstraint::project('project_id'),
                             ProjectConstraint::customer('project.customer_id'),

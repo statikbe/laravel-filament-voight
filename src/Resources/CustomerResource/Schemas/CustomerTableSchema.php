@@ -6,9 +6,13 @@ use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Enums\FiltersLayout;
+use Filament\Tables\Filters\QueryBuilder;
 use Filament\Tables\Table;
+use Statikbe\FilamentVoight\Models\Customer;
 use Statikbe\FilamentVoight\Resources\Components\ApplyTagsBulkAction;
 use Statikbe\FilamentVoight\Resources\Components\RemoveTagsBulkAction;
+use Statikbe\FilamentVoight\Resources\Components\TagConstraint;
 use Statikbe\FilamentVoight\Resources\Components\TagsColumn;
 
 class CustomerTableSchema
@@ -35,6 +39,10 @@ class CustomerTableSchema
                     ->toggleable(isToggledHiddenByDefault: true),
                 TagsColumn::make(),
             ])
+            ->filters([
+                QueryBuilder::make()
+                    ->constraints(TagConstraint::forModel(Customer::class)),
+            ], layout: FiltersLayout::AboveContentCollapsible)
             ->recordActions([
                 ViewAction::make(),
                 EditAction::make(),
