@@ -25,7 +25,9 @@ it('counts distinct packages per environment, not installed copies', function ()
     Livewire::test(EnvironmentsRelationManager::class, [
         'ownerRecord' => $project,
         'pageClass' => ViewProject::class,
-    ])->assertTableColumnStateSet('environment_packages_count', 2, $environment);
+    ])
+        ->toggleAllTableColumns()
+        ->assertTableColumnStateSet('environment_packages_count', 2, $environment);
 });
 
 it('counts distinct environments per package, not installed copies', function () {

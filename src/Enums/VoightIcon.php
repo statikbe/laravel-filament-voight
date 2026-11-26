@@ -142,6 +142,9 @@ enum VoightIcon: string
     #[IconDefinition('heroicon-m-tag', 'Query-builder filter constraint on an installed package version range.')]
     case FilterInstalledVersion = 'filter.installed-version';
 
+    #[IconDefinition('heroicon-m-cube', 'Query-builder filter constraint on an installed package, optionally within a version range.')]
+    case FilterInstalledPackage = 'filter.installed-package';
+
     // -- Widgets --
 
     #[IconDefinition(Heroicon::OutlinedShieldExclamation, 'Dashboard stat cards counting vulnerabilities per severity level.')]

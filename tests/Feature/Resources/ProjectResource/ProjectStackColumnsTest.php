@@ -161,7 +161,9 @@ it('sorts projects by version', function (string $direction) {
     $new = stackProject(laravel: '13.0.0', php: '8.4.1');
     $order = $direction === 'asc' ? [$old, $new] : [$new, $old];
 
+    // Filament ignores sorting on a toggled-hidden column, and the framework version columns are hidden by default.
     Livewire::test(ListProjects::class)
+        ->toggleAllTableColumns()
         ->sortTable('laravel_version', $direction)
         ->assertCanSeeTableRecords($order, inOrder: true)
         ->sortTable('php_version', $direction)

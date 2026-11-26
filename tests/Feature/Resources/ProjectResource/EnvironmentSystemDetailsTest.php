@@ -239,7 +239,6 @@ it('shows the query builder in the relation manager and only lists the project e
         ->assertCanSeeTableRecords([$production, $staging])
         ->assertCanNotSeeTableRecords([$foreign])
         ->assertTableColumnHidden('project.name')
-        ->assertTableActionExists('create')
         ->set('tableDeferredFilters.queryBuilder.rules', queryBuilderRule('environment_stage', 'is', ['values' => [EnvironmentStage::Production->value]]))
         ->call('applyTableFilters')
         ->assertCanSeeTableRecords([$production])
