@@ -20,6 +20,7 @@ use Statikbe\FilamentVoight\Facades\FilamentVoight;
 use Statikbe\FilamentVoight\Models\DependencySync;
 use Statikbe\FilamentVoight\Models\EnvironmentPackageDependency;
 use Statikbe\FilamentVoight\Models\Package;
+use Statikbe\FilamentVoight\Parsers\BunLockParser;
 use Statikbe\FilamentVoight\Parsers\ComposerLockParser;
 use Statikbe\FilamentVoight\Parsers\LockfileParser;
 use Statikbe\FilamentVoight\Parsers\PackageLockParser;
@@ -163,6 +164,7 @@ class ProcessLockFilesJob implements ShouldQueue
                     ),
                     'package-lock.json' => (new PackageLockParser)->parse($content),
                     'yarn.lock' => $this->parseYarnLock($path, $content, $disk),
+                    'bun.lock' => (new BunLockParser)->parse($content),
                     default => null,
                 };
             } catch (UnsupportedLockfileException $e) {

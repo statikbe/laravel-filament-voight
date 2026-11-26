@@ -23,6 +23,12 @@ All notable changes to `laravel-filament-voight` will be documented in this file
 - A failing scan records one failed audit run instead of one per attempt.
 
 ### Added
+- Bun `bun.lock` files (Bun 1.2+) are parsed and sent to the OSV scan instead of being
+  skipped with an "unsupported lockfile" warning. Run `php artisan voight:reprocess-lockfiles`
+  after upgrading to import the stored ones. The binary `bun.lockb` is not supported.
+  **Requires the `voight-osv-scanner-lambda` release that accepts `bun.lock`; deploy the
+  lambda first.** Environments with a git dependency in `bun.lock` are scanned nightly via
+  `/locks` instead of the deduplicated `/packages` sweep.
 - Yarn Berry (v2+) `yarn.lock` files are parsed: their packages, dependency graph and
   vulnerabilities are stored instead of being skipped with a "Yarn Berry lockfile"
   warning. Run `php artisan voight:reprocess-lockfiles` after upgrading to import the

@@ -68,6 +68,17 @@ it('starts a locks scan with the environment\'s lockfiles base64-encoded', funct
     Bus::assertDispatched(SubmitOsvScanJob::class);
 });
 
+it('sends bun.lock to the locks scan', function () {
+    Bus::fake([SubmitOsvScanJob::class]);
+    $environment = environmentWithLockfiles(['p/production/bun.lock' => '{"packages":{}}']);
+
+    RunOsvScanJob::dispatchSync($environment, AuditRunTrigger::PostSync);
+
+    expect(json_decode(Storage::disk('voight-lockfiles')->get(OsvScan::sole()->input_path), true)['files'])->toBe([
+        ['name' => 'bun.lock', 'content_base64' => base64_encode('{"packages":{}}')],
+    ]);
+});
+
 it('defaults the trigger to manual', function () {
     Bus::fake([SubmitOsvScanJob::class]);
 

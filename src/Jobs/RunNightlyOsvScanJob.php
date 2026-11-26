@@ -83,7 +83,8 @@ class RunNightlyOsvScanJob implements ShouldQueue
 
     /**
      * Split environments: any environment containing a commit-pinned (non-PURL-able)
-     * package is scanned in full via /locks; the rest go through the deduplicated
+     * package (`dev-main`, or a bun.lock git locator such as `github:owner/repo#sha`;
+     * registry versions never contain a colon) is scanned in full via /locks; the rest go through the deduplicated
      * /packages path. This subsumes per-package skipping and avoids double runs.
      *
      * @param  Collection<int, Environment>  $environments
@@ -97,7 +98,9 @@ class RunNightlyOsvScanJob implements ShouldQueue
         $lockfileEnvironmentIds = $environmentPackageModel::query()
             ->whereIn('environment_id', $environments->pluck('id'))
             ->where(function (Builder $query): void {
-                $query->where('version', 'like', 'dev-%')->orWhere('version', 'like', '%-dev');
+                $query->where('version', 'like', 'dev-%')
+                    ->orWhere('version', 'like', '%-dev')
+                    ->orWhere('version', 'like', '%:%');
             })
             ->distinct()
             ->pluck('environment_id')
