@@ -31,14 +31,14 @@ class PackageUsageService
             ->join('voight_projects as p', 'p.id', '=', 'e.project_id')
             ->groupBy('p.project_code', 'e.name', 'pk.type', 'ep.version')
             ->select(['p.project_code', 'e.name as environment', 'pk.type', 'ep.version'])
-            ->selectRaw('max(ep.is_direct) as is_direct, min(ep.is_dev) as is_dev');
+            ->selectRaw('max(case when ep.is_direct then 1 else 0 end) as is_direct, min(case when ep.is_dev then 1 else 0 end) as is_dev');
 
         if (! $access->seesEverything) {
             $usages->whereIn('p.id', $access->visibleProjects()->select('voight_projects.id'));
         }
 
         if (! $includeDev) {
-            $usages->havingRaw('min(ep.is_dev) = 0');
+            $usages->havingRaw('min(case when ep.is_dev then 1 else 0 end) = 0');
         }
 
         $total = DB::query()->fromSub($usages, 'usages')->count();

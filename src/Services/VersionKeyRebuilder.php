@@ -3,17 +3,22 @@
 namespace Statikbe\FilamentVoight\Services;
 
 use Closure;
-use Illuminate\Database\Query\Builder;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Statikbe\FilamentVoight\Support\VersionKey;
 
 /**
- * Recomputes the stored version keys from their version columns. Works per distinct version, so the
- * number of updates follows the number of different versions, not the number of rows. Plain query
- * updates: no model events run. Used by the migrations that add the keys and by voight:rebuild-version-keys.
+ * Recomputes the stored version keys from their version columns. Walks each table by id in chunks and
+ * updates only the rows whose key changed, grouped per new key and matched by id: the version columns
+ * are not indexed, and a ci collation would treat versions that differ in case as equal. Plain query
+ * updates: no model events run.
+ *
+ * Public API: published migrations call rebuild(), so its name and signature must stay stable.
  */
 class VersionKeyRebuilder
 {
+    private const int CHUNK = 1000;
+
     /**
      * @return array<string, array{source: string, key: string, encode: Closure(string): ?string}>
      */
@@ -36,25 +41,50 @@ class VersionKeyRebuilder
         $updated = [];
 
         foreach ($tables as $name => ['source' => $source, 'key' => $key, 'encode' => $encode]) {
-            $updated[$name] = DB::table($name)
-                ->whereNull($source)
-                ->whereNotNull($key)
-                ->update([$key => null]);
+            $updated[$name] = 0;
 
-            foreach (DB::table($name)->whereNotNull($source)->distinct()->pluck($source) as $version) {
-                $updated[$name] += $this->update(DB::table($name)->where($source, $version), $key, $encode((string) $version));
-            }
+            DB::table($name)
+                ->select(['id', $source, $key])
+                ->chunkById(self::CHUNK, function (Collection $rows) use ($name, $source, $key, $encode, &$updated): void {
+                    $updated[$name] += $this->updateChunk($name, $key, $this->staleIdsByKey($rows, $source, $key, $encode));
+                });
         }
 
         return $updated;
     }
 
-    private function update(Builder $rows, string $key, ?string $value): int
+    /**
+     * @param  Collection<int, object>  $rows
+     * @param  Closure(string): ?string  $encode
+     * @return array<string, array<int, string>> new key ('' for none) => ids whose stored key differs
+     */
+    private function staleIdsByKey(Collection $rows, string $source, string $key, Closure $encode): array
     {
-        $stale = $value === null
-            ? $rows->whereNotNull($key)
-            : $rows->where(fn (Builder $query) => $query->whereNull($key)->orWhere($key, '!=', $value));
+        $stale = [];
 
-        return $stale->update([$key => $value]);
+        foreach ($rows as $row) {
+            $version = $row->{$source};
+            $value = $version === null ? null : $encode((string) $version);
+
+            if ($value !== $row->{$key}) {
+                $stale[$value ?? ''][] = $row->id;
+            }
+        }
+
+        return $stale;
+    }
+
+    /**
+     * @param  array<string, array<int, string>>  $staleIdsByKey
+     */
+    private function updateChunk(string $table, string $key, array $staleIdsByKey): int
+    {
+        $updated = 0;
+
+        foreach ($staleIdsByKey as $value => $ids) {
+            $updated += DB::table($table)->whereIn('id', $ids)->update([$key => $value === '' ? null : $value]);
+        }
+
+        return $updated;
     }
 }
