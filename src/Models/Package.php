@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
 use Statikbe\FilamentVoight\Enums\PackageType;
+use Statikbe\FilamentVoight\Models\Concerns\HasVoightTags;
 use Staudenmeir\EloquentHasManyDeep\HasManyDeep;
 use Staudenmeir\EloquentHasManyDeep\HasRelationships;
 
@@ -25,6 +26,7 @@ class Package extends Model
     use HasFactory;
     use HasRelationships;
     use HasUlids;
+    use HasVoightTags;
 
     protected $table = 'voight_packages';
 

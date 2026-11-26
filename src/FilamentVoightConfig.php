@@ -19,6 +19,8 @@ use Statikbe\FilamentVoight\Models\NightlySweep;
 use Statikbe\FilamentVoight\Models\OsvScan;
 use Statikbe\FilamentVoight\Models\Package;
 use Statikbe\FilamentVoight\Models\Project;
+use Statikbe\FilamentVoight\Models\Tag;
+use Statikbe\FilamentVoight\Models\TagType;
 use Statikbe\FilamentVoight\Models\Team;
 use Statikbe\FilamentVoight\Models\Vulnerability;
 use Statikbe\FilamentVoight\Models\VulnerablePackageRange;
@@ -350,6 +352,22 @@ class FilamentVoightConfig
     }
 
     /**
+     * @return class-string<TagType>
+     */
+    public function getTagTypeModel(): string
+    {
+        return $this->packageConfig('models.tag_type', TagType::class);
+    }
+
+    /**
+     * @return class-string<Tag>
+     */
+    public function getTagModel(): string
+    {
+        return $this->packageConfig('models.tag', Tag::class);
+    }
+
+    /**
      * @return class-string<AlertSetting>
      */
     public function getAlertSettingModel(): string
@@ -437,6 +455,8 @@ class FilamentVoightConfig
             'voight-alert-setting' => AlertSetting::class,
             'voight-alert-recipient' => AlertRecipient::class,
             'voight-team' => Team::class,
+            'voight-tag-type' => TagType::class,
+            'voight-tag' => Tag::class,
         ]);
     }
 

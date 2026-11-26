@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Support\Carbon;
 use Laravel\Sanctum\HasApiTokens;
 use Statikbe\FilamentVoight\Facades\FilamentVoight;
+use Statikbe\FilamentVoight\Models\Concerns\HasVoightTags;
 use Staudenmeir\EloquentHasManyDeep\HasManyDeep;
 use Staudenmeir\EloquentHasManyDeep\HasRelationships;
 
@@ -34,6 +35,7 @@ class Project extends Model
     use HasApiTokens;
     use HasFactory;
     use HasRelationships;
+    use HasVoightTags;
 
     const DEFAULT_API_TOKEN_NAME = 'ci-pipeline';
 

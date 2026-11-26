@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
+use Statikbe\FilamentVoight\Models\Concerns\HasVoightTags;
 
 /**
  * @property string $id
@@ -22,6 +23,7 @@ class Customer extends Model
     use HasFactory;
     use HasSlug;
     use HasUlids;
+    use HasVoightTags;
 
     protected $table = 'voight_customers';
 

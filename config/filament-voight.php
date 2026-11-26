@@ -13,6 +13,8 @@ use Statikbe\FilamentVoight\Models\EnvironmentPackage;
 use Statikbe\FilamentVoight\Models\EnvironmentSystemDetail;
 use Statikbe\FilamentVoight\Models\Package;
 use Statikbe\FilamentVoight\Models\Project;
+use Statikbe\FilamentVoight\Models\Tag;
+use Statikbe\FilamentVoight\Models\TagType;
 use Statikbe\FilamentVoight\Models\Team;
 use Statikbe\FilamentVoight\Models\Vulnerability;
 use Statikbe\FilamentVoight\Models\VulnerablePackageRange;
@@ -211,6 +213,8 @@ return [
         // 'osv_scan' => \Statikbe\FilamentVoight\Models\OsvScan::class,
         // 'nightly_sweep' => \Statikbe\FilamentVoight\Models\NightlySweep::class,
         // 'alert_setting' => \Statikbe\FilamentVoight\Models\AlertSetting::class,
+        // 'tag_type' => \Statikbe\FilamentVoight\Models\TagType::class,
+        // 'tag' => \Statikbe\FilamentVoight\Models\Tag::class,
         // 'user' => \App\Models\User::class,
     ],
 
@@ -262,5 +266,7 @@ return [
         'voight-alert-setting' => AlertSetting::class,
         'voight-alert-recipient' => AlertRecipient::class,
         'voight-team' => Team::class,
+        'voight-tag-type' => TagType::class,
+        'voight-tag' => Tag::class,
     ],
 ];
