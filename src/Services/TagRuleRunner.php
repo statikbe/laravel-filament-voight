@@ -2,8 +2,10 @@
 
 namespace Statikbe\FilamentVoight\Services;
 
+use Illuminate\Contracts\Cache\LockTimeoutException;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Statikbe\FilamentVoight\Enums\TagRuleStatus;
@@ -19,24 +21,36 @@ class TagRuleRunner
 {
     public const int MAX_PASSES = 5;
 
+    public const string LOCK = 'voight-tag-rules';
+
+    /** Seconds a run waits for another run to finish before giving up. */
+    public static int $lockWaitSeconds = 10;
+
     /**
      * Runs one rule (after saving or retrying it). False when its query failed.
      */
     public function run(TagRule $rule): bool
     {
-        if (! $this->evaluate($rule)) {
-            return false;
-        }
+        return $this->exclusively(function () use ($rule): bool {
+            if (! $this->evaluate($rule)) {
+                return false;
+            }
 
-        $this->applyType($rule->tag->type);
+            $this->applyType($rule->tag->type);
 
-        return true;
+            return true;
+        });
     }
 
     /**
      * Runs every active rule, repeating while rules change tags other rules filter on.
      */
     public function runAll(): void
+    {
+        $this->exclusively(fn () => $this->runAllPasses());
+    }
+
+    private function runAllPasses(): void
     {
         $changedTypes = [];
 
@@ -77,6 +91,11 @@ class TagRuleRunner
      */
     public function removeRule(TagRule $rule, bool $removeTags): void
     {
+        $this->exclusively(fn () => $this->removeRuleNow($rule, $removeTags));
+    }
+
+    private function removeRuleNow(TagRule $rule, bool $removeTags): void
+    {
         $typeKey = $rule->tag->type;
 
         DB::transaction(function () use ($rule, $removeTags): void {
@@ -108,11 +127,13 @@ class TagRuleRunner
                 ->unique()
                 ->values();
         } catch (QueryException $exception) {
-            $rule->update([
+            $rule->timestamps = false;
+            $rule->forceFill([
                 'status' => TagRuleStatus::Failed,
                 'last_error' => $exception->getMessage(),
                 'failed_at' => now(),
-            ]);
+            ])->saveQuietly();
+            $rule->timestamps = true;
 
             Log::warning('Voight tag rule failed and will not run again until retried or saved again.', [
                 'rule' => $rule->getKey(),
@@ -127,7 +148,7 @@ class TagRuleRunner
             DB::table('voight_tag_rule_matches')->where('tag_rule_id', $rule->getKey())->delete();
 
             foreach ($keys->chunk(500) as $chunk) {
-                DB::table('voight_tag_rule_matches')->insert($chunk->map(fn (string $key): array => [
+                DB::table('voight_tag_rule_matches')->insertOrIgnore($chunk->map(fn (string $key): array => [
                     'tag_rule_id' => $rule->getKey(),
                     'taggable_type' => $rule->taggable_type,
                     'taggable_id' => $key,
@@ -135,6 +156,8 @@ class TagRuleRunner
             }
         });
 
+        // Without timestamps: `updated_at` means "last saved" and decides which rule wins on single-value types.
+        $rule->timestamps = false;
         $rule->forceFill([
             'status' => TagRuleStatus::Active,
             'last_error' => null,
@@ -142,6 +165,7 @@ class TagRuleRunner
             'last_run_at' => now(),
             'last_match_count' => $keys->count(),
         ])->saveQuietly();
+        $rule->timestamps = true;
 
         return true;
     }
@@ -160,7 +184,9 @@ class TagRuleRunner
 
         $tagIds = $type->tags()->pluck('id')->map(fn (mixed $id): string => (string) $id)->all();
 
-        $desired = $this->desiredPairs($tagIds, $type->is_single);
+        // Only active rules add tags; paused and failed rules only keep the tags they already gave.
+        $desired = $this->desiredPairs($tagIds, $type->is_single, activeOnly: true);
+        $kept = $this->desiredPairs($tagIds, $type->is_single, activeOnly: false);
         $existing = DB::table('voight_taggables')
             ->whereIn('tag_id', $tagIds)
             ->get(['tag_id', 'taggable_type', 'taggable_id', 'is_manual']);
@@ -173,7 +199,7 @@ class TagRuleRunner
             ->reject(fn (object $pair): bool => $existingKeys->has(self::pairKey($pair->tag_id, $pair->taggable_type, $pair->taggable_id)))
             ->reject(fn (object $pair): bool => $type->is_single && $manualRecords->has($pair->taggable_type . '|' . $pair->taggable_id));
 
-        $desiredKeys = $desired->mapWithKeys(fn (object $pair): array => [self::pairKey($pair->tag_id, $pair->taggable_type, $pair->taggable_id) => true]);
+        $desiredKeys = $kept->mapWithKeys(fn (object $pair): array => [self::pairKey($pair->tag_id, $pair->taggable_type, $pair->taggable_id) => true]);
         $deletes = $existing
             ->reject(fn (object $row): bool => (bool) $row->is_manual)
             ->reject(fn (object $row): bool => $desiredKeys->has(self::pairKey($row->tag_id, $row->taggable_type, $row->taggable_id)));
@@ -188,11 +214,12 @@ class TagRuleRunner
                     ->where('tag_id', $row->tag_id)
                     ->where('taggable_type', $row->taggable_type)
                     ->where('taggable_id', $row->taggable_id)
+                    ->where('is_manual', false)
                     ->delete();
             }
 
             foreach ($inserts->chunk(500) as $chunk) {
-                DB::table('voight_taggables')->insert($chunk->map(fn (object $pair): array => [
+                DB::table('voight_taggables')->insertOrIgnore($chunk->map(fn (object $pair): array => [
                     'tag_id' => $pair->tag_id,
                     'taggable_type' => $pair->taggable_type,
                     'taggable_id' => $pair->taggable_id,
@@ -211,11 +238,12 @@ class TagRuleRunner
      * @param  list<string>  $tagIds
      * @return Collection<int, \stdClass> Rows with `tag_id`, `taggable_type` and `taggable_id`.
      */
-    private function desiredPairs(array $tagIds, bool $isSingle): Collection
+    private function desiredPairs(array $tagIds, bool $isSingle, bool $activeOnly): Collection
     {
         $pairs = DB::table('voight_tag_rule_matches as m')
             ->join('voight_tag_rules as r', 'r.id', '=', 'm.tag_rule_id')
             ->whereIn('r.tag_id', $tagIds)
+            ->when($activeOnly, fn ($query) => $query->where('r.status', TagRuleStatus::Active->value))
             ->orderByDesc('r.updated_at')
             ->orderByDesc('r.id')
             ->get(['r.tag_id', 'm.taggable_type', 'm.taggable_id']);
@@ -225,6 +253,21 @@ class TagRuleRunner
             : $pairs->unique(fn (object $pair): string => self::pairKey($pair->tag_id, $pair->taggable_type, $pair->taggable_id));
 
         return $pairs->values();
+    }
+
+    /**
+     * Runs one runner operation at a time, so overlapping jobs, the nightly command and panel actions don't collide.
+     *
+     * @template TReturn
+     *
+     * @param  callable(): TReturn  $callback
+     * @return TReturn
+     *
+     * @throws LockTimeoutException
+     */
+    private function exclusively(callable $callback): mixed
+    {
+        return Cache::lock(self::LOCK, 600)->block(self::$lockWaitSeconds, $callback);
     }
 
     private static function pairKey(string $tagId, string $taggableType, string | int $taggableId): string

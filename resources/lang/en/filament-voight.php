@@ -181,6 +181,7 @@ return [
             'saved' => 'Rule saved: :count record(s) match.',
             'failed' => 'The rule was saved but its query failed',
             'not_allowed' => 'You may not add rules to this tag.',
+            'relative_dates' => 'Rules cannot use relative dates (e.g. "past week"): they would stay fixed at today\'s date. Use an absolute date instead.',
             'tab' => 'Tab: :tab',
             'search' => 'Search: :search',
             'plural' => 'Rules',

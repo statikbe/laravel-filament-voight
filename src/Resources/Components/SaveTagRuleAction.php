@@ -47,6 +47,12 @@ class SaveTagRuleAction
                 /** @var Tag $tag */
                 $tag = FilamentVoight::config()->getTagModel()::query()->findOrFail($data['tag']);
 
+                if (TagRuleRecorder::usesRelativeDates($livewire)) {
+                    Notification::make()->danger()->title(voightTrans('tags.rules.relative_dates'))->send();
+
+                    return;
+                }
+
                 if (! TagAssigner::userMayTag(auth()->user(), $tag->tagType)) {
                     Notification::make()->danger()->title(voightTrans('tags.rules.not_allowed'))->send();
 

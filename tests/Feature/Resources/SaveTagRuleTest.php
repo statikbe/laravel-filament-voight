@@ -163,3 +163,17 @@ class DenyLockedTagTypesPolicy
         return $type->name !== 'Locked';
     }
 }
+
+it('refuses to save a rule with a relative date filter, which would freeze at today\'s date', function () {
+    $type = TagType::factory()->create(['name' => 'Anywhere']);
+    $tag = Tag::factory()->ofType($type)->create();
+    Project::factory()->create();
+
+    Livewire::test(ListProjects::class)
+        ->set('tableDeferredFilters.queryBuilder.rules', queryBuilderRule('created_at', 'isAfter', ['mode' => 'relative', 'preset' => 'past_week']))
+        ->call('applyTableFilters')
+        ->callAction('saveTagRule', ['tag' => $tag->id])
+        ->assertNotified(voightTrans('tags.rules.relative_dates'));
+
+    expect(TagRule::query()->count())->toBe(0);
+});

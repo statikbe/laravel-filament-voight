@@ -1,6 +1,8 @@
 <?php
 
+use Illuminate\Contracts\Cache\LockTimeoutException;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Statikbe\FilamentVoight\Enums\TagRuleStatus;
@@ -198,4 +200,59 @@ it('removes the tags only it provided when a rule is removed with its tags', fun
     $this->runner->removeRule($rule, removeTags: true);
 
     expect(pivotRow($a, $this->triage))->toBeNull();
+});
+
+it('lets the most recently saved rule win even when it was created first', function () {
+    $a = Project::factory()->create(['project_code' => 'A']);
+    $saved = projectRule($this->high, ['A'], ['updated_at' => now()]);
+    projectRule($this->low, ['A'], ['updated_at' => now()->subDay()]);
+
+    $this->runner->runAll();
+    $this->runner->runAll();
+
+    expect(pivotRow($a, $this->high))->not->toBeNull()
+        ->and(pivotRow($a, $this->low))->toBeNull()
+        ->and($saved->fresh()->updated_at->isToday())->toBeTrue();
+});
+
+it('does not add tags from paused rules, also not to deleted or untagged records', function () {
+    $a = Project::factory()->create(['project_code' => 'A']);
+    $b = Project::factory()->create(['project_code' => 'B']);
+    $paused = projectRule($this->triage, ['A', 'B']);
+    $this->runner->run($paused);
+    $paused->update(['status' => TagRuleStatus::Paused]);
+
+    $a->delete();
+    $b->detachTag($this->triage);
+    projectRule($this->triage, ['NONE']);
+    $this->runner->runAll();
+
+    expect(DB::table('voight_taggables')->where('taggable_id', (string) $a->id)->exists())->toBeFalse()
+        ->and(pivotRow($b, $this->triage))->toBeNull()
+        ->and(DB::table('voight_tag_rule_matches')->where('taggable_id', (string) $a->id)->exists())->toBeFalse();
+});
+
+it('keeps the tags of a paused rule it still matched', function () {
+    $a = Project::factory()->create(['project_code' => 'A']);
+    $paused = projectRule($this->triage, ['A']);
+    $this->runner->run($paused);
+    $paused->update(['status' => TagRuleStatus::Paused]);
+
+    projectRule($this->triage, ['NONE']);
+    $this->runner->runAll();
+
+    expect(pivotRow($a, $this->triage))->not->toBeNull();
+});
+
+it('does not run while another run holds the lock', function () {
+    TagRuleRunner::$lockWaitSeconds = 0;
+    $lock = Cache::lock(TagRuleRunner::LOCK, 60);
+    $lock->get();
+
+    try {
+        expect(fn () => $this->runner->runAll())->toThrow(LockTimeoutException::class);
+    } finally {
+        $lock->release();
+        TagRuleRunner::$lockWaitSeconds = 10;
+    }
 });

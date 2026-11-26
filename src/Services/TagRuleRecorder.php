@@ -62,6 +62,21 @@ class TagRuleRecorder
     }
 
     /**
+     * Whether a filter is relative to today ("past week"): stored SQL would freeze it at the save date.
+     */
+    public static function usesRelativeDates(HasTable & Page $page): bool
+    {
+        $found = false;
+        $filters = $page->tableFilters ?? [];
+
+        array_walk_recursive($filters, function (mixed $value, string | int $key) use (&$found): void {
+            $found = $found || ($key === 'mode' && $value === 'relative');
+        });
+
+        return $found;
+    }
+
+    /**
      * Whether the table is narrowed at all: saving an unfiltered table would tag every record.
      */
     public static function isFiltered(HasTable & Page $page): bool
