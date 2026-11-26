@@ -150,6 +150,14 @@ return [
     ],
 
     // Models
+    'tags' => [
+        'problems' => [
+            'not_applicable' => 'Tag type ":type" cannot be assigned to :model records.',
+            'single_value' => 'Tag type ":type" holds a single value: pick one tag.',
+            'wrong_type' => 'Tag ":tag" does not belong to tag type ":type".',
+        ],
+    ],
+
     'models' => [
         'customer' => [
             'label' => 'Customer',

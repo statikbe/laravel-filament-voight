@@ -12,6 +12,7 @@ use Statikbe\FilamentVoight\Facades\FilamentVoight;
  * A Spatie tag on Voight's own table. Its `type` is the key of the TagType it belongs to.
  *
  * @property string $id
+ * @property string $name
  * @property string $type
  * @property-read TagType $tagType
  */
