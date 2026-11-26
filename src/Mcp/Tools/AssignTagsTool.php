@@ -141,7 +141,11 @@ class AssignTagsTool extends VoightTool
     {
         $before = $this->tagIdsByType($record);
 
-        $adding ? $assigner->assign([$record], $tags) : $assigner->remove([$record], $tags);
+        if ($adding) {
+            $assigner->assign([$record], $tags);
+        } else {
+            $assigner->remove([$record], $tags);
+        }
 
         $after = $this->tagIdsByType($record);
         $counts = ['added' => 0, 'replaced' => 0, 'removed' => 0, 'unchanged' => 0];

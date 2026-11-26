@@ -26,10 +26,21 @@ class TagOptions
             ->with('tags')
             ->get()
             ->mapWithKeys(fn (TagType $type): array => [
-                $type->name => $type->tags->mapWithKeys(fn (Tag $tag): array => [$tag->getKey() => $tag->name])->all(),
+                $type->name => self::names($type->tags),
             ])
             ->filter()
             ->all();
+    }
+
+    /**
+     * Tag names keyed by tag id.
+     *
+     * @param  iterable<Tag>  $tags
+     * @return array<string, string>
+     */
+    public static function names(iterable $tags): array
+    {
+        return collect($tags)->mapWithKeys(fn (Tag $tag): array => [$tag->getKey() => $tag->name])->all();
     }
 
     /**

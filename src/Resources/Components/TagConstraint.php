@@ -9,7 +9,6 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Statikbe\FilamentVoight\Enums\VoightIcon;
 use Statikbe\FilamentVoight\Facades\FilamentVoight;
-use Statikbe\FilamentVoight\Models\Tag;
 use Statikbe\FilamentVoight\Models\TagType;
 
 /**
@@ -44,7 +43,7 @@ class TagConstraint
         return SelectConstraint::make(self::name($type, $scope))
             ->label($scope === null ? $type->name : voightTrans("models.{$scope}.label") . ' › ' . $type->name)
             ->icon(VoightIcon::FilterTag->resolve())
-            ->options(fn (): array => $type->tags()->get()->mapWithKeys(fn (Tag $tag): array => [$tag->getKey() => $tag->name])->all())
+            ->options(fn (): array => TagOptions::names($type->tags()->get()))
             ->multiple()
             ->searchable()
             ->operators([

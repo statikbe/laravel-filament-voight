@@ -2,7 +2,9 @@
 
 namespace Statikbe\FilamentVoight\Resources\Components;
 
+use BackedEnum;
 use Filament\Actions\Action;
+use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Database\Eloquent\Model;
 use Statikbe\FilamentVoight\Enums\VoightIcon;
 use Statikbe\FilamentVoight\Services\TagAssigner;
@@ -16,7 +18,7 @@ class EditTagsAction
     {
         return Action::make('editTags')
             ->label(voightTrans('tags.actions.edit'))
-            ->icon(fn (): string | \BackedEnum | \Illuminate\Contracts\Support\Htmlable => VoightIcon::ActionEditTags->resolve())
+            ->icon(fn (): string | BackedEnum | Htmlable => VoightIcon::ActionEditTags->resolve())
             ->color('gray')
             ->visible(fn (Model $record): bool => TagFields::make($record::class, saveWithRecord: false) !== [])
             ->authorize(fn (Model $record): bool => TagAssigner::userMayTag(auth()->user(), $record))

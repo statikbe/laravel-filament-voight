@@ -54,8 +54,10 @@ class TagFields
     public static function save(Model $record, array $data): void
     {
         foreach (self::types($record::class) as $type) {
-            if (array_key_exists(self::fieldName($type), $data)) {
-                self::sync($record, $type, $data[self::fieldName($type)]);
+            $fieldName = self::fieldName($type);
+
+            if (array_key_exists($fieldName, $data)) {
+                self::sync($record, $type, $data[$fieldName]);
             }
         }
     }
@@ -65,7 +67,7 @@ class TagFields
         $field = Select::make(self::fieldName($type))
             ->label($type->name)
             ->helperText($type->description)
-            ->options(fn (): array => $type->tags()->get()->mapWithKeys(fn (Tag $tag): array => [$tag->getKey() => $tag->name])->all())
+            ->options(fn (): array => TagOptions::names($type->tags()->get()))
             ->multiple(! $type->is_single)
             ->searchable();
 

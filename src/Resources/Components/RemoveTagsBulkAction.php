@@ -2,9 +2,11 @@
 
 namespace Statikbe\FilamentVoight\Resources\Components;
 
+use BackedEnum;
 use Filament\Actions\BulkAction;
 use Filament\Forms\Components\Select;
 use Filament\Notifications\Notification;
+use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Statikbe\FilamentVoight\Enums\VoightIcon;
@@ -17,7 +19,7 @@ class RemoveTagsBulkAction
     {
         return BulkAction::make('removeTags')
             ->label(voightTrans('tags.actions.remove'))
-            ->icon(fn (): string | \BackedEnum | \Illuminate\Contracts\Support\Htmlable => VoightIcon::ActionRemoveTags->resolve())
+            ->icon(fn (): string | BackedEnum | Htmlable => VoightIcon::ActionRemoveTags->resolve())
             ->color('gray')
             ->schema(fn (BulkAction $action): array => [
                 Select::make('tags')

@@ -53,9 +53,11 @@ class TagAssigner
                     /** @var Tag $first */
                     $first = $typeTags->first();
 
-                    $first->tagType->is_single
-                        ? $record->syncTagIds([$first->getKey()], $first->type)
-                        : $record->syncTagIds(self::keys($typeTags), $first->type, detaching: false);
+                    if ($first->tagType->is_single) {
+                        $record->syncTagIds([$first->getKey()], $first->type);
+                    } else {
+                        $record->syncTagIds(self::keys($typeTags), $first->type, detaching: false);
+                    }
                 }
             }
         });

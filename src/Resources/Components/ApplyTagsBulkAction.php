@@ -2,9 +2,11 @@
 
 namespace Statikbe\FilamentVoight\Resources\Components;
 
+use BackedEnum;
 use Filament\Actions\BulkAction;
 use Filament\Forms\Components\Select;
 use Filament\Notifications\Notification;
+use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Statikbe\FilamentVoight\Enums\VoightIcon;
@@ -21,7 +23,7 @@ class ApplyTagsBulkAction
     {
         return BulkAction::make('applyTags')
             ->label(voightTrans('tags.actions.apply'))
-            ->icon(fn (): string | \BackedEnum | \Illuminate\Contracts\Support\Htmlable => VoightIcon::ActionApplyTags->resolve())
+            ->icon(fn (): string | BackedEnum | Htmlable => VoightIcon::ActionApplyTags->resolve())
             ->schema(fn (BulkAction $action): array => [
                 Select::make('tags')
                     ->label(voightTrans('models.tag.plural'))

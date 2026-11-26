@@ -25,7 +25,7 @@ class TagTypeTableSchema
                     ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('applies_to')
                     ->label(voightTrans('models.tag_type.fields.taggable_types'))
-                    ->state(fn (TagType $record): array => $record->taggable_types === null || $record->taggable_types === []
+                    ->state(fn (TagType $record): array => blank($record->taggable_types)
                         ? [voightTrans('models.tag_type.all_models')]
                         : array_map(TagType::modelLabel(...), $record->taggable_types))
                     ->badge(),
