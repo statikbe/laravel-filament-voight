@@ -348,7 +348,8 @@ when `write_tools` is off.
 - Never revokes existing tokens; revoking stays in Filament.
 - Out: the **plain-text token** (shown once), the sync endpoint URL
   (`url('api/voight/lock-file')`), the uploader variables (`VOIGHT_API_BASE_URL`,
-  `VOIGHT_API_TOKEN`, `PROJECT_CODE`; the script also needs `APP_ENV`) and an explicit instruction: store the
+  `VOIGHT_API_TOKEN`, `PROJECT_CODE`; the script also needs `APP_ENV`), the same variables as paste-ready
+  double-quoted `.env` lines (`uploader_env`, INTLAR-274) and an explicit instruction: store the
   token as a CI secret or in an untracked `.env`, never commit it.
 - Rationale for returning the secret: the token only allows pushing lockfiles
   for that project, and returning it is what makes agent-driven onboarding work.
