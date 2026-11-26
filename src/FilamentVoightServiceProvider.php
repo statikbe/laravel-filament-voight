@@ -99,6 +99,7 @@ class FilamentVoightServiceProvider extends PackageServiceProvider
             // independent of the scanner cron and must keep running when it is disabled.
             $schedule->command('voight:send-alert-digests')->hourly();
             $schedule->command('voight:reap-stranded-scans')->hourly()->withoutOverlapping();
+            $schedule->command('voight:run-tag-rules')->daily()->withoutOverlapping();
 
             $cron = FilamentVoight::config()->getScannerNightlyCron();
 
@@ -152,6 +153,7 @@ class FilamentVoightServiceProvider extends PackageServiceProvider
             Commands\ReprocessLockfilesCommand::class,
             Commands\FetchFaviconsCommand::class,
             Commands\ListIconsCommand::class,
+            Commands\RunTagRulesCommand::class,
             Commands\RebuildVersionKeysCommand::class,
         ];
     }

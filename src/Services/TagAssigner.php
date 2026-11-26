@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
+use Statikbe\FilamentVoight\Jobs\RunTagRulesJob;
 use Statikbe\FilamentVoight\Models\Customer;
 use Statikbe\FilamentVoight\Models\Environment;
 use Statikbe\FilamentVoight\Models\Package;
@@ -64,6 +65,8 @@ class TagAssigner
                 $record->tags()->updateExistingPivot(self::keys($tags), ['is_manual' => true]);
             }
         });
+
+        RunTagRulesJob::dispatchIfRulesExist();
     }
 
     /**
@@ -77,6 +80,8 @@ class TagAssigner
                 $record->tags()->detach(self::keys($tags));
             }
         });
+
+        RunTagRulesJob::dispatchIfRulesExist();
     }
 
     /**
@@ -101,6 +106,8 @@ class TagAssigner
         $this->validated([$record], $tags);
 
         $record->syncTagIds(self::keys($tags), $type->key);
+
+        RunTagRulesJob::dispatchIfRulesExist();
     }
 
     /**

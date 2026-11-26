@@ -276,6 +276,7 @@ Response `204 No Content`. Voight keeps only the latest snapshot per environment
 | `voight:run-osv-scan` | Dispatch OSV scan jobs (all or filtered) |
 | `voight:fetch-favicons [--project=] [--force]` | Fetch project favicons from their environment URLs |
 | `voight:icons [--json]` | List every icon with its alias, default, current value and description |
+| `voight:run-tag-rules` | Re-run every active auto-tag rule (scheduled daily; also runs after changes) |
 | `voight:rebuild-version-keys` | Recompute the sortable version keys behind version filters and sorting |
 
 ### Version keys

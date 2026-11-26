@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Relations\MorphPivot;
 use Spatie\Tags\HasTags;
 use Statikbe\FilamentVoight\Facades\FilamentVoight;
+use Statikbe\FilamentVoight\Jobs\RunTagRulesJob;
 use Statikbe\FilamentVoight\Models\TagType;
 
 /**
@@ -14,6 +15,15 @@ use Statikbe\FilamentVoight\Models\TagType;
 trait HasVoightTags
 {
     use HasTags;
+
+    /**
+     * Any change to a taggable record can change what auto-tag rules match.
+     */
+    public static function bootHasVoightTags(): void
+    {
+        static::saved(fn () => RunTagRulesJob::dispatchIfRulesExist());
+        static::deleted(fn () => RunTagRulesJob::dispatchIfRulesExist());
+    }
 
     public static function getTagClassName(): string
     {

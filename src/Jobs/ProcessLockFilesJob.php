@@ -111,6 +111,7 @@ class ProcessLockFilesJob implements ShouldQueue
             ]);
 
             RunOsvScanJob::dispatch($this->sync->environment, AuditRunTrigger::PostSync);
+            RunTagRulesJob::dispatchIfRulesExist();
         } catch (\Throwable $e) {
             Log::error('[Voight] Lock file processing failed', [
                 'sync' => $this->sync->id,

@@ -8,6 +8,7 @@ use Statikbe\FilamentVoight\Enums\AuditRunTrigger;
 use Statikbe\FilamentVoight\Enums\Severity;
 use Statikbe\FilamentVoight\Enums\VulnerabilitySource;
 use Statikbe\FilamentVoight\Facades\FilamentVoight;
+use Statikbe\FilamentVoight\Jobs\RunTagRulesJob;
 use Statikbe\FilamentVoight\Models\AuditFinding;
 use Statikbe\FilamentVoight\Models\AuditRun;
 use Statikbe\FilamentVoight\Models\Environment;
@@ -95,6 +96,8 @@ class RecordEnvironmentAuditRunsService
 
         $auditRun->update(['status' => AuditRunStatus::Completed, 'completed_at' => now()]);
         $environment->update(['scanned_at' => now()]);
+
+        RunTagRulesJob::dispatchIfRulesExist();
 
         return $auditRun;
     }
