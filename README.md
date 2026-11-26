@@ -352,6 +352,15 @@ Classify projects, environments, customers, packages and vulnerabilities with cu
 - **Filtering:** each table's query builder has a constraint per tag type, on its own records and on related ones, e.g. *Project › Security level* on vulnerabilities, packages, environments and open findings.
 - **Permissions:** tagging a record needs its model's `update` policy ability; without a policy for the model, anyone with panel access can tag it.
 
+### Auto-tag rules
+
+A tag can follow a query instead of being set by hand. Filter a list table (projects, environments, customers, packages or vulnerabilities), then use **Save as auto-tag rule** and pick a tag: every record the table shows gets the tag, and from then on the tag follows the query. Records that start matching get it; records that stop matching lose it, unless the tag was set by hand or another rule still matches. Hand-set tags always win, also on single-value types.
+
+- **Where they run:** right after saving, after any change to a project, environment, customer, package, vulnerability or tag, after every lockfile sync and scan (one queued `RunTagRulesJob` per burst of changes, so a queue worker is needed), and nightly via `voight:run-tag-rules`.
+- **Managing them:** a tag's page (click a tag on its tag type) lists its rules with their conditions, match count and status. **Open in table** shows the table with the rule's filter; saving there replaces the rule. Rules can be paused, resumed and deleted (optionally removing the tags they added).
+- **Failures:** each rule stores the SQL of the table query when it is saved. If that query later fails (e.g. after an upgrade changed a column), the rule is marked **Failed**, keeps its tags and stops running until you **Retry** it or save it again from the table.
+- **Scope:** the stored query includes the visibility of the admin who saved it. Saving a rule needs permission to update the tag's type.
+
 Tags live in Voight's own `voight_tag_types`, `voight_tags` and `voight_taggables` tables (built on [spatie/laravel-tags](https://github.com/spatie/laravel-tags)), so an app that uses spatie-tags itself is not affected.
 
 Over MCP, `list_tags` returns the types with their tags, and `list_projects`, `get_project_vulnerabilities` and `find_package_usage` accept a `tags` filter. With write tools on, `assign_tags` adds or removes tags in bulk, e.g. to sync a spreadsheet:

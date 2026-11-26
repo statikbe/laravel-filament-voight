@@ -1,7 +1,7 @@
 # Auto-tag Rules
 
 **Date:** 2026-11-27
-**Status:** draft
+**Status:** implemented
 **Builds on:** `19-tags.md` (tag types, tags, `TagAssigner`, `voight_taggables`)
 
 Save a filtered table as a rule on a tag. Every record the saved query

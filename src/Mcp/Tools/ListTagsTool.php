@@ -53,6 +53,8 @@ class ListTagsTool extends VoightTool
                     'name' => $schema->string(),
                     'slug' => $schema->string(),
                     'usage_count' => $schema->integer()->description('Records you can see that carry the tag.'),
+                    'auto_usage_count' => $schema->integer()->description('Of those, records that carry it only because an auto-tag rule matches them.'),
+                    'rule_count' => $schema->integer()->description('Auto-tag rules that keep this tag on matching records (saved from panel tables).'),
                 ])),
             ]))->required(),
         ];
@@ -62,8 +64,9 @@ class ListTagsTool extends VoightTool
     {
         $access->authorize('viewAny', FilamentVoight::config()->getProjectModel());
 
-        $types = FilamentVoight::config()->getTagTypeModel()::query()->ordered()->with('tags')->get();
+        $types = FilamentVoight::config()->getTagTypeModel()::query()->ordered()->with(['tags' => fn ($tags) => $tags->withCount('rules')])->get();
         $usage = $this->usageCounts($access);
+        $automaticUsage = $this->usageCounts($access, automaticOnly: true);
 
         return Response::structured([
             'tag_types' => $types->map(fn (TagType $type): array => [
@@ -77,6 +80,8 @@ class ListTagsTool extends VoightTool
                     'name' => $tag->name,
                     'slug' => $tag->slug,
                     'usage_count' => $usage[$tag->getKey()] ?? 0,
+                    'auto_usage_count' => $automaticUsage[$tag->getKey()] ?? 0,
+                    'rule_count' => (int) $tag->getAttribute('rules_count'),
                 ])->values()->all(),
             ])->values()->all(),
         ]);
@@ -92,9 +97,12 @@ class ListTagsTool extends VoightTool
      *
      * @return array<string, int>
      */
-    private function usageCounts(McpAccess $access): array
+    private function usageCounts(McpAccess $access, bool $automaticOnly = false): array
     {
-        $query = DB::table('voight_taggables')->groupBy('tag_id')->selectRaw('tag_id, count(*) as aggregate');
+        $query = DB::table('voight_taggables')
+            ->when($automaticOnly, fn (QueryBuilder $query) => $query->where('is_manual', false))
+            ->groupBy('tag_id')
+            ->selectRaw('tag_id, count(*) as aggregate');
 
         if (! $access->seesEverything) {
             $query->where(function (QueryBuilder $query) use ($access): void {

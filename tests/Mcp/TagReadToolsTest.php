@@ -1,5 +1,6 @@
 <?php
 
+use Illuminate\Support\Facades\DB;
 use Statikbe\FilamentVoight\Mcp\McpAccess;
 use Statikbe\FilamentVoight\Mcp\Tools\FindPackageUsageTool;
 use Statikbe\FilamentVoight\Mcp\Tools\GetProjectVulnerabilitiesTool;
@@ -13,6 +14,7 @@ use Statikbe\FilamentVoight\Models\Environment;
 use Statikbe\FilamentVoight\Models\Package;
 use Statikbe\FilamentVoight\Models\Project;
 use Statikbe\FilamentVoight\Models\Tag;
+use Statikbe\FilamentVoight\Models\TagRule;
 use Statikbe\FilamentVoight\Models\TagType;
 use Statikbe\FilamentVoight\Models\Team;
 use Statikbe\FilamentVoight\Models\Vulnerability;
@@ -46,8 +48,8 @@ it('lists tag types with their tags', function () {
         'applies_to_all' => false,
     ])
         ->and($types['security-level']['tags'])->toBe([
-            ['name' => 'High', 'slug' => 'high', 'usage_count' => 2],
-            ['name' => 'Low', 'slug' => 'low', 'usage_count' => 0],
+            ['name' => 'High', 'slug' => 'high', 'usage_count' => 2, 'auto_usage_count' => 0, 'rule_count' => 0],
+            ['name' => 'Low', 'slug' => 'low', 'usage_count' => 0, 'auto_usage_count' => 0, 'rule_count' => 0],
         ])
         ->and($types[$everywhere->key]['applies_to'])->toBe(['project', 'environment', 'customer', 'package', 'vulnerability'])
         ->and($types[$everywhere->key]['applies_to_all'])->toBeTrue();
@@ -135,4 +137,17 @@ it('scopes customers, environments, packages and vulnerabilities to visible proj
         ->and(McpAccess::local()->visiblePackages()->count())->toBe(Package::query()->count());
 
     unset($theirFinding);
+});
+
+it('reports rule counts and automatic uses per tag', function () {
+    TagRule::factory()->for($this->high)->create();
+    DB::table('voight_taggables')
+        ->where('tag_id', $this->high->id)
+        ->where('taggable_id', (string) $this->mine->id)
+        ->update(['is_manual' => false]);
+
+    $high = collect(structuredContent(VoightLocalServer::tool(ListTagsTool::class))['tag_types'])
+        ->keyBy('key')['security-level']['tags'][0];
+
+    expect($high)->toMatchArray(['name' => 'High', 'usage_count' => 2, 'auto_usage_count' => 1, 'rule_count' => 1]);
 });
