@@ -13,7 +13,6 @@ use Statikbe\FilamentVoight\Models\AuditFinding;
 use Statikbe\FilamentVoight\Models\Environment;
 use Statikbe\FilamentVoight\Models\Package;
 use Statikbe\FilamentVoight\Models\Vulnerability;
-use Statikbe\FilamentVoight\Services\Mcp\PackageUsageService;
 
 /**
  * Matches projects with any of the selected packages installed in any environment, optionally within a version range.
@@ -78,14 +77,27 @@ class ProjectPackageOperator extends InstalledVersionRangeOperator
         $severities = $this->selectedSeverities();
 
         $projectIds = $severities === []
-            ? $packages->flatMap(fn (Package $package): array => app(PackageUsageService::class)->projectIdsWithPackage(
-                $package->name,
-                $package->type->value,
-                $this->versionConstraint(),
-            ))->unique()->all()
+            ? $this->projectsWithPackages($packages)
             : $this->projectsWithCurrentFindings($packages, $severities);
 
         return $query->whereIn($query->qualifyColumn('id'), $projectIds, not: $this->isInverse());
+    }
+
+    /**
+     * Project ids with any of the packages installed in the version range.
+     *
+     * @param  Collection<int, Package>  $packages
+     * @return Builder<Environment>
+     */
+    private function projectsWithPackages(Collection $packages): Builder
+    {
+        $config = FilamentVoight::config();
+        $installed = $config->getEnvironmentPackageModel()::query()->whereIn('package_id', $packages->modelKeys());
+        $this->versionConstraint()->apply($installed, $installed->qualifyColumn('version_sort'));
+
+        return $config->getEnvironmentModel()::query()
+            ->select('project_id')
+            ->whereIn('id', $installed->select('environment_id'));
     }
 
     /**
