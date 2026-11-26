@@ -6,6 +6,8 @@ use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Components\Component;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
+use Statikbe\FilamentVoight\Models\Customer;
+use Statikbe\FilamentVoight\Resources\Components\TagsSection;
 
 class CustomerFormSchema
 {
@@ -27,6 +29,7 @@ class CustomerFormSchema
         return $schema
             ->components([
                 Section::make(self::fields()),
+                TagsSection::make(Customer::class),
             ]);
     }
 }

@@ -140,6 +140,15 @@ enum VoightIcon: string
     #[IconDefinition(Heroicon::ClipboardDocument, 'Action button on an environment page copying its system details as Markdown to the clipboard.')]
     case ActionCopyEnvironmentMarkdown = 'action.copy-environment-markdown';
 
+    #[IconDefinition(Heroicon::OutlinedTag, 'Bulk action adding tags to all selected records in a table.')]
+    case ActionApplyTags = 'action.apply-tags';
+
+    #[IconDefinition(Heroicon::OutlinedBackspace, 'Bulk action removing tags from all selected records in a table.')]
+    case ActionRemoveTags = 'action.remove-tags';
+
+    #[IconDefinition(Heroicon::OutlinedTag, 'Action on a record\'s page opening a modal to edit its tags.')]
+    case ActionEditTags = 'action.edit-tags';
+
     // -- Table filters --
 
     #[IconDefinition('heroicon-m-server-stack', 'Query-builder filter constraint on environment stage (production, staging, ...).')]

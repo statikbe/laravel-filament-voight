@@ -7,6 +7,9 @@ use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
+use Statikbe\FilamentVoight\Resources\Components\ApplyTagsBulkAction;
+use Statikbe\FilamentVoight\Resources\Components\RemoveTagsBulkAction;
+use Statikbe\FilamentVoight\Resources\Components\TagsColumn;
 
 class CustomerTableSchema
 {
@@ -30,12 +33,15 @@ class CustomerTableSchema
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
+                TagsColumn::make(),
             ])
             ->recordActions([
                 ViewAction::make(),
                 EditAction::make(),
             ])
             ->toolbarActions([
+                ApplyTagsBulkAction::make(),
+                RemoveTagsBulkAction::make(),
                 DeleteBulkAction::make(),
             ]);
     }

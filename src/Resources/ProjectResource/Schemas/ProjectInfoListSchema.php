@@ -19,6 +19,7 @@ use Statikbe\FilamentVoight\Enums\Severity;
 use Statikbe\FilamentVoight\Enums\VoightIcon;
 use Statikbe\FilamentVoight\Mcp\McpAccess;
 use Statikbe\FilamentVoight\Models\Project;
+use Statikbe\FilamentVoight\Resources\Components\TagsColumn;
 use Statikbe\FilamentVoight\Resources\CustomerResource;
 use Statikbe\FilamentVoight\Resources\ProjectResource\Pages\ViewProject;
 use Statikbe\FilamentVoight\Resources\TeamResource;
@@ -58,6 +59,8 @@ class ProjectInfoListSchema
                     TextEntry::make('description')
                         ->label(voightTrans('models.project.fields.description'))
                         ->placeholder(voightTrans('models.project.fields.no_description'))
+                        ->columnSpanFull(),
+                    TagsColumn::entry()
                         ->columnSpanFull(),
                 ])
                 ->columns(3)

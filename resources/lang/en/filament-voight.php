@@ -156,6 +156,18 @@ return [
             'single_value' => 'Tag type ":type" holds a single value: pick one tag.',
             'wrong_type' => 'Tag ":tag" does not belong to tag type ":type".',
         ],
+        'actions' => [
+            'apply' => 'Apply tags',
+            'apply_help' => 'Single-value types replace the record\'s current tag of that type.',
+            'remove' => 'Remove tags',
+            'edit' => 'Edit tags',
+        ],
+        'notifications' => [
+            'applied' => 'Tags applied to :count record(s).',
+            'removed' => 'Tags removed from :count record(s).',
+            'not_applied' => 'No tags were applied',
+            'saved' => 'Tags saved.',
+        ],
         'validation' => [
             'still_assigned' => 'Records of these models still carry tags of this type: :models. Remove those tags first.',
             'several_tags' => ':count record(s) hold more than one tag of this type. Remove the extra tags first.',

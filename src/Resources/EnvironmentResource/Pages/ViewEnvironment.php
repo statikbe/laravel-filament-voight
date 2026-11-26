@@ -8,6 +8,7 @@ use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Support\Js;
 use Statikbe\FilamentVoight\Enums\VoightIcon;
 use Statikbe\FilamentVoight\Models\Environment;
+use Statikbe\FilamentVoight\Resources\Components\EditTagsAction;
 use Statikbe\FilamentVoight\Resources\EnvironmentResource;
 use Statikbe\FilamentVoight\Support\SystemDetailsPresenter;
 
@@ -30,6 +31,7 @@ class ViewEnvironment extends ViewRecord
     protected function getHeaderActions(): array
     {
         return [
+            EditTagsAction::make(),
             Action::make('copyMarkdown')
                 ->label(voightTrans('models.environment.system_details.copy_markdown'))
                 ->icon(VoightIcon::ActionCopyEnvironmentMarkdown->resolve())

@@ -11,6 +11,7 @@ use Statikbe\FilamentVoight\Enums\Severity;
 use Statikbe\FilamentVoight\Facades\FilamentVoight;
 use Statikbe\FilamentVoight\Models\AuditFinding;
 use Statikbe\FilamentVoight\Models\Package;
+use Statikbe\FilamentVoight\Resources\Components\TagsColumn;
 
 class PackageInfolistSchema
 {
@@ -44,6 +45,7 @@ class PackageInfolistSchema
                             ->badge()
                             ->state(fn ($record): string => self::activeFindingsLabel($record))
                             ->color(fn ($record): string => self::activeFindingsColor($record)),
+                        TagsColumn::entry(),
                     ])
                     ->columns(3)
                     ->columnSpanFull(),

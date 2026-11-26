@@ -6,6 +6,7 @@ use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Support\Enums\TextSize;
+use Statikbe\FilamentVoight\Resources\Components\TagsColumn;
 
 class CustomerInfoListSchema
 {
@@ -16,6 +17,8 @@ class CustomerInfoListSchema
                 TextEntry::make('name')
                     ->label(voightTrans('models.customer.fields.name'))
                     ->size(TextSize::Medium)
+                    ->inlineLabel(),
+                TagsColumn::entry()
                     ->inlineLabel(),
             ])
                 ->columnSpanFull(),

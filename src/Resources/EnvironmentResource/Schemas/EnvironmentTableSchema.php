@@ -18,9 +18,12 @@ use Statikbe\FilamentVoight\Facades\FilamentVoight;
 use Statikbe\FilamentVoight\Models\Environment;
 use Statikbe\FilamentVoight\Models\EnvironmentSystemDetail;
 use Statikbe\FilamentVoight\Models\Project;
+use Statikbe\FilamentVoight\Resources\Components\ApplyTagsBulkAction;
 use Statikbe\FilamentVoight\Resources\Components\EnvironmentNameColumn;
 use Statikbe\FilamentVoight\Resources\Components\EnvironmentStageConstraint;
 use Statikbe\FilamentVoight\Resources\Components\ProjectConstraint;
+use Statikbe\FilamentVoight\Resources\Components\RemoveTagsBulkAction;
+use Statikbe\FilamentVoight\Resources\Components\TagsColumn;
 use Statikbe\FilamentVoight\Resources\EnvironmentResource;
 use Statikbe\FilamentVoight\Resources\ProjectResource;
 use Statikbe\FilamentVoight\Support\ProjectFaviconColumn;
@@ -74,6 +77,7 @@ class EnvironmentTableSchema
                     ->placeholder(voightTrans('models.environment.never_reported'))
                     ->sortable(query: $sortBy('received_at'))
                     ->toggleable(),
+                TagsColumn::make(),
             ])
             ->persistColumnsInSession()
             ->filters([
@@ -131,6 +135,10 @@ class EnvironmentTableSchema
                             ->label(voightTrans('models.environment.fields.created_at')),
                     ]),
             ], layout: FiltersLayout::AboveContentCollapsible)
+            ->toolbarActions([
+                ApplyTagsBulkAction::make(),
+                RemoveTagsBulkAction::make(),
+            ])
             ->recordUrl(fn (Environment $record): string => EnvironmentResource::getUrl('view', [
                 'project' => $record->project,
                 'record' => $record,

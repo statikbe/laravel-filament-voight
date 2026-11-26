@@ -14,6 +14,7 @@ use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Statikbe\FilamentVoight\Models\Project;
 use Statikbe\FilamentVoight\Models\Team;
+use Statikbe\FilamentVoight\Resources\Components\TagsSection;
 use Statikbe\FilamentVoight\Resources\Components\TeamOption;
 use Statikbe\FilamentVoight\Resources\CustomerResource\Schemas\CustomerFormSchema;
 use Statikbe\FilamentVoight\Services\ProjectOnboardingService;
@@ -132,6 +133,7 @@ class ProjectFormSchema
                             }),
                     ])
                     ->extraAttributes(['class' => 'h-full [&>.fi-section]:h-full']),
+                TagsSection::make(Project::class),
             ]);
     }
 }

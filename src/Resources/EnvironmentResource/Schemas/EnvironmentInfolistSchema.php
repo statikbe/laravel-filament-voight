@@ -15,6 +15,7 @@ use Filament\Support\Enums\TextSize;
 use Illuminate\Support\Arr;
 use Statikbe\FilamentVoight\Enums\VoightIcon;
 use Statikbe\FilamentVoight\Models\Environment;
+use Statikbe\FilamentVoight\Resources\Components\TagsColumn;
 use Statikbe\FilamentVoight\Support\SystemDetailsPresenter;
 
 class EnvironmentInfolistSchema
@@ -45,6 +46,9 @@ class EnvironmentInfolistSchema
         $hasSnapshot = fn (Environment $record): bool => $record->systemDetails !== null;
 
         return $schema->components([
+            TagsColumn::entry()
+                ->columnSpanFull()
+                ->visible(fn (Environment $record): bool => $record->tags->isNotEmpty()),
             Grid::make(['default' => 2, 'md' => 3, 'xl' => 4])
                 ->columnSpanFull()
                 ->visible($hasSnapshot)

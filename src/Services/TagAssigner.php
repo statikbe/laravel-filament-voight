@@ -2,10 +2,12 @@
 
 namespace Statikbe\FilamentVoight\Services;
 
+use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Statikbe\FilamentVoight\Models\Customer;
 use Statikbe\FilamentVoight\Models\Environment;
 use Statikbe\FilamentVoight\Models\Package;
@@ -21,6 +23,18 @@ use Statikbe\FilamentVoight\Models\Vulnerability;
  */
 class TagAssigner
 {
+    /**
+     * Tagging needs the record's `update` ability; like Filament, a model without a policy is not restricted.
+     */
+    public static function userMayTag(?Authenticatable $user, Model $record): bool
+    {
+        if (Gate::getPolicyFor($record) === null) {
+            return true;
+        }
+
+        return $user !== null && Gate::forUser($user)->allows('update', $record);
+    }
+
     /**
      * Adds the tags; on a single-value type the record's existing tag of that type is replaced.
      *
