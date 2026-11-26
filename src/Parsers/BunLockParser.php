@@ -275,7 +275,12 @@ class BunLockParser implements LockfileParser
 
         while ($parts !== []) {
             $part = array_shift($parts);
-            $segments[] = str_starts_with($part, '@') && $parts !== [] ? $part . '/' . array_shift($parts) : $part;
+
+            if (str_starts_with($part, '@') && $parts !== []) {
+                $part .= '/' . array_shift($parts);
+            }
+
+            $segments[] = $part;
         }
 
         return $segments;
