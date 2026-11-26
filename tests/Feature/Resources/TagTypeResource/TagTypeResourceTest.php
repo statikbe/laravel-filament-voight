@@ -17,8 +17,9 @@ beforeEach(function () {
     $this->actingAs(new User);
 });
 
-it('lives in the settings navigation group', function () {
-    expect(TagTypeResource::getNavigationGroup())->toBe(voightTrans('navigation.settings'));
+it('lives in the settings navigation group as tags and tag types', function () {
+    expect(TagTypeResource::getNavigationGroup())->toBe(voightTrans('navigation.settings'))
+        ->and(TagTypeResource::getNavigationLabel())->toBe('Tags & tag types');
 });
 
 it('creates a tag type with a key derived from its name', function () {

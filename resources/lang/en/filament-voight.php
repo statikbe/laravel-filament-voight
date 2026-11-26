@@ -181,6 +181,7 @@ return [
         'tag_type' => [
             'label' => 'Tag type',
             'plural' => 'Tag types',
+            'navigation_label' => 'Tags & tag types',
             'all_models' => 'All',
             'delete_description' => 'This also deletes all tags of this type and their :count assignment(s).',
             'fields' => [

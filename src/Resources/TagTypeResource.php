@@ -34,6 +34,11 @@ class TagTypeResource extends Resource
         return voightTrans('navigation.settings');
     }
 
+    public static function getNavigationLabel(): string
+    {
+        return voightTrans('models.tag_type.navigation_label');
+    }
+
     public static function getModelLabel(): string
     {
         return voightTrans('models.tag_type.label');
