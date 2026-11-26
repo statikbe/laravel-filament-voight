@@ -11,18 +11,22 @@ use Statikbe\FilamentVoight\Enums\Severity;
 use Statikbe\FilamentVoight\Models\AuditFinding;
 use Statikbe\FilamentVoight\Models\Environment;
 use Statikbe\FilamentVoight\Models\Vulnerability;
+use Statikbe\FilamentVoight\Resources\Components\SaveTagRuleAction;
 use Statikbe\FilamentVoight\Resources\Concerns\HasCountedTabs;
+use Statikbe\FilamentVoight\Resources\Concerns\SavesTagRules;
 use Statikbe\FilamentVoight\Resources\ProjectResource;
 
 class ListProjects extends ListRecords
 {
     use HasCountedTabs;
+    use SavesTagRules;
 
     protected static string $resource = ProjectResource::class;
 
     protected function getHeaderActions(): array
     {
         return [
+            SaveTagRuleAction::make(),
             CreateAction::make(),
         ];
     }

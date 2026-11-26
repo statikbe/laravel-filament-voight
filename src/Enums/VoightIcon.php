@@ -149,6 +149,9 @@ enum VoightIcon: string
     #[IconDefinition(Heroicon::OutlinedTag, 'Action on a record\'s page opening a modal to edit its tags.')]
     case ActionEditTags = 'action.edit-tags';
 
+    #[IconDefinition(Heroicon::OutlinedBookmarkSquare, 'Header action on a filtered list table saving the filter as an auto-tag rule on a tag.')]
+    case ActionSaveTagRule = 'action.save-tag-rule';
+
     // -- Table filters --
 
     #[IconDefinition('heroicon-m-server-stack', 'Query-builder filter constraint on environment stage (production, staging, ...).')]

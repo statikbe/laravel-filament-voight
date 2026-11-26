@@ -173,6 +173,17 @@ return [
             'not_applied' => 'No tags were applied',
             'saved' => 'Tags saved.',
         ],
+        'rules' => [
+            'save_action' => 'Save as auto-tag rule',
+            'save_heading' => 'Save as auto-tag rule',
+            'save_description' => 'Every record this filtered table shows gets the tag, now and whenever new data arrives. Records that stop matching lose it again, unless it was set by hand.',
+            'replace' => 'Replace the rule this table was opened from (:tag)',
+            'saved' => 'Rule saved: :count record(s) match.',
+            'failed' => 'The rule was saved but its query failed',
+            'not_allowed' => 'You may not add rules to this tag.',
+            'tab' => 'Tab: :tab',
+            'search' => 'Search: :search',
+        ],
         'validation' => [
             'still_assigned' => 'Records of these models still carry tags of this type: :models. Remove those tags first.',
             'several_tags' => ':count record(s) hold more than one tag of this type. Remove the extra tags first.',

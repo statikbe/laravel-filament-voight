@@ -16,7 +16,9 @@ use Livewire\Attributes\Url;
 use Statikbe\FilamentVoight\Enums\EnvironmentStage;
 use Statikbe\FilamentVoight\Facades\FilamentVoight;
 use Statikbe\FilamentVoight\Models\Environment;
+use Statikbe\FilamentVoight\Resources\Components\SaveTagRuleAction;
 use Statikbe\FilamentVoight\Resources\Concerns\HasCountedTabs;
+use Statikbe\FilamentVoight\Resources\Concerns\SavesTagRules;
 use Statikbe\FilamentVoight\Resources\EnvironmentResource\Schemas\EnvironmentTableSchema;
 use Statikbe\FilamentVoight\Resources\ProjectResource;
 
@@ -29,6 +31,7 @@ class ListEnvironments extends Page implements HasTable
     use HasCountedTabs;
     use HasTabs;
     use InteractsWithTable;
+    use SavesTagRules;
 
     protected static bool $shouldRegisterNavigation = false;
 
@@ -36,6 +39,18 @@ class ListEnvironments extends Page implements HasTable
 
     #[Url(as: 'tab')]
     public ?string $activeTab = null;
+
+    /**
+     * @var array<string, mixed>|null
+     */
+    #[Url(as: 'filters')]
+    public ?array $tableFilters = null;
+
+    /**
+     * @var ?string
+     */
+    #[Url(as: 'search')]
+    public $tableSearch = '';
 
     public function mount(): void
     {
@@ -97,5 +112,12 @@ class ListEnvironments extends Page implements HasTable
         return EnvironmentTableSchema::configure(
             $table->query(static::getBaseQuery())->modifyQueryUsing($this->modifyQueryWithActiveTab(...)),
         );
+    }
+
+    protected function getHeaderActions(): array
+    {
+        return [
+            SaveTagRuleAction::make(),
+        ];
     }
 }
