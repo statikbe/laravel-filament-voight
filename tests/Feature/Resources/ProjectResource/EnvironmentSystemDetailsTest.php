@@ -248,3 +248,16 @@ it('shows the query builder in the relation manager and only lists the project e
         ->toContain('environment_stage')
         ->not->toContain('project', 'customer', 'team');
 });
+
+it('sorts environments by php version with unreported ones last', function (string $direction) {
+    $older = Environment::factory()->create();
+    EnvironmentSystemDetail::factory()->for($older)->create(['php_version' => '8.9.0']);
+    $newer = Environment::factory()->create();
+    EnvironmentSystemDetail::factory()->for($newer)->create(['php_version' => '8.10.0']);
+    $never = Environment::factory()->create();
+    $versioned = $direction === 'asc' ? [$older, $newer] : [$newer, $older];
+
+    Livewire::test(ListEnvironments::class)
+        ->sortTable('systemDetails.php_version', $direction)
+        ->assertCanSeeTableRecords([...$versioned, $never], inOrder: true);
+})->with(['asc', 'desc']);

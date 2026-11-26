@@ -24,6 +24,7 @@ use Statikbe\FilamentVoight\Resources\Components\ProjectConstraint;
 use Statikbe\FilamentVoight\Resources\EnvironmentResource;
 use Statikbe\FilamentVoight\Resources\ProjectResource;
 use Statikbe\FilamentVoight\Support\ProjectFaviconColumn;
+use Statikbe\FilamentVoight\Support\VersionKey;
 
 class EnvironmentTableSchema
 {
@@ -38,10 +39,10 @@ class EnvironmentTableSchema
         $projectIds = fn (): Builder => ProjectResource::getEloquentQuery()->select('id');
 
         // Sorts through a correlated subquery so no join is needed next to the eager-loaded relation.
-        $sortBy = fn (string $column): Closure => fn (Builder $query, string $direction): Builder => $query->orderBy(
-            EnvironmentSystemDetail::query()->select($column)->whereColumn('environment_id', (new $environmentModel)->getQualifiedKeyName()),
-            $direction,
-        );
+        $systemDetail = fn (string $column): Builder => EnvironmentSystemDetail::query()
+            ->select($column)
+            ->whereColumn('environment_id', (new $environmentModel)->getQualifiedKeyName());
+        $sortBy = fn (string $column): Closure => fn (Builder $query, string $direction): Builder => $query->orderBy($systemDetail($column), $direction);
 
         return $table
             ->modifyQueryUsing(fn (Builder $query): Builder => $query->with(['project', 'systemDetails']))
@@ -65,7 +66,7 @@ class EnvironmentTableSchema
                 TextColumn::make('systemDetails.php_version')
                     ->label(voightTrans('models.environment.fields.php_version'))
                     ->placeholder('—')
-                    ->sortable(query: $sortBy('php_version'))
+                    ->sortable(query: fn (Builder $query, string $direction): Builder => VersionKey::orderBy($query, $systemDetail('php_version_sort'), $direction))
                     ->toggleable(),
                 TextColumn::make('systemDetails.received_at')
                     ->label(voightTrans('models.environment.fields.system_details_received_at'))

@@ -27,6 +27,7 @@ use Statikbe\FilamentVoight\Parsers\PackageLockParser;
 use Statikbe\FilamentVoight\Parsers\UnsupportedLockfileException;
 use Statikbe\FilamentVoight\Parsers\YarnBerryLockParser;
 use Statikbe\FilamentVoight\Parsers\YarnLockParser;
+use Statikbe\FilamentVoight\Support\VersionKey;
 
 /**
  * @phpstan-import-type ParsedPackage from LockfileParser
@@ -266,6 +267,7 @@ class ProcessLockFilesJob implements ShouldQueue
                     'environment_id' => $environmentId,
                     'package_id' => $packageModels[self::packageKey($parsed)]->id,
                     'version' => $parsed['version'],
+                    'version_sort' => VersionKey::for($parsed['version']),
                     'is_direct' => $parsed['is_direct'],
                     'is_dev' => $parsed['is_dev'],
                     'created_at' => $now,

@@ -1,5 +1,6 @@
 <?php
 
+use Illuminate\Support\Facades\DB;
 use Statikbe\FilamentVoight\Enums\Framework;
 use Statikbe\FilamentVoight\Mcp\Tools\FindPackageUsageTool;
 use Statikbe\FilamentVoight\Mcp\Tools\GetProjectVulnerabilitiesTool;
@@ -427,6 +428,34 @@ describe('find_package_usage', function () {
         $paged = walkPages(FindPackageUsageTool::class, ['package' => 'lodash', 'version' => '<4.17.21'], 'usages', 2);
 
         expect(array_column($paged, 'project_code'))->toBe(['A', 'C', 'D', 'E']);
+    });
+
+    it('counts only non-dev usages when dev is excluded', function () {
+        $lodash = Package::query()->where('name', 'lodash')->firstOrFail();
+        EnvironmentPackage::factory()->for(mcpEnvironment('C'))->for($lodash)->create(['version' => '4.0.0', 'is_dev' => false]);
+
+        $result = structuredContent(VoightLocalServer::tool(FindPackageUsageTool::class, ['package' => 'lodash', 'include_dev' => false, 'limit' => 1]));
+
+        expect($result['total'])->toBe(2)
+            ->and($result['next_offset'])->toBe(1)
+            ->and(array_column($result['usages'], 'project_code'))->toBe(['A']);
+    });
+
+    it('groups, filters and pages the usages in sql', function () {
+        $lodash = Package::query()->where('name', 'lodash')->firstOrFail();
+        foreach (range(1, 12) as $index) {
+            EnvironmentPackage::factory()->for(mcpEnvironment("P{$index}"))->for($lodash)->create(['version' => '4.0.0']);
+        }
+        DB::enableQueryLog();
+
+        $result = structuredContent(VoightLocalServer::tool(FindPackageUsageTool::class, ['package' => 'lodash', 'version' => '<4.17.21', 'limit' => 5]));
+
+        $usageQueries = collect(DB::getQueryLog())->pluck('query')->filter(fn (string $sql): bool => str_contains($sql, 'voight_environment_packages'));
+        expect($result['total'])->toBe(13)
+            ->and($result['usages'])->toHaveCount(5)
+            ->and($usageQueries)->not->toBeEmpty()
+            ->and($usageQueries->every(fn (string $sql): bool => str_contains($sql, 'group by') || str_contains($sql, 'count(')))->toBeTrue()
+            ->and($usageQueries->contains(fn (string $sql): bool => str_contains($sql, 'limit')))->toBeTrue();
     });
 
     it('accepts a version range', function () {

@@ -1,0 +1,45 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+use Statikbe\FilamentVoight\Services\VersionKeyRebuilder;
+
+return new class extends Migration
+{
+    public function up(): void
+    {
+        // The column is guarded, the backfill is not: a backfill that failed after the column was
+        // added (MySQL commits DDL at once) is retried by the next migrate.
+        if (! Schema::hasColumn('voight_audit_findings', 'installed_version_sort')) {
+            $driver = Schema::getConnection()->getDriverName();
+
+            Schema::table('voight_audit_findings', function (Blueprint $table) use ($driver) {
+                // The key must compare byte by byte, see Statikbe\FilamentVoight\Support\VersionKey.
+                $column = $table->string('installed_version_sort', 191)->nullable()->after('installed_version');
+
+                match ($driver) {
+                    'mysql', 'mariadb' => $column->charset('ascii')->collation('ascii_bin'),
+                    'pgsql' => $column->collation('C'),
+                    default => null,
+                };
+
+                $table->index(['package_id', 'installed_version_sort'], 'voight_audit_findings_version_sort_index');
+            });
+        }
+
+        app(VersionKeyRebuilder::class)->rebuild('voight_audit_findings');
+    }
+
+    public function down(): void
+    {
+        if (! Schema::hasColumn('voight_audit_findings', 'installed_version_sort')) {
+            return;
+        }
+
+        Schema::table('voight_audit_findings', function (Blueprint $table) {
+            $table->dropIndex('voight_audit_findings_version_sort_index');
+            $table->dropColumn('installed_version_sort');
+        });
+    }
+};

@@ -274,6 +274,13 @@ Response `204 No Content`. Voight keeps only the latest snapshot per environment
 | `voight:run-osv-scan` | Dispatch OSV scan jobs (all or filtered) |
 | `voight:fetch-favicons [--project=] [--force]` | Fetch project favicons from their environment URLs |
 | `voight:icons [--json]` | List every icon with its alias, default, current value and description |
+| `voight:rebuild-version-keys` | Recompute the sortable version keys behind version filters and sorting |
+
+### Version keys
+
+Installed versions, finding versions and PHP versions each have a sortable key column (`version_sort`, `installed_version_sort`, `php_version_sort`), so version ranges, counts, paging and sorting run in SQL. The migrations that add the columns fill them; `voight:rebuild-version-keys` recomputes them after a release that changes the key rules. Versions that are not comparable (`dev-main`, git dependencies) have no key: they never match a version range and sort last.
+
+If you configure your own model classes for installed packages, audit findings or environment system details, they must use the `Statikbe\FilamentVoight\Models\Concerns\HasVersionKeys` trait (or extend the package models), so new rows get their key.
 
 ### `voight:run-osv-scan`
 

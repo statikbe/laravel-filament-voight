@@ -10,12 +10,14 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Statikbe\FilamentVoight\Enums\PackageType;
+use Statikbe\FilamentVoight\Models\Concerns\HasVersionKeys;
 
 /**
  * @property string $id
  * @property string $environment_id
  * @property string $package_id
  * @property string $version
+ * @property string|null $version_sort
  * @property bool $is_direct
  * @property bool $is_dev
  * @property-read EnvironmentPackageDependency|null $pivot Set when loaded through children() or parents()
@@ -26,10 +28,19 @@ class EnvironmentPackage extends Model
 {
     use HasFactory;
     use HasUlids;
+    use HasVersionKeys;
 
     protected $table = 'voight_environment_packages';
 
     protected $guarded = [];
+
+    /**
+     * @return array<string, string>
+     */
+    protected function versionKeyColumns(): array
+    {
+        return ['version' => 'version_sort'];
+    }
 
     /**
      * @return array<string, string>

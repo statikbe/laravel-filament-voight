@@ -106,3 +106,19 @@ it('filters installations by installed version range', function (array $settings
     'v prefix on bound' => [['min_operator' => '>=', 'min_version' => 'v4.1.0', 'max_operator' => '<', 'max_version' => 'v5.3.1'], ['v4.1.0']],
     'no match' => [['min_operator' => '>', 'min_version' => '9.0.0'], []],
 ]);
+
+it('keeps installations without a comparable version when the range is inverted', function () {
+    $package = Package::factory()->create();
+    $installations = collect(['2.3.2', '3.0.0', 'dev-main'])->mapWithKeys(fn (string $version): array => [
+        $version => EnvironmentPackage::factory()->for(Environment::factory()->create())->for($package)->create(['version' => $version]),
+    ]);
+
+    Livewire::test(InstallationsRelationManager::class, [
+        'ownerRecord' => $package,
+        'pageClass' => ViewPackage::class,
+    ])
+        ->set('tableDeferredFilters.queryBuilder.rules', queryBuilderRule('installed_version', 'inRange.inverse', ['min_operator' => '>=', 'min_version' => '3.0.0', 'max_version' => null]))
+        ->call('applyTableFilters')
+        ->assertCanSeeTableRecords($installations->only(['2.3.2', 'dev-main']))
+        ->assertCanNotSeeTableRecords($installations->only(['3.0.0']));
+});

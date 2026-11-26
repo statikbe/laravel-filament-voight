@@ -292,6 +292,13 @@ it('imports a bun lockfile with its edges and no warning', function () {
         ->and($nestedMs->version)->toBe('2.1.3');
 });
 
+it('stores a version key for every imported package', function () {
+    syncLockfiles(['p/production/bun.lock' => lockfileFixture('bun/bun.lock')]);
+
+    expect(EnvironmentPackage::whereNull('version_sort')->pluck('version')->all())
+        ->toBe(['github:jonschlinkert/is-even#585f800']);
+});
+
 it('warns about an unreadable bun lockfile but still imports the rest', function () {
     $sync = syncLockfiles([
         'p/production/bun.lock' => 'not json',

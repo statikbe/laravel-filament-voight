@@ -4,6 +4,17 @@ All notable changes to `laravel-filament-voight` will be documented in this file
 
 ## Unreleased
 
+### Changed 2026-11-27
+- Version filters, counts, paging and sorting run in SQL on new sortable version key columns (`voight_environment_packages.version_sort`, `voight_audit_findings.installed_version_sort`, `voight_environment_system_details.php_version_sort`). Publish and run the three new migrations; they fill the keys of existing rows.
+- New `php artisan voight:rebuild-version-keys` recomputes the keys. Run it after any release that changes the version key rules.
+- Custom model classes for installed packages, audit findings or system details must use the new `HasVersionKeys` trait.
+- `1.0` now equals `1.0.0` in version filters (was lower).
+- Composer branch aliases such as `7.4.x-dev` fall inside `>=7.4 <7.5`. `dev-main` and git dependencies never match a version range and sort last.
+- Pre-releases follow semver order (`beta.2 < beta.10`, `RC2 < RC10`); Composer `-p1` patches sort after the release.
+- Version filters on bounds that are not versions (e.g. `dev-main`) are rejected.
+- MCP `find_package_usage` groups, counts and pages in SQL.
+- Project table: the Laravel/Filament and PHP version columns sort by full version (was major.minor).
+
 ### Changed 2026-11-26
 - Every icon is configurable. Icons are cases of the new `VoightIcon` enum, exposed as Filament icon aliases (`voight::…`) and overridable via the new `icons` config key or `FilamentIcon::register()`. `php artisan voight:icons [--json]` lists them with a description of each.
 - **Breaking:** the package enums' `icon()` / `getIcon()` return `string | BackedEnum | Htmlable` instead of `string`; `McpClient::$icon` is widened the same way.

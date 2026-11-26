@@ -3,7 +3,6 @@
 namespace Statikbe\FilamentVoight\Services\Mcp;
 
 use Illuminate\Database\Query\Builder;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 use Statikbe\FilamentVoight\Mcp\McpAccess;
@@ -17,6 +16,9 @@ use Statikbe\FilamentVoight\Support\VersionConstraint;
 class PackageUsageService
 {
     /**
+     * One usage per project, environment and version, however many nested copies are installed:
+     * direct when any copy is, dev only when every copy is.
+     *
      * @return array{usages: array<int, array<string, mixed>>, total: int, truncated: bool, next_offset: int|null}
      *
      * @throws McpToolError
@@ -25,34 +27,41 @@ class PackageUsageService
     {
         $constraint = self::versionConstraint($versionFilter);
 
-        $query = $this->installations($packageName, $type)
+        $usages = $this->installations($packageName, $type, $constraint)
             ->join('voight_projects as p', 'p.id', '=', 'e.project_id')
-            ->orderBy('p.project_code')
-            ->orderBy('e.name')
-            ->orderBy('ep.version');
+            ->groupBy('p.project_code', 'e.name', 'pk.type', 'ep.version')
+            ->select(['p.project_code', 'e.name as environment', 'pk.type', 'ep.version'])
+            ->selectRaw('max(case when ep.is_direct then 1 else 0 end) as is_direct, min(case when ep.is_dev then 1 else 0 end) as is_dev');
 
         if (! $access->seesEverything) {
-            $query->whereIn('p.id', $access->visibleProjects()->select('voight_projects.id'));
+            $usages->whereIn('p.id', $access->visibleProjects()->select('voight_projects.id'));
         }
 
-        $usages = $query->get(['p.project_code', 'e.name as environment', 'pk.type', 'ep.version', 'ep.is_direct', 'ep.is_dev'])
-            ->filter(fn (object $row): bool => $constraint === null || $constraint->matches($row->version))
-            // One entry per project, environment and version, however many nested copies are installed.
-            ->groupBy(fn (object $row): string => $row->project_code . '|' . $row->environment . '|' . $row->type . '|' . $row->version)
-            ->map(fn (Collection $copies): array => [
-                'project_code' => $copies->first()->project_code,
-                'environment' => $copies->first()->environment,
-                'type' => $copies->first()->type,
-                'version' => $copies->first()->version,
-                'is_direct' => $copies->contains(fn (object $copy): bool => (bool) $copy->is_direct),
-                'is_dev' => $copies->every(fn (object $copy): bool => (bool) $copy->is_dev),
-            ])
-            ->filter(fn (array $usage): bool => $includeDev || ! $usage['is_dev'])
-            ->values();
+        if (! $includeDev) {
+            $usages->havingRaw('min(case when ep.is_dev then 1 else 0 end) = 0');
+        }
+
+        $total = DB::query()->fromSub($usages, 'usages')->count();
+
+        $rows = $usages
+            ->orderBy('p.project_code')
+            ->orderBy('e.name')
+            ->orderBy('ep.version')
+            ->offset($page->offset)
+            ->limit($page->limit)
+            ->get()
+            ->map(fn (object $row): array => [
+                'project_code' => $row->project_code,
+                'environment' => $row->environment,
+                'type' => $row->type,
+                'version' => $row->version,
+                'is_direct' => (bool) $row->is_direct,
+                'is_dev' => (bool) $row->is_dev,
+            ]);
 
         return [
-            'usages' => $page->slice($usages)->all(),
-            ...$page->meta($usages->count()),
+            'usages' => $rows->all(),
+            ...$page->meta($total),
         ];
     }
 
@@ -75,27 +84,22 @@ class PackageUsageService
     }
 
     /**
-     * Ids of the projects with the package installed in any environment, in a version matching the
-     * constraint. Visibility is left to the caller's project query.
-     *
-     * @return array<int, int>
+     * The ids of the projects with the package installed in any environment, in a version matching the
+     * constraint, as a subquery for `whereIn`. Visibility is left to the caller's project query.
      */
-    public function projectIdsWithPackage(string $packageName, ?string $type, ?VersionConstraint $constraint): array
+    public function projectIdsWithPackage(string $packageName, ?string $type, ?VersionConstraint $constraint): Builder
     {
-        return $this->installations($packageName, $type)
-            ->get(['e.project_id', 'ep.version'])
-            ->filter(fn (object $row): bool => $constraint === null || $constraint->matches($row->version))
-            ->pluck('project_id')
-            ->unique()
-            ->all();
+        return $this->installations($packageName, $type, $constraint)->select('e.project_id')->distinct();
     }
 
-    private function installations(string $packageName, ?string $type): Builder
+    private function installations(string $packageName, ?string $type, ?VersionConstraint $constraint): Builder
     {
-        return DB::table('voight_environment_packages as ep')
+        $query = DB::table('voight_environment_packages as ep')
             ->join('voight_packages as pk', 'pk.id', '=', 'ep.package_id')
             ->join('voight_environments as e', 'e.id', '=', 'ep.environment_id')
             ->where('pk.name', $packageName)
             ->when($type, fn (Builder $query) => $query->where('pk.type', $type));
+
+        return $constraint === null ? $query : $constraint->apply($query, 'ep.version_sort');
     }
 }

@@ -6,12 +6,14 @@ use Filament\Forms\Components\Select;
 use Filament\Schemas\Components\Grid;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Arr;
 use Statikbe\FilamentVoight\Enums\Severity;
+use Statikbe\FilamentVoight\Facades\FilamentVoight;
 use Statikbe\FilamentVoight\Models\AuditFinding;
+use Statikbe\FilamentVoight\Models\Environment;
 use Statikbe\FilamentVoight\Models\Package;
 use Statikbe\FilamentVoight\Models\Vulnerability;
-use Statikbe\FilamentVoight\Services\Mcp\PackageUsageService;
 
 /**
  * Matches projects with any of the selected packages installed in any environment, optionally within a version range.
@@ -76,35 +78,56 @@ class ProjectPackageOperator extends InstalledVersionRangeOperator
         $severities = $this->selectedSeverities();
 
         $projectIds = $severities === []
-            ? $packages->flatMap(fn (Package $package): array => app(PackageUsageService::class)->projectIdsWithPackage(
-                $package->name,
-                $package->type->value,
-                $this->versionConstraint(),
-            ))->unique()->all()
-            : $this->projectIdsWithCurrentFindings($packages, $severities);
+            ? $this->projectsWithPackages($packages)
+            : $this->projectsWithCurrentFindings($packages, $severities);
 
         return $query->whereIn($query->qualifyColumn('id'), $projectIds, not: $this->isInverse());
     }
 
     /**
+     * Project ids with any of the packages installed in the version range.
+     *
+     * @param  Collection<int, Package>  $packages
+     * @return Builder<Environment>
+     */
+    private function projectsWithPackages(Collection $packages): Builder
+    {
+        $installed = FilamentVoight::config()->getEnvironmentPackageModel()::query()->whereIn('package_id', $packages->modelKeys());
+        $this->versionConstraint()->apply($installed, $installed->qualifyColumn('version_sort'));
+
+        return $this->projectIdsOfEnvironments($installed->select('environment_id'));
+    }
+
+    /**
+     * Project ids with a current finding of one of the severities on a selected package, installed in the version range.
+     *
      * @param  Collection<int, Package>  $packages
      * @param  array<int, Severity>  $severities
-     * @return array<int, int>
+     * @return Builder<Environment>
      */
-    private function projectIdsWithCurrentFindings(Collection $packages, array $severities): array
+    private function projectsWithCurrentFindings(Collection $packages, array $severities): Builder
     {
-        $constraint = $this->versionConstraint();
-
-        return AuditFinding::constrainToCurrent(AuditFinding::query())
+        $findings = AuditFinding::constrainToCurrent(AuditFinding::query())
             ->whereIn('package_id', $packages->modelKeys())
-            ->whereHas('vulnerability', fn (Builder $vulnerability) => Vulnerability::constrainToSeverities($vulnerability, ...$severities))
-            ->with('auditRun.environment:id,project_id')
-            ->get()
-            ->filter(fn (AuditFinding $finding): bool => $constraint->matches($finding->installed_version))
-            ->map(fn (AuditFinding $finding): int => $finding->auditRun->environment->project_id)
-            ->unique()
-            ->values()
-            ->all();
+            ->whereHas('vulnerability', fn (Builder $vulnerability) => Vulnerability::constrainToSeverities($vulnerability, ...$severities));
+        $this->versionConstraint()->apply($findings, $findings->qualifyColumn('installed_version_sort'));
+
+        $environmentIds = FilamentVoight::config()->getAuditRunModel()::query()
+            ->select('environment_id')
+            ->whereIn('id', $findings->select('audit_run_id'));
+
+        return $this->projectIdsOfEnvironments($environmentIds);
+    }
+
+    /**
+     * @param  Builder<covariant Model>  $environmentIds  a query selecting environment ids
+     * @return Builder<Environment>
+     */
+    private function projectIdsOfEnvironments(Builder $environmentIds): Builder
+    {
+        return FilamentVoight::config()->getEnvironmentModel()::query()
+            ->select('project_id')
+            ->whereIn('id', $environmentIds);
     }
 
     /**

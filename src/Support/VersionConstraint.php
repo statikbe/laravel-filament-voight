@@ -2,19 +2,20 @@
 
 namespace Statikbe\FilamentVoight\Support;
 
+use Illuminate\Contracts\Database\Query\Builder;
 use InvalidArgumentException;
 
 /**
  * A version filter of one or more comparisons that must all hold, such as `<4.17.21` or `>=7.0 <7.4`.
- * Versions cannot be ordered in SQL, so callers fetch the candidate versions and match them here with
- * PHP's version_compare (numeric parts, pre-releases before the release). A leading `v` is ignored.
+ * apply() compares a VersionKey column in SQL, so a bound must be a version VersionKey can encode.
+ * A leading `v` is ignored.
  */
 final readonly class VersionConstraint
 {
     private const string OPERATOR = '<=|>=|==|<|>|=';
 
     /**
-     * @param  array<int, array{0: string, 1: string}>  $comparisons  [operator, normalized version] pairs
+     * @param  array<int, array{0: string, 1: string}>  $comparisons  [operator, version key] pairs
      */
     private function __construct(private array $comparisons) {}
 
@@ -44,6 +45,8 @@ final readonly class VersionConstraint
      *
      * @param  array{0: string, 1: string}|null  $lower
      * @param  array{0: string, 1: string}|null  $upper
+     *
+     * @throws InvalidArgumentException when a bound cannot be compared
      */
     public static function between(?array $lower, ?array $upper): self
     {
@@ -53,29 +56,33 @@ final readonly class VersionConstraint
         ));
     }
 
-    public function matches(string $version): bool
+    /**
+     * Restrict the query to rows whose version key column satisfies every comparison. Rows without a
+     * key (versions that cannot be compared) never match.
+     *
+     * @template TBuilder of Builder
+     *
+     * @param  TBuilder  $query
+     * @return TBuilder
+     */
+    public function apply(Builder $query, string $column): Builder
     {
-        $version = self::normalize($version);
-
-        foreach ($this->comparisons as [$operator, $bound]) {
-            if (! version_compare($version, $bound, $operator)) {
-                return false;
-            }
+        foreach ($this->comparisons as [$operator, $key]) {
+            $query->where($column, $operator, $key);
         }
 
-        return true;
+        return $query;
     }
 
     /**
      * @return array{0: string, 1: string}
+     *
+     * @throws InvalidArgumentException when the version cannot be compared
      */
     private static function comparison(string $operator, string $version): array
     {
-        return [$operator === '=' ? '==' : $operator, self::normalize($version)];
-    }
+        $key = VersionKey::for($version) ?? throw new InvalidArgumentException("Invalid version `{$version}`.");
 
-    private static function normalize(string $version): string
-    {
-        return ltrim($version, 'vV');
+        return [$operator === '==' ? '=' : $operator, $key];
     }
 }
