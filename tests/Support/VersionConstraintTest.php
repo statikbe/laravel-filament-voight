@@ -3,8 +3,15 @@
 use Statikbe\FilamentVoight\Models\EnvironmentPackage;
 use Statikbe\FilamentVoight\Support\VersionConstraint;
 
+function matchesInSql(VersionConstraint $constraint, string $version): bool
+{
+    $installed = EnvironmentPackage::factory()->create(['version' => $version]);
+
+    return $constraint->apply(EnvironmentPackage::query()->whereKey($installed->getKey()), 'version_sort')->exists();
+}
+
 it('matches versions against every comparison', function (string $constraint, string $version, bool $matches) {
-    expect(VersionConstraint::parse($constraint)->matches($version))->toBe($matches);
+    expect(matchesInSql(VersionConstraint::parse($constraint), $version))->toBe($matches);
 })->with([
     'below' => ['<4.17.21', '4.17.15', true],
     'below, equal' => ['<4.17.21', '4.17.21', false],
@@ -32,9 +39,9 @@ it('rejects malformed constraints', function (string $constraint) {
 it('builds a constraint from optional lower and upper bounds', function () {
     $constraint = VersionConstraint::between(['>=', 'v2.0'], ['<', '3.0']);
 
-    expect($constraint->matches('2.5'))->toBeTrue()
-        ->and($constraint->matches('3.0'))->toBeFalse()
-        ->and(VersionConstraint::between(null, ['<', '3.0'])->matches('1.0'))->toBeTrue();
+    expect(matchesInSql($constraint, '2.5'))->toBeTrue()
+        ->and(matchesInSql($constraint, '3.0'))->toBeFalse()
+        ->and(matchesInSql(VersionConstraint::between(null, ['<', '3.0']), '1.0'))->toBeTrue();
 });
 
 /**

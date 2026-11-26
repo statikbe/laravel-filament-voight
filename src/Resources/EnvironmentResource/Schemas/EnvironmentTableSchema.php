@@ -24,6 +24,7 @@ use Statikbe\FilamentVoight\Resources\Components\ProjectConstraint;
 use Statikbe\FilamentVoight\Resources\EnvironmentResource;
 use Statikbe\FilamentVoight\Resources\ProjectResource;
 use Statikbe\FilamentVoight\Support\ProjectFaviconColumn;
+use Statikbe\FilamentVoight\Support\VersionKey;
 
 class EnvironmentTableSchema
 {
@@ -65,7 +66,11 @@ class EnvironmentTableSchema
                 TextColumn::make('systemDetails.php_version')
                     ->label(voightTrans('models.environment.fields.php_version'))
                     ->placeholder('—')
-                    ->sortable(query: $sortBy('php_version'))
+                    ->sortable(query: fn (Builder $query, string $direction): Builder => VersionKey::orderBy(
+                        $query,
+                        EnvironmentSystemDetail::query()->select('php_version_sort')->whereColumn('environment_id', (new $environmentModel)->getQualifiedKeyName()),
+                        $direction,
+                    ))
                     ->toggleable(),
                 TextColumn::make('systemDetails.received_at')
                     ->label(voightTrans('models.environment.fields.system_details_received_at'))

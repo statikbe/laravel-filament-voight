@@ -15,7 +15,7 @@ final readonly class VersionConstraint
     private const string OPERATOR = '<=|>=|==|<|>|=';
 
     /**
-     * @param  array<int, array{0: string, 1: string, 2: string}>  $comparisons  [operator, normalized version, version key]
+     * @param  array<int, array{0: string, 1: string}>  $comparisons  [operator, version key] pairs
      */
     private function __construct(private array $comparisons) {}
 
@@ -67,28 +67,15 @@ final readonly class VersionConstraint
      */
     public function apply(Builder $query, string $column): Builder
     {
-        foreach ($this->comparisons as [$operator, , $key]) {
-            $query->where($column, $operator === '==' ? '=' : $operator, $key);
+        foreach ($this->comparisons as [$operator, $key]) {
+            $query->where($column, $operator, $key);
         }
 
         return $query;
     }
 
-    public function matches(string $version): bool
-    {
-        $version = self::normalize($version);
-
-        foreach ($this->comparisons as [$operator, $bound]) {
-            if (! version_compare($version, $bound, $operator)) {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
     /**
-     * @return array{0: string, 1: string, 2: string}
+     * @return array{0: string, 1: string}
      *
      * @throws InvalidArgumentException when the version cannot be compared
      */
@@ -96,11 +83,6 @@ final readonly class VersionConstraint
     {
         $key = VersionKey::for($version) ?? throw new InvalidArgumentException("Invalid version `{$version}`.");
 
-        return [$operator === '=' ? '==' : $operator, self::normalize($version), $key];
-    }
-
-    private static function normalize(string $version): string
-    {
-        return ltrim($version, 'vV');
+        return [$operator === '==' ? '=' : $operator, $key];
     }
 }

@@ -2,6 +2,8 @@
 
 namespace Statikbe\FilamentVoight\Support;
 
+use Illuminate\Contracts\Database\Query\Builder;
+
 /**
  * Encodes a version into a key whose byte order is version order, so versions can be compared and
  * sorted in SQL. The key is four zero-padded numeric parts (`0000000001.0000000002.0000000003.0000000000`)
@@ -43,6 +45,36 @@ final class VersionKey
         $suffix = ($matches[2] ?? '') . ($matches[3] ?? '');
 
         return self::key(explode('.', $matches[1]), $suffix === '' ? [] : explode('.', $suffix));
+    }
+
+    /**
+     * Order by a subquery selecting one key, with versions without a key (or no row) last in both directions.
+     *
+     * @template TBuilder of Builder
+     *
+     * @param  TBuilder  $query
+     * @return TBuilder
+     */
+    public static function orderBy(Builder $query, Builder $key, string $direction): Builder
+    {
+        $sql = $key->toSql();
+        $bindings = $key->getBindings();
+        $direction = strtolower($direction) === 'desc' ? 'desc' : 'asc';
+
+        return $query
+            ->orderByRaw("({$sql}) is null", $bindings)
+            ->orderByRaw("({$sql}) {$direction}", $bindings);
+    }
+
+    /**
+     * The 43-character numeric part of a key: every key of that version, its pre-releases included,
+     * sorts at or after it, and before the core of any higher version.
+     */
+    public static function core(string $version): ?string
+    {
+        $key = self::for($version);
+
+        return $key === null ? null : substr($key, 0, 4 * self::PART_DIGITS + 3);
     }
 
     /**

@@ -11,13 +11,15 @@ use Statikbe\FilamentVoight\Facades\FilamentVoight;
 use Statikbe\FilamentVoight\Models\EnvironmentPackage;
 use Statikbe\FilamentVoight\Models\EnvironmentSystemDetail;
 use Statikbe\FilamentVoight\Models\Project;
+use Statikbe\FilamentVoight\Support\VersionKey;
 
 /**
  * A project's stack (framework versions, PHP version, upgrade status) as read from its representative
  * environment: the first environment of the highest stage, in EnvironmentStage order.
  *
- * Versions are compared in SQL through a numeric cast (`REPLACE(version, 'v', '') + 0`): "12.3.0" becomes
- * 12.3 and "dev-main" becomes 0. That orders by major.minor only, which is enough for sorting and major filters.
+ * Versions are sorted and filtered on their VersionKey columns. Only the upgrade status uses a numeric cast
+ * (`REPLACE(version, 'v', '') + 0`, so "12.3.0" is 12.3 and "dev-main" is 0): it compares majors only, like
+ * packagesBehind().
  */
 class ProjectStackService
 {
@@ -112,9 +114,9 @@ class ProjectStackService
      */
     public static function orderByVersion(Builder $query, Framework $framework, string $direction): Builder
     {
-        $version = self::installedPackages($framework)->select('version')->limit(1);
+        $installed = self::installedPackages($framework);
 
-        return $query->orderByRaw("REPLACE(({$version->toSql()}), 'v', '') + 0 " . self::normalizeDirection($direction), $version->getBindings());
+        return VersionKey::orderBy($query, $installed->select($installed->qualifyColumn('version_sort'))->limit(1), $direction);
     }
 
     /**
@@ -123,9 +125,7 @@ class ProjectStackService
      */
     public static function orderByPhpVersion(Builder $query, string $direction): Builder
     {
-        $version = self::phpDetails()->select('php_version')->limit(1);
-
-        return $query->orderByRaw("({$version->toSql()}) + 0 " . self::normalizeDirection($direction), $version->getBindings());
+        return VersionKey::orderBy($query, self::phpDetails()->select('php_version_sort')->limit(1), $direction);
     }
 
     /**
@@ -137,7 +137,16 @@ class ProjectStackService
     {
         return $query->whereExists(self::phpDetails()->where(function (Builder $details) use ($versions): void {
             foreach ($versions as $version) {
-                $details->orWhere('php_version', $version)->orWhere('php_version', 'like', "{$version}.%");
+                $parts = explode('.', $version);
+                $parts[array_key_last($parts)] = (string) ((int) end($parts) + 1);
+                $lower = VersionKey::core($version);
+                $upper = VersionKey::core(implode('.', $parts));
+
+                if ($lower !== null && $upper !== null) {
+                    $details->orWhere(fn (Builder $range): Builder => $range
+                        ->where('php_version_sort', '>=', $lower)
+                        ->where('php_version_sort', '<', $upper));
+                }
             }
         }));
     }

@@ -169,3 +169,40 @@ it('sorts projects by version', function (string $direction) {
         ->sortTable('php_version', $direction)
         ->assertCanSeeTableRecords($order, inOrder: true);
 })->with(['asc', 'desc']);
+
+it('sorts projects by full version, not only major.minor', function () {
+    $older = stackProject(laravel: '12.9.0');
+    $newer = stackProject(laravel: '12.10.1');
+
+    Livewire::test(ListProjects::class)
+        ->toggleAllTableColumns()
+        ->sortTable('laravel_version', 'asc')
+        ->assertCanSeeTableRecords([$older, $newer], inOrder: true);
+});
+
+it('sorts projects without a version last', function (string $direction) {
+    $old = stackProject(laravel: '11.0.0', php: '8.2.1');
+    $new = stackProject(laravel: '12.0.0', php: '8.4.1');
+    $branch = stackProject(laravel: 'dev-main');
+    $none = stackProject();
+    $versioned = $direction === 'asc' ? [$old, $new] : [$new, $old];
+
+    Livewire::test(ListProjects::class)
+        ->toggleAllTableColumns()
+        ->sortTable('laravel_version', $direction)
+        ->assertCanSeeTableRecords([...$versioned, $branch], inOrder: true)
+        ->assertCanSeeTableRecords([...$versioned, $none], inOrder: true)
+        ->sortTable('php_version', $direction)
+        ->assertCanSeeTableRecords([...$versioned, $none], inOrder: true);
+})->with(['asc', 'desc']);
+
+it('filters projects by php minor', function () {
+    $distro = stackProject(php: '8.3.12-1+ubuntu');
+    $candidate = stackProject(php: '8.3.0RC1');
+    $later = stackProject(php: '8.30.0');
+    $next = stackProject(php: '8.4.0RC1');
+
+    filterStack('php_version', ['8.3'])
+        ->assertCanSeeTableRecords([$distro, $candidate])
+        ->assertCanNotSeeTableRecords([$later, $next]);
+});
