@@ -1,0 +1,20 @@
+{
+  "name": "fixture-app",
+  "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
+  "dependencies": {
+    "chalk": "^4.1.2",
+    "local-lib": "portal:./local-lib",
+    "string-width-cjs": "npm:string-width@^4.2.0"
+  },
+  "optionalDependencies": {
+    "is-number": "^7.0.0"
+  },
+  "devDependencies": {
+    "debug": "^4.3.4",
+    "strip-ansi": "^6.0.1",
+    "typescript": "^5.4.0"
+  }
+}

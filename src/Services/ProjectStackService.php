@@ -85,7 +85,7 @@ class ProjectStackService
     }
 
     /**
-     * @return Collection<string, string> Installed version per package name
+     * @return Collection<string, non-falsy-string> Installed version per package name
      */
     private static function installedVersions(Project $project): Collection
     {
@@ -95,7 +95,7 @@ class ProjectStackService
     }
 
     /**
-     * @return Collection<string, string> Installed version per package name that is behind its latest major
+     * @return Collection<string, non-falsy-string> Installed version per package name that is behind its latest major
      */
     private static function packagesBehind(Project $project): Collection
     {

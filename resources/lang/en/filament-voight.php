@@ -91,6 +91,10 @@ return [
                 'label' => 'Lockfile missing',
                 'message' => ':file was not found in storage and was skipped.',
             ],
+            'lockfile_unreadable' => [
+                'label' => 'Unreadable lockfile',
+                'message' => ':file could not be read; its packages were not imported.',
+            ],
         ],
         'dependency_kind' => [
             'dependency' => 'Dependency',

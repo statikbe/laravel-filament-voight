@@ -9,7 +9,7 @@ use Filament\Schemas\Components\Utilities\Get;
 use Filament\Tables\Filters\QueryBuilder\Constraints\Operators\Operator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
-use Statikbe\FilamentVoight\Services\Mcp\PackageUsageService;
+use Statikbe\FilamentVoight\Support\VersionConstraint;
 
 /**
  * Versions cannot be ordered in SQL, so the versions of the already scoped installation rows are
@@ -90,7 +90,7 @@ class InstalledVersionRangeOperator extends Operator
 
         return [
             $allowedOperators[$settings["{$side}_operator"] ?? null] ?? $defaultOperator,
-            PackageUsageService::normalize($settings["{$side}_version"]),
+            $settings["{$side}_version"],
         ];
     }
 
@@ -99,19 +99,15 @@ class InstalledVersionRangeOperator extends Operator
      */
     private function matchedInstallationIds(Builder $query): array
     {
-        $bounds = array_filter([
+        $constraint = VersionConstraint::between(
             $this->bound('min', self::MIN_OPERATORS, '>'),
             $this->bound('max', self::MAX_OPERATORS, '<'),
-        ]);
+        );
 
         return (clone $query)
             ->reorder()
             ->get([$query->qualifyColumn('id'), $query->qualifyColumn('version')])
-            ->filter(function (Model $installed) use ($bounds): bool {
-                $version = PackageUsageService::normalize($installed->version);
-
-                return collect($bounds)->every(fn (array $bound): bool => version_compare($version, $bound[1], $bound[0]));
-            })
+            ->filter(fn (Model $installed): bool => $constraint->matches((string) $installed->getAttribute('version')))
             ->pluck('id')
             ->all();
     }

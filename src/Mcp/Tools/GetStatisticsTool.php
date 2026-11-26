@@ -37,6 +37,7 @@ class GetStatisticsTool extends VoightTool
             'team' => $schema->string()->description('Only projects of this team (name).'),
             'customer' => $schema->string()->description('Only projects of this customer (name).'),
             'limit' => $this->limitSchema($schema),
+            'offset' => $this->offsetSchema($schema),
         ];
     }
 
@@ -51,7 +52,7 @@ class GetStatisticsTool extends VoightTool
                 'max_score' => $schema->number()->nullable(),
                 'affected_projects' => $schema->integer(),
             ]))->required(),
-            'truncated' => $schema->boolean()->required(),
+            ...$this->pagingOutputSchema($schema),
         ];
     }
 
@@ -72,7 +73,7 @@ class GetStatisticsTool extends VoightTool
             $this->minSeverity($request),
             $request->get('team'),
             $request->get('customer'),
-            $this->limit($request),
+            $this->page($request),
         ));
     }
 }

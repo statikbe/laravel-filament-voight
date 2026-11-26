@@ -5,24 +5,30 @@ namespace Statikbe\FilamentVoight\Services\Mcp;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
+use Statikbe\FilamentVoight\Enums\Framework;
 use Statikbe\FilamentVoight\Enums\Severity;
+use Statikbe\FilamentVoight\Enums\UpgradeStatus;
 use Statikbe\FilamentVoight\Facades\FilamentVoight;
 use Statikbe\FilamentVoight\Mcp\McpAccess;
 use Statikbe\FilamentVoight\Mcp\McpToolError;
 use Statikbe\FilamentVoight\Models\Environment;
 use Statikbe\FilamentVoight\Models\EnvironmentPackage;
 use Statikbe\FilamentVoight\Models\Project;
+use Statikbe\FilamentVoight\Services\ProjectStackService;
+use Statikbe\FilamentVoight\Support\VersionConstraint;
 
 /**
- * @phpstan-type ProjectFilters array{search?: string|null, team?: string|null, customer?: string|null, min_severity?: Severity|null, has_findings?: bool|null, scanned_before?: Carbon|null, sort?: string|null, limit: int}
+ * @phpstan-type ProjectFilters array{project_codes?: array<int, string>|null, package?: string|null, package_type?: string|null, package_version?: VersionConstraint|null, search?: string|null, team?: string|null, customer?: string|null, min_severity?: Severity|null, has_findings?: bool|null, scanned_before?: Carbon|null, upgrade_status?: UpgradeStatus|null, sort?: string|null, page: Page}
  */
 class ProjectQueryService
 {
     public const array SORTS = ['findings', 'max_score', 'name', 'last_scanned'];
 
+    public function __construct(private readonly PackageUsageService $packageUsage) {}
+
     /**
      * @param  ProjectFilters  $filters
-     * @return array{projects: array<int, array<string, mixed>>, truncated: bool}
+     * @return array{projects: array<int, array<string, mixed>>, total: int, truncated: bool, next_offset: int|null, missing_codes?: array<int, string>}
      */
     public function listProjects(McpAccess $access, array $filters): array
     {
@@ -36,6 +42,21 @@ class ProjectQueryService
             ->leftJoinSub($counts, 'counts', 'counts.project_id', '=', 'voight_projects.id')
             ->select(['voight_projects.*', 'counts.critical', 'counts.high', 'counts.medium', 'counts.low', 'counts.none', 'counts.total', 'counts.max_score'])
             ->with(['team', 'customer', 'environments' => fn ($environments) => $environments->orderBy('name')]);
+        ProjectStackService::withStack($query);
+
+        $projectCodes = $filters['project_codes'] ?? null;
+
+        if ($projectCodes !== null) {
+            $query->whereIn('voight_projects.project_code', $projectCodes);
+        }
+
+        if (filled($filters['package'] ?? null)) {
+            $query->whereIn('voight_projects.id', $this->packageUsage->projectIdsWithPackage(
+                $filters['package'],
+                $filters['package_type'] ?? null,
+                $filters['package_version'] ?? null,
+            ));
+        }
 
         if (filled($filters['search'] ?? null)) {
             $search = '%' . $filters['search'] . '%';
@@ -58,6 +79,10 @@ class ProjectQueryService
             $query->whereNull('counts.total');
         }
 
+        if (($filters['upgrade_status'] ?? null) !== null) {
+            ProjectStackService::constrainToUpgradeStatuses($query, $filters['upgrade_status']);
+        }
+
         if (($filters['scanned_before'] ?? null) !== null) {
             $scannedBefore = $filters['scanned_before'];
             $query->where(fn (Builder $projects): Builder => $projects
@@ -77,27 +102,74 @@ class ProjectQueryService
             default => $query->orderByRaw('coalesce(counts.total, 0) desc')->orderByRaw('coalesce(counts.max_score, -1) desc'),
         };
 
-        $projects = $query->orderBy('voight_projects.project_code')->limit($filters['limit'] + 1)->get();
+        $page = $filters['page'];
+        $total = (clone $query)->reorder()->count();
+        $projects = $query->orderBy('voight_projects.project_code')->offset($page->offset)->limit($page->limit)->get();
 
         return [
-            'projects' => $projects->take($filters['limit'])->map(fn (Project $project): array => [
+            'projects' => $projects->map(fn (Project $project): array => [
                 ...$this->describeProject($project),
                 'environments' => $project->environments->map(fn (Environment $environment): array => [
                     'name' => $environment->name,
                     'scanned_at' => $environment->scanned_at?->toIso8601String(),
                 ])->all(),
                 ...CurrentFindings::severitySummary((object) $project->getAttributes()),
-            ])->values()->all(),
-            'truncated' => $projects->count() > $filters['limit'],
+                'stack' => $this->describeStack($project),
+            ])->all(),
+            ...$page->meta($total),
+            ...($projectCodes === null ? [] : ['missing_codes' => $this->missingCodes($access, $projectCodes)]),
         ];
+    }
+
+    /**
+     * The stack as the Filament project table shows it, read from the project's highest-stage environment.
+     *
+     * @return array{environment: string|null, php_version: string|null, frameworks: array<int, array{package: string, version: string, latest_major: int}>, upgrade_status: string}
+     */
+    private function describeStack(Project $project): array
+    {
+        $frameworks = [];
+
+        foreach (Framework::cases() as $framework) {
+            $version = ProjectStackService::version($project, $framework);
+
+            if ($version !== null) {
+                $frameworks[] = ['package' => $framework->value, 'version' => $version, 'latest_major' => $framework->latestMajor()];
+            }
+        }
+
+        return [
+            'environment' => $project->representativeEnvironment?->name,
+            'php_version' => ProjectStackService::phpVersion($project),
+            'frameworks' => $frameworks,
+            'upgrade_status' => ProjectStackService::upgradeStatus($project)->value,
+        ];
+    }
+
+    /**
+     * Requested codes that match no visible project, whatever the other filters. Unknown and invisible
+     * codes are reported alike, and codes compare case-insensitively as most database collations do.
+     *
+     * @param  array<int, string>  $projectCodes
+     * @return array<int, string>
+     */
+    private function missingCodes(McpAccess $access, array $projectCodes): array
+    {
+        $found = $access->visibleProjects()
+            ->whereIn('project_code', $projectCodes)
+            ->pluck('project_code')
+            ->map(fn (string $code): string => mb_strtolower($code))
+            ->all();
+
+        return array_values(array_filter($projectCodes, fn (string $code): bool => ! in_array(mb_strtolower($code), $found, true)));
     }
 
     /**
      * Current findings of a project, grouped by vulnerability, worst first.
      *
-     * @return array{project: array<string, mixed>, vulnerabilities: array<int, array<string, mixed>>, truncated: bool}
+     * @return array{project: array<string, mixed>, vulnerabilities: array<int, array<string, mixed>>, total: int, truncated: bool, next_offset: int|null}
      */
-    public function projectVulnerabilities(McpAccess $access, Project $project, ?Environment $environment, ?Severity $minSeverity, bool $includeDev, int $limit): array
+    public function projectVulnerabilities(McpAccess $access, Project $project, ?Environment $environment, ?Severity $minSeverity, bool $includeDev, Page $page): array
     {
         $findings = CurrentFindings::query($access, $minSeverity, $includeDev)
             ->where('p.id', $project->id)
@@ -113,12 +185,13 @@ class ProjectQueryService
 
         $copies = $this->installedCopies($findings);
         $vulnerabilityIds = $findings->pluck('vulnerability_id')->unique()->values();
+        $pageIds = $page->slice($vulnerabilityIds);
         $vulnerabilities = FilamentVoight::config()->getVulnerabilityModel()::query()
-            ->whereIn('id', $vulnerabilityIds->take($limit))
+            ->whereIn('id', $pageIds)
             ->get()
             ->keyBy('id');
 
-        $grouped = $vulnerabilityIds->take($limit)->map(function (string $vulnerabilityId) use ($findings, $vulnerabilities, $copies): array {
+        $grouped = $pageIds->map(function (string $vulnerabilityId) use ($findings, $vulnerabilities, $copies): array {
             $vulnerability = $vulnerabilities[$vulnerabilityId];
 
             return [
@@ -151,8 +224,8 @@ class ProjectQueryService
 
         return [
             'project' => $this->describeProject($project),
-            'vulnerabilities' => $grouped->values()->all(),
-            'truncated' => $vulnerabilityIds->count() > $limit,
+            'vulnerabilities' => $grouped->all(),
+            ...$page->meta($vulnerabilityIds->count()),
         ];
     }
 

@@ -196,9 +196,8 @@ production roots).
 - `is_dev`: roots from `devDependencies` are dev, then [dev
   propagation](#dev-propagation). Without `package.json` everything is
   production.
-- Yarn berry (`__metadata`, `resolution:`) and yarn workspaces are out of scope.
-  - Berry: the parser throws `UnsupportedLockfileException`
-    (`SyncWarning::YarnBerryUnsupported`, spec 14).
+- Yarn berry (`__metadata`, `resolution:`) has its own parser, see
+  `16-yarn-berry-lockfiles.md`. Yarn v1 workspaces are out of scope.
   - Workspaces: `yarn.lock` does not list workspace members, so their
     declarations are invisible without each member's `package.json`. When the
     root `package.json` has a `workspaces` key, `ProcessLockFilesJob` adds
@@ -488,7 +487,7 @@ Tests:
 
 ## Out of scope
 
-- Yarn berry, yarn workspaces, pnpm and bun parsing (the uploader already sends
+- Yarn v1 workspaces, pnpm and bun parsing (yarn berry: spec 16) (the uploader already sends
   those files; no parser exists yet).
 - npm lockfile v1.
 - `RunOsvScanJob::resolveLockfileContents()` keys files by basename, so two

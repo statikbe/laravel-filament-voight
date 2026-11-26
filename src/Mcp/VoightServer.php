@@ -41,6 +41,8 @@ class VoightServer extends Server
 
         Start with `list_projects` or `get_statistics`; drill down with `get_project_vulnerabilities` and
         `get_upgrade_plan`; use `find_package_usage` and `get_vulnerability` for cross-project questions.
+        Each project's `stack` (PHP and framework versions, upgrade status) comes with `list_projects`; to check a
+        list of known project codes, pass them as `project_codes` and read `missing_codes`.
         You only see the projects you have access to; an unknown project code may also be one you cannot see.
     MARKDOWN;
 

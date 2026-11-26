@@ -225,8 +225,14 @@ Shared conventions:
 
 - Inputs declared with `schema()`; results returned as `Response::structured()`
   with an `outputSchema()`, so clients get both JSON text and structured content.
-- List tools take `limit` (default 25, max 100) and return `truncated: true` when
-  more rows exist.
+- List tools (`list_projects`, `get_project_vulnerabilities`,
+  `find_package_usage`, `get_statistics`) are paged by offset: they take `limit`
+  (default 25, max 100) and `offset` (default 0), and return `total` (rows across
+  all pages), `truncated` (more rows follow this page) and `next_offset` (the
+  next page's `offset`, `null` on the last page). Offsets rather than cursors:
+  the default sorts are on computed values, and data only changes on a CI sync.
+  `Services\Mcp\Page` holds the offset and limit and builds these fields; SQL
+  tools count and page in the query, tools that filter in PHP slice the result.
 - Project arguments are `project_code`; environment arguments are the
   environment `name`.
 - Errors use `Response::error()` with a message the model can act on (e.g.
@@ -235,11 +241,22 @@ Shared conventions:
 ### Read tools — `#[IsReadOnly]`, `#[IsIdempotent]`
 
 **`list_projects`**
-- In: `search?` (code or name), `team?`, `customer?`, `min_severity?`,
-  `has_findings?`, `scanned_before?` (ISO date, finds stale scans),
-  `sort` = `findings` (default) | `max_score` | `name` | `last_scanned`, `limit`.
+- In: `project_codes?` (exact codes, max 100), `package?` (exact name) with
+  `package_type?` and `package_version?` (a version constraint, see below): only
+  projects with that package installed in a matching version in any
+  environment; `search?` (code or name), `team?`,
+  `customer?`, `min_severity?`, `has_findings?`, `scanned_before?` (ISO date,
+  finds stale scans), `upgrade_status?` = `needs_upgrade` | `current` | `unknown`,
+  `sort` = `findings` (default) | `max_score` | `name` | `last_scanned`, `limit`
+  (defaults to the number of `project_codes` when those are passed).
 - Out: per project: `code`, `name`, `team`, `customer`, `environments[]`
-  (`name`, `scanned_at`), current finding counts per severity, `max_score`.
+  (`name`, `scanned_at`), current finding counts per severity, `max_score`, and
+  `stack`: the representative `environment`, `php_version`, `frameworks[]`
+  (`package`, `version`, `latest_major`) and `upgrade_status`. The stack comes
+  from `ProjectStackService`, the same code as the Filament project table.
+- With `project_codes`, also `missing_codes`: requested codes that match no
+  visible project, regardless of the other filters. Unknown and invisible codes
+  are reported alike. Use it to reconcile an external project list.
 
 **`get_project_vulnerabilities`**
 - In: `project_code`, `environment?`, `min_severity?`, `include_dev` (default
@@ -278,12 +295,21 @@ Shared conventions:
   major bump of the parent is needed"). The tool description says so.
 
 **`find_package_usage`**
-- In: `package`, `type?` (`composer` | `npm`), `version?` — a single comparison
-  `<`, `<=`, `>`, `>=`, `=` followed by a version (e.g. `<4.17.21`), compared
-  with `version_compare()` after stripping a leading `v`; `include_dev`
-  (default `true`); `limit`.
+- In: `package`, `type?` (`composer` | `npm`), `version?` — a version
+  constraint (see below, e.g. `<4.17.21` or `>=7.0 <7.4`); `include_dev`
+  (default `true`); `limit`, `offset`.
 - Out: per match: `project_code`, `environment`, `version`, `is_direct`,
   `is_dev`.
+
+**Version constraints** (`find_package_usage.version`,
+`list_projects.package_version`): one or more comparisons (`<`, `<=`, `>`, `>=`,
+`=`; a bare version means `=`), separated by spaces or commas, all of which must
+hold. `Support\VersionConstraint` parses and matches them with
+`version_compare()` after stripping a leading `v`; the Filament installed-version
+range filter uses the same class. Versions cannot be ordered in SQL, so the
+installations of the one named package are fetched and matched in PHP, and
+`list_projects` restricts its query to the matching project ids — counting and
+paging stay in SQL.
 
 **`get_vulnerability`**
 - In: `id` — matched on `source_id` or any entry in `aliases` (CVE, GHSA).

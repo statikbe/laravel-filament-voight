@@ -1,5 +1,6 @@
 <?php
 
+use Statikbe\FilamentVoight\Enums\Framework;
 use Statikbe\FilamentVoight\Mcp\Tools\FindPackageUsageTool;
 use Statikbe\FilamentVoight\Mcp\Tools\GetProjectVulnerabilitiesTool;
 use Statikbe\FilamentVoight\Mcp\Tools\GetStatisticsTool;
@@ -10,6 +11,7 @@ use Statikbe\FilamentVoight\Models\AuditRun;
 use Statikbe\FilamentVoight\Models\Customer;
 use Statikbe\FilamentVoight\Models\Environment;
 use Statikbe\FilamentVoight\Models\EnvironmentPackage;
+use Statikbe\FilamentVoight\Models\EnvironmentSystemDetail;
 use Statikbe\FilamentVoight\Models\Package;
 use Statikbe\FilamentVoight\Models\Project;
 use Statikbe\FilamentVoight\Models\Team;
@@ -22,6 +24,45 @@ function mcpEnvironment(string $projectCode, string $name = 'production', array 
         ?? Project::factory()->create(['project_code' => $projectCode, ...$projectAttributes]);
 
     return Environment::factory()->for($project)->create(['name' => $name]);
+}
+
+function installFramework(Environment $environment, Framework $framework, string $version): void
+{
+    EnvironmentPackage::factory()->for($environment)->for(
+        Package::query()->firstOrCreate(['name' => $framework->value, 'type' => 'composer']),
+    )->create(['version' => $version]);
+}
+
+/**
+ * Walks a list tool page by page with the given page size and checks the paging fields on each page:
+ * the same total everywhere, next_offset pointing at the next page, and truncated only before the last.
+ * Returns the rows of all pages, in order.
+ *
+ * @param  class-string  $tool
+ * @param  array<string, mixed>  $arguments
+ * @return array<int, array<string, mixed>>
+ */
+function walkPages(string $tool, array $arguments, string $rowsKey, int $pageSize): array
+{
+    $rows = [];
+    $offset = 0;
+    $total = null;
+
+    do {
+        $page = structuredContent(VoightLocalServer::tool($tool, [...$arguments, 'limit' => $pageSize, 'offset' => $offset]));
+        $total ??= $page['total'];
+        $rows = [...$rows, ...$page[$rowsKey]];
+
+        expect($page['total'])->toBe($total)
+            ->and($page['truncated'])->toBe($page['next_offset'] !== null)
+            ->and($page['next_offset'])->toBe(count($rows) < $total ? count($rows) : null);
+
+        $offset = $page['next_offset'];
+    } while ($offset !== null);
+
+    expect($rows)->toHaveCount($total);
+
+    return $rows;
 }
 
 describe('list_projects', function () {
@@ -93,6 +134,183 @@ describe('list_projects', function () {
     it('rejects a limit above the maximum', function () {
         VoightLocalServer::tool(ListProjectsTool::class, ['limit' => 101])->assertHasErrors();
     });
+
+    it('filters on an installed package and its version range', function () {
+        $guzzle = Package::factory()->create(['name' => 'guzzlehttp/guzzle', 'type' => 'composer']);
+        EnvironmentPackage::factory()->for(mcpEnvironment('OLD'))->for($guzzle)->create(['version' => '7.2.0']);
+        EnvironmentPackage::factory()->for(mcpEnvironment('NEW'))->for($guzzle)->create(['version' => 'v7.9.2']);
+        EnvironmentPackage::factory()->for(mcpEnvironment('MIXED', 'staging'))->for($guzzle)->create(['version' => '7.4.0']);
+        EnvironmentPackage::factory()->for(mcpEnvironment('MIXED'))->for($guzzle)->create(['version' => '7.9.0']);
+        mcpEnvironment('NONE');
+
+        $codes = fn (array $arguments): array => array_column(structuredContent(VoightLocalServer::tool(ListProjectsTool::class, [...$arguments, 'sort' => 'name']))['projects'], 'code');
+
+        expect($codes(['package' => 'guzzlehttp/guzzle']))->toEqualCanonicalizing(['OLD', 'NEW', 'MIXED'])
+            ->and($codes(['package' => 'guzzlehttp/guzzle', 'package_version' => '<7.5']))->toEqualCanonicalizing(['OLD', 'MIXED'])
+            ->and($codes(['package' => 'guzzlehttp/guzzle', 'package_version' => '>=7.3 <7.5']))->toBe(['MIXED'])
+            ->and($codes(['package' => 'guzzlehttp/guzzle', 'package_type' => 'npm']))->toBe([])
+            ->and($codes(['package' => 'unknown/package']))->toBe([]);
+    });
+
+    it('counts and pages only the projects with the package', function () {
+        $lodash = Package::factory()->create(['name' => 'lodash', 'type' => 'npm']);
+        foreach (['A', 'B', 'C'] as $code) {
+            EnvironmentPackage::factory()->for(mcpEnvironment($code))->for($lodash)->create(['version' => '4.17.15']);
+        }
+        mcpEnvironment('D');
+
+        $paged = walkPages(ListProjectsTool::class, ['package' => 'lodash', 'package_version' => '<4.17.21'], 'projects', 2);
+
+        expect(array_column($paged, 'code'))->toEqualCanonicalizing(['A', 'B', 'C']);
+    });
+
+    it('requires a package for a package version or type', function (array $arguments) {
+        VoightLocalServer::tool(ListProjectsTool::class, $arguments)->assertHasErrors();
+    })->with([
+        'version' => [['package_version' => '<7.5']],
+        'type' => [['package_type' => 'composer']],
+    ]);
+
+    it('rejects a malformed package version range', function () {
+        VoightLocalServer::tool(ListProjectsTool::class, ['package' => 'lodash', 'package_version' => '^4.0'])
+            ->assertHasErrors(['Invalid version filter']);
+    });
+
+    it('pages through every project in order, with the total', function () {
+        foreach (['A', 'B', 'C', 'D', 'E'] as $code) {
+            mcpEnvironment($code);
+        }
+
+        $paged = walkPages(ListProjectsTool::class, ['sort' => 'name'], 'projects', 2);
+        $unpaged = structuredContent(VoightLocalServer::tool(ListProjectsTool::class, ['sort' => 'name']))['projects'];
+
+        expect(array_column($paged, 'code'))->toBe(array_column($unpaged, 'code'))
+            ->and($paged)->toHaveCount(5);
+    });
+
+    it('counts only the filtered projects in the total', function () {
+        mcpFinding(mcpEnvironment('VULN'), Vulnerability::factory()->high()->create());
+        mcpEnvironment('CLEAN');
+
+        $result = structuredContent(VoightLocalServer::tool(ListProjectsTool::class, ['has_findings' => true]));
+
+        expect($result['total'])->toBe(1)
+            ->and($result['next_offset'])->toBeNull()
+            ->and($result['truncated'])->toBeFalse();
+    });
+
+    it('returns an empty last page for an offset past the end', function () {
+        mcpEnvironment('A');
+
+        $result = structuredContent(VoightLocalServer::tool(ListProjectsTool::class, ['offset' => 10]));
+
+        expect($result['projects'])->toBe([])
+            ->and($result['total'])->toBe(1)
+            ->and($result['next_offset'])->toBeNull();
+    });
+
+    it('rejects a negative offset', function () {
+        VoightLocalServer::tool(ListProjectsTool::class, ['offset' => -1])->assertHasErrors();
+    });
+
+    it('reports every missing code on each page', function () {
+        foreach (['A', 'B', 'C'] as $code) {
+            mcpEnvironment($code);
+        }
+
+        $arguments = ['project_codes' => ['A', 'B', 'C', 'NOPE'], 'limit' => 2];
+
+        expect(structuredContent(VoightLocalServer::tool(ListProjectsTool::class, $arguments))['missing_codes'])->toBe(['NOPE'])
+            ->and(structuredContent(VoightLocalServer::tool(ListProjectsTool::class, [...$arguments, 'offset' => 2]))['missing_codes'])->toBe(['NOPE']);
+    });
+
+    it('describes the stack of the highest-stage environment', function () {
+        $production = mcpEnvironment('SHOP');
+        installFramework($production, Framework::Laravel, 'v11.31.0');
+        installFramework($production, Framework::Filament, '5.0.2');
+        EnvironmentSystemDetail::factory()->for($production)->create(['php_version' => '8.3.12']);
+        installFramework(mcpEnvironment('SHOP', 'staging'), Framework::Laravel, '13.0.0');
+        mcpEnvironment('BLOG');
+
+        $projects = collect(structuredContent(VoightLocalServer::tool(ListProjectsTool::class))['projects'])->keyBy('code');
+
+        expect($projects['SHOP']['stack'])->toBe([
+            'environment' => 'production',
+            'php_version' => '8.3.12',
+            'frameworks' => [
+                ['package' => 'laravel/framework', 'version' => 'v11.31.0', 'latest_major' => Framework::Laravel->latestMajor()],
+                ['package' => 'filament/filament', 'version' => '5.0.2', 'latest_major' => Framework::Filament->latestMajor()],
+            ],
+            'upgrade_status' => 'needs_upgrade',
+        ])->and($projects['BLOG']['stack'])->toBe([
+            'environment' => 'production',
+            'php_version' => null,
+            'frameworks' => [],
+            'upgrade_status' => 'unknown',
+        ]);
+    });
+
+    it('filters on upgrade status', function () {
+        installFramework(mcpEnvironment('OLD'), Framework::Laravel, '11.0.0');
+        installFramework(mcpEnvironment('NEW'), Framework::Laravel, Framework::Laravel->latestMajor() . '.1.0');
+        mcpEnvironment('NODE');
+
+        $codes = fn (string $status): array => array_column(structuredContent(VoightLocalServer::tool(ListProjectsTool::class, ['upgrade_status' => $status]))['projects'], 'code');
+
+        expect($codes('needs_upgrade'))->toBe(['OLD'])
+            ->and($codes('current'))->toBe(['NEW'])
+            ->and($codes('unknown'))->toBe(['NODE']);
+    });
+
+    it('rejects an unknown upgrade status', function () {
+        VoightLocalServer::tool(ListProjectsTool::class, ['upgrade_status' => 'ancient'])->assertHasErrors();
+    });
+
+    it('lists the requested project codes and reports the missing ones', function () {
+        foreach (['KULCOB', 'STIPLA', 'OTHER'] as $code) {
+            mcpEnvironment($code);
+        }
+
+        $result = structuredContent(VoightLocalServer::tool(ListProjectsTool::class, ['project_codes' => ['STIPLA', 'KULXMS', 'KULCOB', 'COLTRA']]));
+
+        expect(array_column($result['projects'], 'code'))->toEqualCanonicalizing(['KULCOB', 'STIPLA'])
+            ->and($result['missing_codes'])->toBe(['KULXMS', 'COLTRA']);
+    });
+
+    it('does not report a requested code as missing when another filter excludes it', function () {
+        mcpFinding(mcpEnvironment('VULN'), Vulnerability::factory()->high()->create());
+        mcpEnvironment('CLEAN');
+
+        $result = structuredContent(VoightLocalServer::tool(ListProjectsTool::class, ['project_codes' => ['VULN', 'CLEAN'], 'has_findings' => true]));
+
+        expect(array_column($result['projects'], 'code'))->toBe(['VULN'])
+            ->and($result['missing_codes'])->toBe([]);
+    });
+
+    it('omits missing codes when no project codes are requested', function () {
+        mcpEnvironment('A');
+
+        expect(structuredContent(VoightLocalServer::tool(ListProjectsTool::class)))->not->toHaveKey('missing_codes');
+    });
+
+    it('returns every requested project without a limit', function () {
+        $codes = array_map(fn (int $number): string => "P{$number}", range(1, 30));
+
+        foreach ($codes as $code) {
+            mcpEnvironment($code);
+        }
+
+        $result = structuredContent(VoightLocalServer::tool(ListProjectsTool::class, ['project_codes' => $codes]));
+
+        expect($result['projects'])->toHaveCount(30)
+            ->and($result['truncated'])->toBeFalse();
+    });
+
+    it('rejects more than the maximum number of project codes', function () {
+        $codes = array_map(fn (int $number): string => "P{$number}", range(1, 101));
+
+        VoightLocalServer::tool(ListProjectsTool::class, ['project_codes' => $codes])->assertHasErrors();
+    });
 });
 
 describe('get_project_vulnerabilities', function () {
@@ -157,6 +375,17 @@ describe('get_project_vulnerabilities', function () {
 
         expect($result['vulnerabilities'])->toHaveCount(2)->and($result['truncated'])->toBeTrue();
     });
+
+    it('pages through the vulnerabilities, worst first', function () {
+        $production = mcpEnvironment('P');
+        foreach ([9.8, 7.5, 5.0, 2.0, 1.0] as $i => $score) {
+            mcpFinding($production, Vulnerability::factory()->create(['vulnerability_score' => $score]), "package-{$i}");
+        }
+
+        $paged = walkPages(GetProjectVulnerabilitiesTool::class, ['project_code' => 'P'], 'vulnerabilities', 2);
+
+        expect(array_column($paged, 'score'))->toEqual([9.8, 7.5, 5, 2, 1]);
+    });
 });
 
 describe('find_package_usage', function () {
@@ -187,6 +416,23 @@ describe('find_package_usage', function () {
         $usages = structuredContent(VoightLocalServer::tool(FindPackageUsageTool::class, ['package' => 'lodash', 'include_dev' => false]))['usages'];
 
         expect($usages)->toBe([['project_code' => 'A', 'environment' => 'production', 'type' => 'npm', 'version' => '4.17.15', 'is_direct' => true, 'is_dev' => false]]);
+    });
+
+    it('pages through the usages after filtering on version', function () {
+        $lodash = Package::query()->where('name', 'lodash')->firstOrFail();
+        foreach (['C', 'D', 'E'] as $code) {
+            EnvironmentPackage::factory()->for(mcpEnvironment($code))->for($lodash)->create(['version' => '4.0.0']);
+        }
+
+        $paged = walkPages(FindPackageUsageTool::class, ['package' => 'lodash', 'version' => '<4.17.21'], 'usages', 2);
+
+        expect(array_column($paged, 'project_code'))->toBe(['A', 'C', 'D', 'E']);
+    });
+
+    it('accepts a version range', function () {
+        $usages = structuredContent(VoightLocalServer::tool(FindPackageUsageTool::class, ['package' => 'lodash', 'version' => '>=4.17 <4.17.21']))['usages'];
+
+        expect(array_column($usages, 'project_code'))->toBe(['A']);
     });
 
     it('rejects a malformed version filter', function () {
@@ -252,5 +498,13 @@ describe('get_statistics', function () {
         $result = structuredContent(VoightLocalServer::tool(GetStatisticsTool::class, ['group_by' => 'project', 'min_severity' => 'critical', 'limit' => 1]));
 
         expect(array_column($result['groups'], 'key'))->toBe(['A'])->and($result['truncated'])->toBeFalse();
+    });
+
+    it('pages through the groups', function () {
+        $paged = walkPages(GetStatisticsTool::class, ['group_by' => 'project'], 'groups', 1);
+        $unpaged = structuredContent(VoightLocalServer::tool(GetStatisticsTool::class, ['group_by' => 'project']))['groups'];
+
+        expect($paged)->toBe($unpaged)
+            ->and($paged)->toHaveCount(2);
     });
 });

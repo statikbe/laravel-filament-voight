@@ -24,8 +24,9 @@ class FindPackageUsageTool extends VoightTool
 
     protected string $description = <<<'MARKDOWN'
         Where a package is installed: per project and environment, the installed version and whether it is a
-        direct (`is_direct`) or dev-only (`is_dev`) dependency. Narrow with `version`, one comparison such as
-        `<4.17.21`, `>=2.0` or `=1.2.3`, e.g. to find every project still on a vulnerable version.
+        direct (`is_direct`) or dev-only (`is_dev`) dependency. Narrow with `version`: one or more comparisons that
+        must all hold, such as `<4.17.21`, `=1.2.3` or the range `>=7.0 <7.4`, e.g. to find every project still on
+        a vulnerable version. To list the projects themselves, use `list_projects` with `package`.
     MARKDOWN;
 
     public function __construct(private readonly PackageUsageService $packageUsage) {}
@@ -35,9 +36,10 @@ class FindPackageUsageTool extends VoightTool
         return [
             'package' => $schema->string()->required()->description('Exact package name, e.g. `lodash` or `guzzlehttp/guzzle`.'),
             'type' => $schema->string()->enum(array_column(PackageType::cases(), 'value')),
-            'version' => $schema->string()->description('One comparison: <, <=, >, >= or = followed by a version. A leading `v` is ignored.'),
+            'version' => $schema->string()->description('One or more comparisons (<, <=, >, >=, =) separated by spaces, all of which must hold, e.g. `>=7.0 <7.4`. A leading `v` is ignored.'),
             'include_dev' => $schema->boolean()->default(true),
             'limit' => $this->limitSchema($schema),
+            'offset' => $this->offsetSchema($schema),
         ];
     }
 
@@ -52,7 +54,7 @@ class FindPackageUsageTool extends VoightTool
                 'is_direct' => $schema->boolean(),
                 'is_dev' => $schema->boolean(),
             ]))->required(),
-            'truncated' => $schema->boolean()->required(),
+            ...$this->pagingOutputSchema($schema),
         ];
     }
 
@@ -74,7 +76,7 @@ class FindPackageUsageTool extends VoightTool
             $request->get('type'),
             $request->get('version'),
             filter_var($request->get('include_dev', true), FILTER_VALIDATE_BOOLEAN),
-            $this->limit($request),
+            $this->page($request),
         ));
     }
 }
