@@ -2,12 +2,13 @@
 
 namespace Statikbe\FilamentVoight\Resources;
 
+use BackedEnum;
 use Filament\Resources\Resource;
-use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
 use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Statikbe\FilamentVoight\Enums\VoightIcon;
 use Statikbe\FilamentVoight\Facades\FilamentVoight;
 use Statikbe\FilamentVoight\Models\AuditRun;
 use Statikbe\FilamentVoight\Resources\AuditRunResource\Pages\ListAuditRuns;
@@ -19,9 +20,12 @@ class AuditRunResource extends Resource
 {
     protected static ?string $model = AuditRun::class;
 
-    protected static string | \BackedEnum | null $navigationIcon = Heroicon::OutlinedClipboardDocumentCheck;
-
     protected static ?int $navigationSort = 3;
+
+    public static function getNavigationIcon(): string | BackedEnum | Htmlable | null
+    {
+        return VoightIcon::NavigationAuditRuns->resolve();
+    }
 
     public static function getNavigationGroup(): ?string
     {

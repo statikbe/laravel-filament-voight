@@ -2,8 +2,8 @@
 
 namespace Statikbe\FilamentVoight\Resources;
 
+use BackedEnum;
 use Filament\Resources\Resource;
-use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Grouping\Group;
 use Filament\Tables\Table;
 use Illuminate\Contracts\Support\Htmlable;
@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Str;
 use Statikbe\FilamentVoight\Enums\EnvironmentStage;
 use Statikbe\FilamentVoight\Enums\Severity;
+use Statikbe\FilamentVoight\Enums\VoightIcon;
 use Statikbe\FilamentVoight\Facades\FilamentVoight;
 use Statikbe\FilamentVoight\Models\AuditFinding;
 use Statikbe\FilamentVoight\Models\Environment;
@@ -23,13 +24,16 @@ class AuditFindingResource extends Resource
 {
     protected static ?string $model = AuditFinding::class;
 
-    protected static string | \BackedEnum | null $navigationIcon = Heroicon::OutlinedExclamationTriangle;
-
     protected static ?string $slug = 'open-findings';
 
     protected static ?int $navigationSort = 1;
 
     // Gated like the vulnerabilities it lists, so no extra Shield permission is needed.
+    public static function getNavigationIcon(): string | BackedEnum | Htmlable | null
+    {
+        return VoightIcon::NavigationAuditFindings->resolve();
+    }
+
     public static function canViewAny(): bool
     {
         return VulnerabilityResource::canViewAny();

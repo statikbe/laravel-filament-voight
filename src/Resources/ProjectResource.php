@@ -2,13 +2,15 @@
 
 namespace Statikbe\FilamentVoight\Resources;
 
+use BackedEnum;
 use Filament\Pages\Enums\SubNavigationPosition;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
-use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
+use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Statikbe\FilamentVoight\Enums\VoightIcon;
 use Statikbe\FilamentVoight\Models\Project;
 use Statikbe\FilamentVoight\Resources\ProjectResource\Pages\CreateProject;
 use Statikbe\FilamentVoight\Resources\ProjectResource\Pages\EditProject;
@@ -26,13 +28,16 @@ class ProjectResource extends Resource
 {
     protected static ?string $model = Project::class;
 
-    protected static string | \BackedEnum | null $navigationIcon = Heroicon::OutlinedCodeBracket;
-
     protected static ?string $recordTitleAttribute = 'name';
 
     protected static ?int $navigationSort = 1;
 
     protected static ?SubNavigationPosition $subNavigationPosition = SubNavigationPosition::Top;
+
+    public static function getNavigationIcon(): string | BackedEnum | Htmlable | null
+    {
+        return VoightIcon::NavigationProjects->resolve();
+    }
 
     public static function getNavigationGroup(): ?string
     {

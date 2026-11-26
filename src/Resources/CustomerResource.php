@@ -2,11 +2,13 @@
 
 namespace Statikbe\FilamentVoight\Resources;
 
+use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
-use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
+use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Database\Eloquent\Model;
+use Statikbe\FilamentVoight\Enums\VoightIcon;
 use Statikbe\FilamentVoight\Models\Customer;
 use Statikbe\FilamentVoight\Resources\CustomerResource\Pages\CreateCustomer;
 use Statikbe\FilamentVoight\Resources\CustomerResource\Pages\EditCustomer;
@@ -21,11 +23,14 @@ class CustomerResource extends Resource
 {
     protected static ?string $model = Customer::class;
 
-    protected static string | \BackedEnum | null $navigationIcon = Heroicon::OutlinedBuildingOffice;
-
     protected static ?string $recordTitleAttribute = 'name';
 
     protected static ?int $navigationSort = 1;
+
+    public static function getNavigationIcon(): string | BackedEnum | Htmlable | null
+    {
+        return VoightIcon::NavigationCustomers->resolve();
+    }
 
     public static function getNavigationGroup(): ?string
     {

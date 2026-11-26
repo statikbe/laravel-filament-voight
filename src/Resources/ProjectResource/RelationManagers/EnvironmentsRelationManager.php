@@ -2,6 +2,7 @@
 
 namespace Statikbe\FilamentVoight\Resources\ProjectResource\RelationManagers;
 
+use BackedEnum;
 use Filament\Actions\CreateAction;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
@@ -10,16 +11,17 @@ use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Schemas\Schema;
-use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Columns\ToggleColumn;
 use Filament\Tables\Table;
+use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Statikbe\FilamentVoight\Enums\EnvironmentIssueType;
+use Statikbe\FilamentVoight\Enums\VoightIcon;
 use Statikbe\FilamentVoight\Models\Environment;
 use Statikbe\FilamentVoight\Resources\EnvironmentResource\Schemas\EnvironmentTableSchema;
 use Statikbe\FilamentVoight\Services\EnvironmentHealthService;
@@ -31,7 +33,10 @@ class EnvironmentsRelationManager extends RelationManager
 
     protected static string $relationship = 'environments';
 
-    protected static string | \BackedEnum | null $icon = Heroicon::OutlinedServerStack;
+    public static function getIcon(Model $ownerRecord, string $pageClass): string | BackedEnum | Htmlable | null
+    {
+        return VoightIcon::TabProjectEnvironments->resolve();
+    }
 
     public static function getTitle(Model $ownerRecord, string $pageClass): string
     {

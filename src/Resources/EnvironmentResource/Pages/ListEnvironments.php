@@ -2,12 +2,12 @@
 
 namespace Statikbe\FilamentVoight\Resources\EnvironmentResource\Pages;
 
+use BackedEnum;
 use Filament\Pages\Page;
 use Filament\Resources\Concerns\HasTabs;
 use Filament\Schemas\Components\EmbeddedTable;
 use Filament\Schemas\Components\Tabs\Tab;
 use Filament\Schemas\Schema;
-use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Table;
@@ -15,6 +15,7 @@ use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Database\Eloquent\Builder;
 use Livewire\Attributes\Url;
 use Statikbe\FilamentVoight\Enums\EnvironmentStage;
+use Statikbe\FilamentVoight\Enums\VoightIcon;
 use Statikbe\FilamentVoight\Facades\FilamentVoight;
 use Statikbe\FilamentVoight\Models\Environment;
 use Statikbe\FilamentVoight\Resources\Concerns\HasCountedTabs;
@@ -31,14 +32,17 @@ class ListEnvironments extends Page implements HasTable
     use HasTabs;
     use InteractsWithTable;
 
-    protected static string | \BackedEnum | null $navigationIcon = Heroicon::OutlinedServerStack;
-
     protected static ?int $navigationSort = 2;
 
     protected static ?string $slug = 'environments';
 
     #[Url(as: 'tab')]
     public ?string $activeTab = null;
+
+    public static function getNavigationIcon(): string | BackedEnum | Htmlable | null
+    {
+        return VoightIcon::NavigationEnvironments->resolve();
+    }
 
     public function mount(): void
     {
