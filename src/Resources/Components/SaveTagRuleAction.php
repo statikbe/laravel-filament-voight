@@ -62,7 +62,7 @@ class SaveTagRuleAction
     }
 
     /**
-     * The rule this table was opened from ("Open in table"), when it was saved from this page.
+     * The rule this table was opened from ("Open in table"), when it was saved from this page and the user may manage it.
      */
     private static function replaceableRule(HasTable & Page $page): ?TagRule
     {
@@ -72,9 +72,12 @@ class SaveTagRuleAction
             return null;
         }
 
-        return FilamentVoight::config()->getTagRuleModel()::query()
+        $rule = FilamentVoight::config()->getTagRuleModel()::query()
             ->whereKey($ruleId)
             ->where('source_page', $page::class)
             ->first();
+
+        // The id comes from the URL: only a rule on a tag type the user may manage can be replaced.
+        return $rule !== null && TagAssigner::userMayTag(auth()->user(), $rule->tag->tagType) ? $rule : null;
     }
 }

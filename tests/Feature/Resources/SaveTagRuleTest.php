@@ -3,6 +3,7 @@
 use Filament\Forms\Components\Select;
 use Illuminate\Foundation\Auth\User;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Livewire\Features\SupportTesting\Testable;
 use Livewire\Livewire;
 use Statikbe\FilamentVoight\Models\Environment;
@@ -132,3 +133,33 @@ it('stores working SQL on tables with joins and aggregates', function (string $p
     'projects' => [ListProjects::class, fn (string $name) => Project::factory()->create(['name' => $name, 'project_code' => $name]), 'zeta'],
     'environments' => [ListEnvironments::class, fn (string $name) => Environment::factory()->create(['name' => $name]), 'zeta'],
 ]);
+
+it('refuses to replace a rule on a tag type the user may not manage', function () {
+    Gate::policy(TagType::class, DenyLockedTagTypesPolicy::class);
+    $locked = TagType::factory()->appliesTo(['voight-vulnerability'])->create(['name' => 'Locked']);
+    $lockedTag = Tag::factory()->ofType($locked)->create();
+    $existing = TagRule::factory()->for($lockedTag)->create([
+        'taggable_type' => 'voight-vulnerability',
+        'source_page' => ListVulnerabilities::class,
+        'description' => ['original'],
+    ]);
+    Vulnerability::factory()->create()->attachTag($this->external);
+
+    Livewire::withQueryParams(['tag_rule' => $existing->id])
+        ->test(ListVulnerabilities::class)
+        ->set('activeTab', 'all')
+        ->set('tableDeferredFilters.queryBuilder.rules', queryBuilderRule('tag_origin', 'is', ['values' => [$this->external->id]]))
+        ->call('applyTableFilters')
+        ->callAction('saveTagRule', ['tag' => $this->needsTriage->id, 'replace' => true]);
+
+    expect($existing->fresh()->description)->toBe(['original'])
+        ->and($existing->fresh()->tag_id)->toBe($lockedTag->id);
+});
+
+class DenyLockedTagTypesPolicy
+{
+    public function update(mixed $user, TagType $type): bool
+    {
+        return $type->name !== 'Locked';
+    }
+}
