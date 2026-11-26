@@ -156,9 +156,40 @@ return [
             'single_value' => 'Tag type ":type" holds a single value: pick one tag.',
             'wrong_type' => 'Tag ":tag" does not belong to tag type ":type".',
         ],
+        'validation' => [
+            'still_assigned' => 'Records of these models still carry tags of this type: :models. Remove those tags first.',
+            'several_tags' => ':count record(s) hold more than one tag of this type. Remove the extra tags first.',
+            'duplicate_name' => 'This tag type already has a tag with this name.',
+        ],
     ],
 
     'models' => [
+        'tag_type' => [
+            'label' => 'Tag type',
+            'plural' => 'Tag types',
+            'all_models' => 'All',
+            'delete_description' => 'This also deletes all tags of this type and their :count assignment(s).',
+            'fields' => [
+                'name' => 'Name',
+                'key' => 'Key',
+                'key_help' => 'Fixed when the type is created. MCP clients and syncs refer to the type by this key.',
+                'description' => 'Description',
+                'description_help' => 'What this classification means. Shown next to the field and to AI assistants over MCP.',
+                'is_single' => 'Single value',
+                'is_single_help' => 'A record holds at most one tag of this type; assigning another replaces it.',
+                'taggable_types' => 'Applies to',
+                'taggable_types_help' => 'Leave all unchecked to allow it on every model.',
+            ],
+        ],
+        'tag' => [
+            'label' => 'Tag',
+            'plural' => 'Tags',
+            'delete_description' => 'This tag is assigned to :count record(s); those assignments are removed too.',
+            'fields' => [
+                'name' => 'Name',
+                'usage_count' => 'Used on',
+            ],
+        ],
         'customer' => [
             'label' => 'Customer',
             'plural' => 'Customers',

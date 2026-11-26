@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use LogicException;
 use Spatie\EloquentSortable\Sortable;
@@ -107,5 +108,56 @@ class TagType extends Model implements Sortable
         }
 
         return class_exists($model) ? Relation::getMorphAlias($model) : $model;
+    }
+
+    /**
+     * The models tags can be assigned to, keyed by morph alias.
+     *
+     * @return array<string, class-string<Model>>
+     */
+    public static function taggableModels(): array
+    {
+        $config = FilamentVoight::config();
+
+        return collect([
+            $config->getProjectModel(),
+            $config->getEnvironmentModel(),
+            $config->getCustomerModel(),
+            $config->getPackageModel(),
+            $config->getVulnerabilityModel(),
+        ])->mapWithKeys(fn (string $model): array => [self::morphAlias($model) => $model])->all();
+    }
+
+    /**
+     * How many records of each model carry tags of this type, keyed by morph alias.
+     *
+     * @return array<string, int>
+     */
+    public function assignmentCountsByModel(): array
+    {
+        return DB::table('voight_taggables')
+            ->join('voight_tags', 'voight_tags.id', '=', 'voight_taggables.tag_id')
+            ->where('voight_tags.type', $this->key)
+            ->groupBy('voight_taggables.taggable_type')
+            ->selectRaw('voight_taggables.taggable_type, count(distinct voight_taggables.taggable_id) as aggregate')
+            ->pluck('aggregate', 'taggable_type')
+            ->map(fn (mixed $count): int => (int) $count)
+            ->all();
+    }
+
+    /**
+     * How many records hold more than one tag of this type.
+     */
+    public function recordsWithSeveralTagsCount(): int
+    {
+        return DB::query()->fromSub(
+            DB::table('voight_taggables')
+                ->join('voight_tags', 'voight_tags.id', '=', 'voight_taggables.tag_id')
+                ->where('voight_tags.type', $this->key)
+                ->groupBy('voight_taggables.taggable_type', 'voight_taggables.taggable_id')
+                ->havingRaw('count(*) > 1')
+                ->select('voight_taggables.taggable_id'),
+            'several',
+        )->count();
     }
 }

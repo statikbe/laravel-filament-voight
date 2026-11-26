@@ -37,6 +37,9 @@ enum VoightIcon: string
     #[IconDefinition(Heroicon::OutlinedBuildingOffice, 'Sidebar navigation item for the customers list: the clients projects belong to.')]
     case NavigationCustomers = 'navigation.customers';
 
+    #[IconDefinition(Heroicon::OutlinedTag, 'Sidebar navigation item for the tag types screen, where admins define classifications and their tags.')]
+    case NavigationTagTypes = 'navigation.tag-types';
+
     #[IconDefinition(Heroicon::OutlinedCommandLine, 'User menu item opening the MCP access page, where users connect AI assistants to Voight.')]
     case UserMenuMcpAccess = 'user-menu.mcp-access';
 
@@ -92,6 +95,9 @@ enum VoightIcon: string
 
     #[IconDefinition(Heroicon::PuzzlePiece, 'Tab on an environment page listing the loaded PHP extensions.')]
     case TabEnvironmentExtensions = 'tab.environment.extensions';
+
+    #[IconDefinition(Heroicon::OutlinedTag, 'Tab on a tag type page listing the tags of that type.')]
+    case TabTagTypeTags = 'tab.tag-type.tags';
 
     // -- Empty states --
 
