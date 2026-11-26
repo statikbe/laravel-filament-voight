@@ -210,11 +210,11 @@ class BunLockParser implements LockfileParser
             }
 
             $fromKey = $path === '' ? '' : (string) ($workspace['name'] ?? $path);
-            $requirements = [
-                ...array_fill_keys(array_keys($this->mapField($workspace, 'devDependencies')), true),
-                ...array_fill_keys(array_keys($this->mapField($workspace, 'optionalDependencies')), false),
-                ...array_fill_keys(array_keys($this->mapField($workspace, 'dependencies')), false),
-            ];
+            $requirements = array_replace(
+                array_fill_keys(array_keys($this->mapField($workspace, 'devDependencies')), true),
+                array_fill_keys(array_keys($this->mapField($workspace, 'optionalDependencies')), false),
+                array_fill_keys(array_keys($this->mapField($workspace, 'dependencies')), false),
+            );
 
             foreach ($requirements as $name => $isDev) {
                 $key = $this->resolve($fromKey, (string) $name, $nodes);

@@ -88,6 +88,23 @@ it('falls back to unrequired packages being direct without workspaces', function
     expect(bunKeys(parseBun(SCOPED_BUN_LOCK), 'is_direct'))->toBe(['@scope/a', '@scope/c']);
 });
 
+it('marks a package with a digit-only name direct', function () {
+    $packages = parseBun(<<<'JSONC'
+        {
+          "workspaces": {
+            "": { "name": "app", "dependencies": { "123": "^1.0.0" }, "devDependencies": { "123": "^1.0.0", "a": "^1.0.0" } },
+          },
+          "packages": {
+            "123": ["123@1.0.0", "", {}, "sha512-n"],
+            "a": ["a@1.0.0", "", {}, "sha512-a"],
+          },
+        }
+        JSONC);
+
+    expect($packages['123'])->toMatchArray(['is_direct' => true, 'is_dev' => false])
+        ->and($packages['a'])->toMatchArray(['is_direct' => true, 'is_dev' => true]);
+});
+
 it('records resolvable peer dependencies', function () {
     $packages = parseBun(<<<'JSONC'
         {

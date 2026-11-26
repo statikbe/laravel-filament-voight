@@ -27,8 +27,9 @@ All notable changes to `laravel-filament-voight` will be documented in this file
   skipped with an "unsupported lockfile" warning. Run `php artisan voight:reprocess-lockfiles`
   after upgrading to import the stored ones. The binary `bun.lockb` is not supported.
   **Requires the `voight-osv-scanner-lambda` release that accepts `bun.lock`; deploy the
-  lambda first.** Environments with a git dependency in `bun.lock` are scanned nightly via
-  `/locks` instead of the deduplicated `/packages` sweep.
+  lambda first.** Environments with a git or tarball dependency in `bun.lock` are scanned
+  nightly via `/locks` instead of the deduplicated `/packages` sweep. If you published the
+  config, add `bun.lock` to `lockfiles.allowed_names` for `voight:sync-lockfile`.
 - Yarn Berry (v2+) `yarn.lock` files are parsed: their packages, dependency graph and
   vulnerabilities are stored instead of being skipped with a "Yarn Berry lockfile"
   warning. Run `php artisan voight:reprocess-lockfiles` after upgrading to import the

@@ -83,10 +83,10 @@ class RunNightlyOsvScanJob implements ShouldQueue
 
     /**
      * Split environments: any environment containing a commit-pinned (non-PURL-able)
-     * package (`dev-main`, or a bun.lock git locator such as `github:owner/repo#sha`;
-     * registry versions never contain a colon) is scanned in full via /locks; the rest
-     * go through the deduplicated /packages path. This subsumes per-package skipping
-     * and avoids double runs.
+     * package (`dev-main`, or a bun.lock git or tarball locator such as
+     * `github:owner/repo#sha`; registry versions never contain a colon) is scanned
+     * in full via /locks; the rest go through the deduplicated /packages path. This
+     * subsumes per-package skipping and avoids double runs.
      *
      * @param  Collection<int, Environment>  $environments
      * @return array{0: Collection<int, Environment>, 1: Collection<int, Environment>}
