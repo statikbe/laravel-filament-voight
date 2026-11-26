@@ -5,8 +5,8 @@ namespace Statikbe\FilamentVoight\Resources\Components;
 use Filament\Forms\Components\Select;
 use Filament\Schemas\Components\Grid;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Collection;
 use Statikbe\FilamentVoight\Enums\Severity;
 use Statikbe\FilamentVoight\Models\AuditFinding;
 use Statikbe\FilamentVoight\Models\Package;
@@ -89,7 +89,7 @@ class ProjectPackageOperator extends InstalledVersionRangeOperator
     /**
      * @param  Collection<int, Package>  $packages
      * @param  array<int, Severity>  $severities
-     * @return array<int, string>
+     * @return array<int, int>
      */
     private function projectIdsWithCurrentFindings(Collection $packages, array $severities): array
     {
@@ -101,7 +101,7 @@ class ProjectPackageOperator extends InstalledVersionRangeOperator
             ->with('auditRun.environment:id,project_id')
             ->get()
             ->filter(fn (AuditFinding $finding): bool => $constraint->matches($finding->installed_version))
-            ->map(fn (AuditFinding $finding): string => $finding->auditRun->environment->project_id)
+            ->map(fn (AuditFinding $finding): int => $finding->auditRun->environment->project_id)
             ->unique()
             ->values()
             ->all();

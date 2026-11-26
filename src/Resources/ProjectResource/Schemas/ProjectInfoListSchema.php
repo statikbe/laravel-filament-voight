@@ -172,7 +172,7 @@ class ProjectInfoListSchema
      * Distinct open vulnerabilities per severity, keyed by environment id.
      *
      * @param  array<int, PackageType>  $types
-     * @return Collection<string, object>
+     * @return Collection<int|string, \stdClass>
      */
     public static function severityCounts(Project $project, array $types): Collection
     {

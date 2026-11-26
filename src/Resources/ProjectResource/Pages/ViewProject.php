@@ -20,6 +20,7 @@ use Statikbe\FilamentVoight\Enums\PackageType;
 use Statikbe\FilamentVoight\Enums\Severity;
 use Statikbe\FilamentVoight\Enums\VoightIcon;
 use Statikbe\FilamentVoight\Models\Environment;
+use Statikbe\FilamentVoight\Models\Project;
 use Statikbe\FilamentVoight\Resources\Components\EnvironmentNameColumn;
 use Statikbe\FilamentVoight\Resources\ProjectResource;
 use Statikbe\FilamentVoight\Resources\ProjectResource\Schemas\ProjectInfoListSchema;
@@ -78,7 +79,7 @@ class ViewProject extends ViewRecord implements HasTable
             );
 
         return $table
-            ->query(fn (): Builder => $this->getRecord()->environments()->getQuery())
+            ->query(fn (): Builder => $this->project()->environments()->getQuery())
             ->defaultSort('name')
             ->paginated(false)
             ->columns([
@@ -133,13 +134,21 @@ class ViewProject extends ViewRecord implements HasTable
         };
     }
 
+    private function project(): Project
+    {
+        $project = $this->getRecord();
+        assert($project instanceof Project);
+
+        return $project;
+    }
+
     /**
-     * @return Collection<string, object>
+     * @return Collection<int|string, \stdClass>
      */
     private function severityCounts(bool $includeNpm): Collection
     {
         return once(fn (): Collection => ProjectInfoListSchema::severityCounts(
-            $this->getRecord(),
+            $this->project(),
             $includeNpm ? [PackageType::Composer, PackageType::Npm] : [PackageType::Composer],
         ));
     }
