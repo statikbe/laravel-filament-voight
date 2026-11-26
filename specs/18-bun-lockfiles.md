@@ -66,7 +66,7 @@ JSONC: JSON with trailing commas, no comments. Excerpt (Bun 1.3.11,
   `string-width`.
 - **The metadata object** (`dependencies`, `optionalDependencies`,
   `peerDependencies`, `os`, `bin`, …) is the first object in the array: index 2
-  for registry packages, index 1 for git/github ones.
+  for registry packages, index 1 for git/github and tarball URL ones.
 - **Workspaces** declare `dependencies`, `devDependencies` and
   `optionalDependencies` separately, so direct and dev flags need no
   `package.json`.
@@ -99,6 +99,9 @@ One node per `packages` entry whose locator reference is not `workspace:`,
 - `version` = locator reference with a leading `npm:` removed. Registry packages
   give plain semver; git/github ones keep their reference
   (`github:jonschlinkert/is-even#585f800`), as there is no other version.
+  Tarball URL dependencies keep their URL too
+  (`https://registry.npmjs.org/ms/-/ms-2.0.0.tgz`); the lambda works out a
+  version for scanning where it can.
 - `type` = `PackageType::Npm`.
 
 ### Edges
@@ -140,11 +143,15 @@ production (e.g. root dev `supports-color`, also required by production
   release from `voight-osv-scanner-lambda`
   `docs/superpowers/specs/2026-11-26-bun-lockfiles-design.md`.** It accepts the
   name and strips git entries, whose short commits make the OSV API fail the
-  scan. An older lambda rejects the whole `/locks` input, so deploy the lambda
+  scan. It rewrites tarball URLs in the npm registry layout
+  (`…/<name>/-/<name>-<version>.tgz`) to `name@version` and strips other
+  tarball URLs, which would otherwise match every advisory for the package.
+  An older lambda rejects the whole `/locks` input, so deploy the lambda
   first.
 - `RunNightlyOsvScanJob::partitionEnvironments()`: an environment with an
   installed version containing `:` (bun git/github locators such as
-  `github:owner/repo#sha`; registry versions never contain one) is scanned via
+  `github:owner/repo#sha` and tarball URLs; registry versions never contain
+  one) is scanned via
   `/locks`, like `dev-` versions, so they never reach `/packages`.
 - `lockfiles.allowed_names`: add `bun.lock` in `config/filament-voight.php`
   and `FilamentVoightConfig::getAllowedLockfileNames()`.
@@ -161,8 +168,10 @@ files are parsed, and the `UnsupportedLockfile` warning is replaced. Add this to
 
 - `bun.lockb` (binary) and pnpm.
 - Which version satisfies a peer: like npm, the nearest installed copy is used.
-- Vulnerabilities in git dependencies: the lambda skips them (Bun records only
-  a short commit). They are still stored and shown.
+- Vulnerabilities in git dependencies and non-registry tarball URL
+  dependencies: the lambda skips them (Bun records only a short commit; a
+  non-registry URL has no reliable version). They are still stored and shown.
+  Registry tarball URLs are scanned as `name@version`.
 
 ---
 
