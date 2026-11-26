@@ -151,6 +151,7 @@ class FilamentVoightServiceProvider extends PackageServiceProvider
             Commands\SendAlertDigestsCommand::class,
             Commands\ReprocessLockfilesCommand::class,
             Commands\FetchFaviconsCommand::class,
+            Commands\ListIconsCommand::class,
         ];
     }
 
