@@ -64,3 +64,12 @@ it('resolves relation manager tab icons through VoightIcon', function (string $r
     [InstallationsRelationManager::class, VoightIcon::TabPackageInstallations],
     [KnownVulnerabilitiesRelationManager::class, VoightIcon::TabPackageKnownVulnerabilities],
 ]);
+
+it('resolves the MCP access user menu icon at render time, so host overrides made after the panel registers apply', function () {
+    $this->actingAs(mcpUser());
+    FilamentIcon::register([VoightIcon::UserMenuMcpAccess->alias() => 'heroicon-o-star']);
+
+    $item = filament()->getCurrentOrDefaultPanel()->getUserMenuItems()['voight-mcp-access'];
+
+    expect($item->getIcon())->toBe('heroicon-o-star');
+});

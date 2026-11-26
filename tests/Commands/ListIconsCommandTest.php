@@ -33,7 +33,7 @@ it('outputs json with every case and marks overrides', function () {
             'case' => 'SeverityCritical',
             'alias' => 'voight::severity.critical',
             'default' => 'heroicon-o-fire',
-            'current' => 'o-bolt',
+            'current' => 'Heroicon::OutlinedBolt',
             'overridden' => true,
         ])
         ->and($rows['voight::severity.critical']['description'])->not->toBe('')
@@ -44,4 +44,8 @@ it('renders Htmlable overrides as strings in json', function () {
     FilamentIcon::register(['voight::severity.critical' => new HtmlString('<svg/>')]);
 
     expect(iconRowsByAlias()['voight::severity.critical']['current'])->toBe('<svg/>');
+});
+
+it('shows enum defaults as pasteable enum references', function () {
+    expect(iconRowsByAlias()['voight::navigation.projects']['default'])->toBe('Heroicon::OutlinedCodeBracket');
 });

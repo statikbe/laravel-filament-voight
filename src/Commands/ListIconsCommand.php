@@ -52,7 +52,7 @@ class ListIconsCommand extends Command
     private function iconToString(string | BackedEnum | Htmlable $icon): string
     {
         return match (true) {
-            $icon instanceof BackedEnum => (string) $icon->value,
+            $icon instanceof BackedEnum => class_basename($icon) . '::' . $icon->name,
             $icon instanceof Htmlable => $icon->toHtml(),
             default => $icon,
         };

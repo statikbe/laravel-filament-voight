@@ -2,10 +2,12 @@
 
 namespace Statikbe\FilamentVoight;
 
+use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Contracts\Plugin;
 use Filament\Navigation\NavigationGroup;
 use Filament\Panel;
+use Illuminate\Contracts\Support\Htmlable;
 use Statikbe\FilamentVoight\Enums\VoightIcon;
 use Statikbe\FilamentVoight\Pages\McpAccess;
 use Statikbe\FilamentVoight\Resources\AuditFindingResource;
@@ -56,7 +58,7 @@ class FilamentVoightPlugin implements Plugin
         $panel->userMenuItems([
             'voight-mcp-access' => Action::make('voight-mcp-access')
                 ->label(fn (): string => voightTrans('pages.mcp_access.title'))
-                ->icon(VoightIcon::UserMenuMcpAccess->resolve())
+                ->icon(fn (): string | BackedEnum | Htmlable => VoightIcon::UserMenuMcpAccess->resolve())
                 ->url(fn (): string => McpAccess::getUrl(panel: $panel->getId()))
                 ->visible(fn (): bool => McpAccess::canAccess()),
         ]);
