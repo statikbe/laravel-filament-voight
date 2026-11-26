@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
 use Statikbe\FilamentVoight\Facades\FilamentVoight;
+use Statikbe\FilamentVoight\Models\Concerns\HasVersionKeys;
 
 /**
  * @property string $id
@@ -16,6 +17,7 @@ use Statikbe\FilamentVoight\Facades\FilamentVoight;
  * @property string $package_id
  * @property string $vulnerability_id
  * @property string $installed_version
+ * @property string|null $installed_version_sort
  * @property string|null $fixed_version
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
@@ -24,10 +26,19 @@ class AuditFinding extends Model
 {
     use HasFactory;
     use HasUlids;
+    use HasVersionKeys;
 
     protected $table = 'voight_audit_findings';
 
     protected $guarded = [];
+
+    /**
+     * @return array<string, string>
+     */
+    protected function versionKeyColumns(): array
+    {
+        return ['installed_version' => 'installed_version_sort'];
+    }
 
     /**
      * Restricts findings to those of an environment's latest audit run.
