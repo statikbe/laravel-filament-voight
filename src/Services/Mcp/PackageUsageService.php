@@ -2,9 +2,11 @@
 
 namespace Statikbe\FilamentVoight\Services\Mcp;
 
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
+use Statikbe\FilamentVoight\Facades\FilamentVoight;
 use Statikbe\FilamentVoight\Mcp\McpAccess;
 use Statikbe\FilamentVoight\Mcp\McpToolError;
 use Statikbe\FilamentVoight\Support\VersionConstraint;
@@ -23,7 +25,7 @@ class PackageUsageService
      *
      * @throws McpToolError
      */
-    public function find(McpAccess $access, string $packageName, ?string $type, ?string $versionFilter, bool $includeDev, Page $page): array
+    public function find(McpAccess $access, string $packageName, ?string $type, ?string $versionFilter, bool $includeDev, Page $page, ?EloquentCollection $projectTags = null): array
     {
         $constraint = self::versionConstraint($versionFilter);
 
@@ -35,6 +37,10 @@ class PackageUsageService
 
         if (! $access->seesEverything) {
             $usages->whereIn('p.id', $access->visibleProjects()->select('voight_projects.id'));
+        }
+
+        if ($projectTags !== null) {
+            $usages->whereIn('p.id', TagReferences::constrain(FilamentVoight::config()->getProjectModel()::query(), $projectTags)->select('voight_projects.id'));
         }
 
         if (! $includeDev) {

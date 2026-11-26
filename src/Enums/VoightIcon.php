@@ -37,6 +37,9 @@ enum VoightIcon: string
     #[IconDefinition(Heroicon::OutlinedBuildingOffice, 'Sidebar navigation item for the customers list: the clients projects belong to.')]
     case NavigationCustomers = 'navigation.customers';
 
+    #[IconDefinition(Heroicon::OutlinedTag, 'Sidebar navigation item for the tag types screen, where admins define classifications and their tags.')]
+    case NavigationTagTypes = 'navigation.tag-types';
+
     #[IconDefinition(Heroicon::OutlinedCommandLine, 'User menu item opening the MCP access page, where users connect AI assistants to Voight.')]
     case UserMenuMcpAccess = 'user-menu.mcp-access';
 
@@ -93,6 +96,9 @@ enum VoightIcon: string
     #[IconDefinition(Heroicon::PuzzlePiece, 'Tab on an environment page listing the loaded PHP extensions.')]
     case TabEnvironmentExtensions = 'tab.environment.extensions';
 
+    #[IconDefinition(Heroicon::OutlinedTag, 'Tab on a tag type page listing the tags of that type.')]
+    case TabTagTypeTags = 'tab.tag-type.tags';
+
     // -- Empty states --
 
     #[IconDefinition(Heroicon::OutlinedShieldCheck, 'Empty state of vulnerability/finding lists meaning "all clear": nothing vulnerable was found.')]
@@ -134,6 +140,15 @@ enum VoightIcon: string
     #[IconDefinition(Heroicon::ClipboardDocument, 'Action button on an environment page copying its system details as Markdown to the clipboard.')]
     case ActionCopyEnvironmentMarkdown = 'action.copy-environment-markdown';
 
+    #[IconDefinition(Heroicon::OutlinedTag, 'Bulk action adding tags to all selected records in a table.')]
+    case ActionApplyTags = 'action.apply-tags';
+
+    #[IconDefinition(Heroicon::OutlinedBackspace, 'Bulk action removing tags from all selected records in a table.')]
+    case ActionRemoveTags = 'action.remove-tags';
+
+    #[IconDefinition(Heroicon::OutlinedTag, 'Action on a record\'s page opening a modal to edit its tags.')]
+    case ActionEditTags = 'action.edit-tags';
+
     // -- Table filters --
 
     #[IconDefinition('heroicon-m-server-stack', 'Query-builder filter constraint on environment stage (production, staging, ...).')]
@@ -144,6 +159,9 @@ enum VoightIcon: string
 
     #[IconDefinition('heroicon-m-cube', 'Query-builder filter constraint on an installed package, optionally within a version range.')]
     case FilterInstalledPackage = 'filter.installed-package';
+
+    #[IconDefinition(Heroicon::OutlinedTag, 'Query-builder filter constraint on tags of one tag type, on the record or a related model.')]
+    case FilterTag = 'filter.tag';
 
     // -- Widgets --
 

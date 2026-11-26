@@ -17,6 +17,7 @@ use Statikbe\FilamentVoight\Resources\EnvironmentResource;
 use Statikbe\FilamentVoight\Resources\EnvironmentResource\Pages\ListEnvironments;
 use Statikbe\FilamentVoight\Resources\PackageResource;
 use Statikbe\FilamentVoight\Resources\ProjectResource;
+use Statikbe\FilamentVoight\Resources\TagTypeResource;
 use Statikbe\FilamentVoight\Resources\TeamResource;
 use Statikbe\FilamentVoight\Resources\VulnerabilityResource;
 
@@ -34,6 +35,7 @@ class FilamentVoightPlugin implements Plugin
         $panel->resources([
             CustomerResource::class,
             TeamResource::class,
+            TagTypeResource::class,
             ProjectResource::class,
             PackageResource::class,
             VulnerabilityResource::class,

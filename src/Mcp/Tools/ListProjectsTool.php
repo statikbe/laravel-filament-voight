@@ -16,6 +16,7 @@ use Statikbe\FilamentVoight\Facades\FilamentVoight;
 use Statikbe\FilamentVoight\Mcp\McpAccess;
 use Statikbe\FilamentVoight\Services\Mcp\PackageUsageService;
 use Statikbe\FilamentVoight\Services\Mcp\ProjectQueryService;
+use Statikbe\FilamentVoight\Services\Mcp\TagReferences;
 
 #[IsReadOnly]
 #[IsIdempotent]
@@ -61,6 +62,7 @@ class ListProjectsTool extends VoightTool
             'scanned_before' => $schema->string()->format('date')->description('ISO date. Only projects with an environment not scanned since then.'),
             'upgrade_status' => $schema->string()->enum(array_column(UpgradeStatus::cases(), 'value'))
                 ->description('Only projects with this upgrade status (see `stack.upgrade_status`).'),
+            'tags' => TagReferences::schema($schema)->description('Only projects with these project tags (any of the tags given per type, every type given). ' . TagReferences::DESCRIPTION),
             'sort' => $schema->string()->enum(ProjectQueryService::SORTS)->default('findings'),
             'limit' => $this->limitSchema($schema),
             'offset' => $this->offsetSchema($schema),
@@ -75,6 +77,7 @@ class ListProjectsTool extends VoightTool
                 'name' => $schema->string()->nullable(),
                 'team' => $schema->string()->nullable(),
                 'customer' => $schema->string()->nullable(),
+                'tags' => $schema->array()->items($schema->object(['type' => $schema->string(), 'tag' => $schema->string()])),
                 'environments' => $schema->array(),
                 'findings' => $schema->object()->description('Current finding counts: critical, high, medium, low, none, total.'),
                 'max_score' => $schema->number()->nullable(),
@@ -110,6 +113,7 @@ class ListProjectsTool extends VoightTool
             'has_findings' => ['nullable', 'boolean'],
             'scanned_before' => ['nullable', 'date'],
             'sort' => ['nullable', Rule::in(ProjectQueryService::SORTS)],
+            ...TagReferences::rules('tags'),
         ]);
 
         $access->authorize('viewAny', FilamentVoight::config()->getProjectModel());
@@ -130,6 +134,7 @@ class ListProjectsTool extends VoightTool
             'has_findings' => $hasFindings === null ? null : filter_var($hasFindings, FILTER_VALIDATE_BOOLEAN),
             'scanned_before' => $request->get('scanned_before') ? Carbon::parse($request->get('scanned_before')) : null,
             'upgrade_status' => $upgradeStatus === null ? null : UpgradeStatus::from($upgradeStatus),
+            'tags' => filled($request->get('tags')) ? TagReferences::resolveOrFail($request->get('tags')) : null,
             'sort' => $request->get('sort'),
             'page' => $this->page($request, $this->projectsLimit($request, $projectCodes)),
         ]));

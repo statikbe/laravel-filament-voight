@@ -21,12 +21,17 @@ use Statikbe\FilamentVoight\Enums\Framework;
 use Statikbe\FilamentVoight\Enums\Severity;
 use Statikbe\FilamentVoight\Enums\UpgradeStatus;
 use Statikbe\FilamentVoight\Models\AuditFinding;
+use Statikbe\FilamentVoight\Models\Customer;
 use Statikbe\FilamentVoight\Models\Project;
+use Statikbe\FilamentVoight\Resources\Components\ApplyTagsBulkAction;
 use Statikbe\FilamentVoight\Resources\Components\EnvironmentStageConstraint;
 use Statikbe\FilamentVoight\Resources\Components\ProjectConstraint;
 use Statikbe\FilamentVoight\Resources\Components\ProjectPackageConstraint;
 use Statikbe\FilamentVoight\Resources\Components\ProjectStackConstraint;
+use Statikbe\FilamentVoight\Resources\Components\RemoveTagsBulkAction;
 use Statikbe\FilamentVoight\Resources\Components\SeverityConstraint;
+use Statikbe\FilamentVoight\Resources\Components\TagConstraint;
+use Statikbe\FilamentVoight\Resources\Components\TagsColumn;
 use Statikbe\FilamentVoight\Resources\ProjectResource;
 use Statikbe\FilamentVoight\Services\ProjectStackService;
 use Statikbe\FilamentVoight\Support\ProjectFaviconColumn;
@@ -97,6 +102,7 @@ class ProjectTableSchema
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
+                TagsColumn::make(),
             ])
             ->filters([
                 QueryBuilder::make()
@@ -118,6 +124,8 @@ class ProjectTableSchema
                         ProjectStackConstraint::phpVersion(),
                         ProjectStackConstraint::upgradeStatus(),
                         ProjectPackageConstraint::make(),
+                        ...TagConstraint::forModel(Project::class),
+                        ...TagConstraint::forModel(Customer::class, 'customer', 'customer'),
                         // "Current" means a finding in an environment's latest audit run; matches projects with any such finding of the severity.
                         SeverityConstraint::make('current_severity', fn (Builder $query, Severity $severity) => $query
                             ->whereHas('environments.auditRuns.auditFindings', fn (Builder $finding) => AuditFinding::constrainToCurrent($finding)
@@ -132,6 +140,8 @@ class ProjectTableSchema
                 EditAction::make(),
             ])
             ->toolbarActions([
+                ApplyTagsBulkAction::make(),
+                RemoveTagsBulkAction::make(),
                 DeleteBulkAction::make(),
             ]);
     }

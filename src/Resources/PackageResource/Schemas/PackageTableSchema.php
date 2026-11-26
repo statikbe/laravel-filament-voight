@@ -14,8 +14,16 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 use Statikbe\FilamentVoight\Enums\PackageType;
+use Statikbe\FilamentVoight\Models\Customer;
+use Statikbe\FilamentVoight\Models\Environment;
+use Statikbe\FilamentVoight\Models\Package;
+use Statikbe\FilamentVoight\Models\Project;
+use Statikbe\FilamentVoight\Resources\Components\ApplyTagsBulkAction;
 use Statikbe\FilamentVoight\Resources\Components\EnvironmentStageConstraint;
 use Statikbe\FilamentVoight\Resources\Components\ProjectConstraint;
+use Statikbe\FilamentVoight\Resources\Components\RemoveTagsBulkAction;
+use Statikbe\FilamentVoight\Resources\Components\TagConstraint;
+use Statikbe\FilamentVoight\Resources\Components\TagsColumn;
 use Statikbe\FilamentVoight\Resources\PackageResource\Actions\OpenPackageWebsiteAction;
 
 class PackageTableSchema
@@ -44,6 +52,7 @@ class PackageTableSchema
                     ->label(voightTrans('models.package.fields.installations'))
                     ->counts(['environmentPackages' => fn (Builder $query) => $query->select(DB::raw('count(distinct environment_id)'))])
                     ->sortable(),
+                TagsColumn::make(),
             ])
             ->filters([
                 QueryBuilder::make()
@@ -59,6 +68,10 @@ class PackageTableSchema
                         DateConstraint::make('latest_version_updated_at')
                             ->label(voightTrans('models.package.fields.latest_version_updated_at')),
                         EnvironmentStageConstraint::make('environmentPackages.environment'),
+                        ...TagConstraint::forModel(Package::class),
+                        ...TagConstraint::forModel(Environment::class, 'environmentPackages.environment', 'environment'),
+                        ...TagConstraint::forModel(Project::class, 'environmentPackages.environment.project', 'project'),
+                        ...TagConstraint::forModel(Customer::class, 'environmentPackages.environment.project.customer', 'customer'),
                         RelationshipConstraint::make('environmentPackages')
                             ->label(voightTrans('models.package.fields.installations'))
                             ->multiple(),
@@ -74,6 +87,10 @@ class PackageTableSchema
             ->recordActions([
                 ViewAction::make(),
                 OpenPackageWebsiteAction::make(),
+            ])
+            ->toolbarActions([
+                ApplyTagsBulkAction::make(),
+                RemoveTagsBulkAction::make(),
             ]);
     }
 }

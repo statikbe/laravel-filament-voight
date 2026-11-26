@@ -13,6 +13,7 @@ use Statikbe\FilamentVoight\Enums\PackageType;
 use Statikbe\FilamentVoight\Facades\FilamentVoight;
 use Statikbe\FilamentVoight\Mcp\McpAccess;
 use Statikbe\FilamentVoight\Services\Mcp\PackageUsageService;
+use Statikbe\FilamentVoight\Services\Mcp\TagReferences;
 
 #[IsReadOnly]
 #[IsIdempotent]
@@ -38,6 +39,7 @@ class FindPackageUsageTool extends VoightTool
             'type' => $schema->string()->enum(array_column(PackageType::cases(), 'value')),
             'version' => $schema->string()->description('One or more comparisons (<, <=, >, >=, =) separated by spaces, all of which must hold, e.g. `>=7.0 <7.4`. A leading `v` is ignored.'),
             'include_dev' => $schema->boolean()->default(true),
+            'tags' => TagReferences::schema($schema)->description('Only projects with these project tags (any of the tags given per type, every type given). ' . TagReferences::DESCRIPTION),
             'limit' => $this->limitSchema($schema),
             'offset' => $this->offsetSchema($schema),
         ];
@@ -66,6 +68,7 @@ class FindPackageUsageTool extends VoightTool
             'type' => ['nullable', Rule::enum(PackageType::class)],
             'version' => ['nullable', 'string'],
             'include_dev' => ['nullable', 'boolean'],
+            ...TagReferences::rules('tags'),
         ]);
 
         $access->authorize('viewAny', FilamentVoight::config()->getProjectModel());
@@ -77,6 +80,7 @@ class FindPackageUsageTool extends VoightTool
             $request->get('version'),
             filter_var($request->get('include_dev', true), FILTER_VALIDATE_BOOLEAN),
             $this->page($request),
+            filled($request->get('tags')) ? TagReferences::resolveOrFail($request->get('tags')) : null,
         ));
     }
 }

@@ -15,6 +15,11 @@ use Statikbe\FilamentVoight\Enums\PackageType;
 use Statikbe\FilamentVoight\Enums\Severity;
 use Statikbe\FilamentVoight\Enums\VulnerabilitySource;
 use Statikbe\FilamentVoight\Models\AuditFinding;
+use Statikbe\FilamentVoight\Models\Customer;
+use Statikbe\FilamentVoight\Models\Environment;
+use Statikbe\FilamentVoight\Models\Package;
+use Statikbe\FilamentVoight\Models\Project;
+use Statikbe\FilamentVoight\Models\Vulnerability;
 use Statikbe\FilamentVoight\Resources\PackageResource;
 use Statikbe\FilamentVoight\Resources\ProjectResource;
 
@@ -60,6 +65,15 @@ class AuditFindingTableSchema
                 ->label(voightTrans('models.vulnerability.fields.source_id'))
                 ->attribute('vulnerability.source_id');
         }
+
+        array_push(
+            $constraints,
+            ...TagConstraint::forModel(Vulnerability::class, 'vulnerability', 'vulnerability'),
+            ...TagConstraint::forModel(Package::class, 'package', 'package'),
+            ...TagConstraint::forModel(Environment::class, 'auditRun.environment', 'environment'),
+            ...TagConstraint::forModel(Project::class, 'auditRun.environment.project', 'project'),
+            ...TagConstraint::forModel(Customer::class, 'auditRun.environment.project.customer', 'customer'),
+        );
 
         $constraints[] = TextConstraint::make('installed_version')
             ->label(voightTrans('models.package.view.columns.installed_version'));

@@ -10,8 +10,10 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use Laravel\Sanctum\HasApiTokens;
 use Statikbe\FilamentVoight\Facades\FilamentVoight;
+use Statikbe\FilamentVoight\Models\Concerns\HasVoightTags;
 use Staudenmeir\EloquentHasManyDeep\HasManyDeep;
 use Staudenmeir\EloquentHasManyDeep\HasRelationships;
 
@@ -34,12 +36,24 @@ class Project extends Model
     use HasApiTokens;
     use HasFactory;
     use HasRelationships;
+    use HasVoightTags;
 
     const DEFAULT_API_TOKEN_NAME = 'ci-pipeline';
 
     protected $table = 'voight_projects';
 
     protected $guarded = [];
+
+    protected static function booted(): void
+    {
+        // Environments go with the project through a foreign key cascade, which skips their tag cleanup.
+        static::deleting(function (self $project): void {
+            DB::table('voight_taggables')
+                ->where('taggable_type', (new (FilamentVoight::config()->getEnvironmentModel()))->getMorphClass())
+                ->whereIn('taggable_id', $project->environments()->select('id'))
+                ->delete();
+        });
+    }
 
     /**
      * @return array<string, string>

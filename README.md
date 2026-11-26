@@ -216,6 +216,8 @@ FilamentVoight::resolveMcpAdminUsing(fn ($user): bool => $user->is_admin);
 FilamentVoight::resolveMcpVisibleProjectsUsing(fn ($query, $user) => $query->where(/* your rules */));
 ```
 
+Tag types and tags can be read (`list_tags`) and assigned (`assign_tags`); see [Tags](#tags).
+
 When your app registers a policy for the project model, the MCP tools respect it (`viewAny`, `view`, `create`, `update`). See `specs/13-mcp-server.md` for the full design.
 
 ## API reference
@@ -339,6 +341,23 @@ To see every icon with its default, current value and description, run:
 php artisan voight:icons         # table
 php artisan voight:icons --json  # e.g. hand this to an LLM to remap the set to another icon library
 ```
+
+## Tags
+
+Classify projects, environments, customers, packages and vulnerabilities with curated tags, e.g. a project's security level or a customer's support tier, and filter on them.
+
+- **Tag types** (Settings → Tag types) define a classification: a name, a description, which models it applies to (none checked = all five), and whether it is **single value** (a record holds at most one of its tags; assigning another replaces it). Each type's tags are managed on the type's page. Tags are never created while assigning, so the list stays curated.
+- **Assigning:** project and customer forms have a field per applicable type; environment, package and vulnerability pages have an **Edit tags** action. Every table has **Apply tags** and **Remove tags** bulk actions: filter the table, select all, apply.
+- **Filtering:** each table's query builder has a constraint per tag type, on its own records and on related ones, e.g. *Project › Security level* on vulnerabilities, packages, environments and open findings.
+- **Permissions:** tagging a record needs its model's `update` policy ability; without a policy for the model, anyone with panel access can tag it.
+
+Tags live in Voight's own `voight_tag_types`, `voight_tags` and `voight_taggables` tables (built on [spatie/laravel-tags](https://github.com/spatie/laravel-tags)), so an app that uses spatie-tags itself is not affected.
+
+Over MCP, `list_tags` returns the types with their tags, and `list_projects`, `get_project_vulnerabilities` and `find_package_usage` accept a `tags` filter. With write tools on, `assign_tags` adds or removes tags in bulk, e.g. to sync a spreadsheet:
+
+> Read `security-levels.csv` (project code, level) and set each project's security level in Voight.
+
+The call is checked as a whole: an unknown tag type or tag, a type that does not apply, or a record that is not found or not editable rejects the entire batch with every problem listed, so an admin can create what is missing and the sync can be rerun.
 
 ## Scheduling
 

@@ -5,6 +5,7 @@ namespace Statikbe\FilamentVoight\Resources\PackageResource\Pages;
 use Filament\Resources\Pages\ViewRecord;
 use Filament\Schemas\Schema;
 use Illuminate\Contracts\Support\Htmlable;
+use Statikbe\FilamentVoight\Resources\Components\EditTagsAction;
 use Statikbe\FilamentVoight\Resources\PackageResource;
 use Statikbe\FilamentVoight\Resources\PackageResource\Actions\OpenPackageWebsiteAction;
 use Statikbe\FilamentVoight\Resources\PackageResource\Schemas\PackageInfolistSchema;
@@ -22,6 +23,7 @@ class ViewPackage extends ViewRecord
     {
         return [
             OpenPackageWebsiteAction::make(),
+            EditTagsAction::make(),
         ];
     }
 

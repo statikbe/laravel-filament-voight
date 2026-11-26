@@ -221,6 +221,9 @@ class FilamentVoightServiceProvider extends PackageServiceProvider
             'add_version_sort_to_voight_environment_packages_table',
             'add_installed_version_sort_to_voight_audit_findings_table',
             'add_php_version_sort_to_voight_environment_system_details_table',
+            'create_voight_tag_types_table',
+            'create_voight_tags_table',
+            'create_voight_taggables_table',
         ];
     }
 }

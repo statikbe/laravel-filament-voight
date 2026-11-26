@@ -14,6 +14,7 @@ use Statikbe\FilamentVoight\Enums\AuditRunStatus;
 use Statikbe\FilamentVoight\Enums\DependencySyncStatus;
 use Statikbe\FilamentVoight\Enums\EnvironmentStage;
 use Statikbe\FilamentVoight\Facades\FilamentVoight;
+use Statikbe\FilamentVoight\Models\Concerns\HasVoightTags;
 
 /**
  * @property string $id
@@ -29,6 +30,7 @@ class Environment extends Model
 {
     use HasFactory;
     use HasUlids;
+    use HasVoightTags;
 
     protected $table = 'voight_environments';
 
