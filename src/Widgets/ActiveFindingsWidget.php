@@ -2,7 +2,6 @@
 
 namespace Statikbe\FilamentVoight\Widgets;
 
-use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
@@ -10,6 +9,7 @@ use Filament\Widgets\TableWidget;
 use Illuminate\Database\Eloquent\Builder;
 use Statikbe\FilamentVoight\Enums\PackageType;
 use Statikbe\FilamentVoight\Enums\Severity;
+use Statikbe\FilamentVoight\Enums\VoightIcon;
 use Statikbe\FilamentVoight\Facades\FilamentVoight;
 use Statikbe\FilamentVoight\Models\AuditFinding;
 use Statikbe\FilamentVoight\Resources\Components\EnvironmentNameColumn;
@@ -92,7 +92,7 @@ class ActiveFindingsWidget extends TableWidget
             ])
             ->paginated([10])
             ->defaultPaginationPageOption(10)
-            ->emptyStateIcon(Heroicon::OutlinedShieldCheck)
+            ->emptyStateIcon(VoightIcon::EmptyStateAllClear->resolve())
             ->emptyStateHeading(voightTrans('models.package.view.empty.no_active_findings_heading'))
             ->emptyStateDescription(voightTrans('models.package.view.empty.no_active_findings_description'));
     }

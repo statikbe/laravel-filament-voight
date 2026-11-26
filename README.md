@@ -273,6 +273,7 @@ Response `204 No Content`. Voight keeps only the latest snapshot per environment
 | `voight:sync-lockfile` | Push lockfiles from the command line |
 | `voight:run-osv-scan` | Dispatch OSV scan jobs (all or filtered) |
 | `voight:fetch-favicons [--project=] [--force]` | Fetch project favicons from their environment URLs |
+| `voight:icons [--json]` | List every icon with its alias, default, current value and description |
 
 ### `voight:run-osv-scan`
 
@@ -297,6 +298,39 @@ Backfill existing projects once their environments have a URL (set it in the env
 
 ```bash
 php artisan voight:fetch-favicons
+```
+
+## Icons
+
+Every icon the panel shows is a case of the `VoightIcon` enum, registered as a Filament icon alias `voight::<name>` (e.g. `voight::severity.critical`). Each case has a default and a short description of what it represents and where it shows.
+
+Override icons in the config, keyed by the alias without its `voight::` prefix:
+
+```php
+// config/filament-voight.php
+'icons' => [
+    'severity.critical' => 'phosphor-fire',
+    'navigation.projects' => \Filament\Support\Icons\Heroicon::OutlinedFolder,
+],
+```
+
+Or use Filament's own icon aliases from a service provider:
+
+```php
+use Filament\Support\Facades\FilamentIcon;
+
+FilamentIcon::register([
+    'voight::severity.critical' => 'phosphor-fire',
+]);
+```
+
+When both set the same icon, `FilamentIcon::register()` wins over the config. Icons you don't override keep their default.
+
+To see every icon with its default, current value and description, run:
+
+```bash
+php artisan voight:icons         # table
+php artisan voight:icons --json  # e.g. hand this to an LLM to remap the set to another icon library
 ```
 
 ## Scheduling

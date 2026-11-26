@@ -2,10 +2,10 @@
 
 namespace Statikbe\FilamentVoight\Widgets;
 
-use Filament\Support\Icons\Heroicon;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 use Statikbe\FilamentVoight\Enums\AuditRunStatus;
+use Statikbe\FilamentVoight\Enums\VoightIcon;
 use Statikbe\FilamentVoight\Facades\FilamentVoight;
 
 class AuditRunStatusWidget extends StatsOverviewWidget
@@ -37,17 +37,17 @@ class AuditRunStatusWidget extends StatsOverviewWidget
                 $auditRunModel::query()->where('status', $status->value)->count(),
             )
                 ->color($status->color())
-                ->icon($this->getIconForStatus($status)))
+                ->icon($this->getIconForStatus($status)->resolve()))
             ->all();
     }
 
-    protected function getIconForStatus(AuditRunStatus $status): Heroicon
+    protected function getIconForStatus(AuditRunStatus $status): VoightIcon
     {
         return match ($status) {
-            AuditRunStatus::Completed => Heroicon::OutlinedCheckCircle,
-            AuditRunStatus::Running => Heroicon::OutlinedArrowPath,
-            AuditRunStatus::Pending => Heroicon::OutlinedClock,
-            AuditRunStatus::Failed => Heroicon::OutlinedXCircle,
+            AuditRunStatus::Completed => VoightIcon::WidgetAuditRunStatusCompleted,
+            AuditRunStatus::Running => VoightIcon::WidgetAuditRunStatusRunning,
+            AuditRunStatus::Pending => VoightIcon::WidgetAuditRunStatusPending,
+            AuditRunStatus::Failed => VoightIcon::WidgetAuditRunStatusFailed,
         };
     }
 }

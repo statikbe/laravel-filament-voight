@@ -2,9 +2,11 @@
 
 namespace Statikbe\FilamentVoight\Enums;
 
+use BackedEnum;
 use Filament\Support\Contracts\HasColor;
 use Filament\Support\Contracts\HasIcon;
 use Filament\Support\Contracts\HasLabel;
+use Illuminate\Contracts\Support\Htmlable;
 
 enum PackageType: string implements HasColor, HasIcon, HasLabel
 {
@@ -25,9 +27,17 @@ enum PackageType: string implements HasColor, HasIcon, HasLabel
         };
     }
 
-    public function icon(): string
+    public function voightIcon(): VoightIcon
     {
-        return 'heroicon-o-cube';
+        return match ($this) {
+            self::Composer => VoightIcon::PackageTypeComposer,
+            self::Npm => VoightIcon::PackageTypeNpm,
+        };
+    }
+
+    public function icon(): string | BackedEnum | Htmlable
+    {
+        return $this->voightIcon()->resolve();
     }
 
     public function getLabel(): string
@@ -40,7 +50,7 @@ enum PackageType: string implements HasColor, HasIcon, HasLabel
         return $this->color();
     }
 
-    public function getIcon(): string
+    public function getIcon(): string | BackedEnum | Htmlable
     {
         return $this->icon();
     }

@@ -4,9 +4,9 @@ namespace Statikbe\FilamentVoight\Resources\EnvironmentResource\Pages;
 
 use Filament\Actions\Action;
 use Filament\Resources\Pages\ViewRecord;
-use Filament\Support\Icons\Heroicon;
 use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Support\Js;
+use Statikbe\FilamentVoight\Enums\VoightIcon;
 use Statikbe\FilamentVoight\Models\Environment;
 use Statikbe\FilamentVoight\Resources\EnvironmentResource;
 use Statikbe\FilamentVoight\Support\SystemDetailsPresenter;
@@ -32,7 +32,7 @@ class ViewEnvironment extends ViewRecord
         return [
             Action::make('copyMarkdown')
                 ->label(voightTrans('models.environment.system_details.copy_markdown'))
-                ->icon(Heroicon::ClipboardDocument)
+                ->icon(VoightIcon::ActionCopyEnvironmentMarkdown->resolve())
                 ->color('gray')
                 ->visible(fn (Environment $record): bool => $record->systemDetails !== null)
                 ->alpineClickHandler(fn (Environment $record): string => 'window.navigator.clipboard.writeText(' . Js::from(SystemDetailsPresenter::markdown($record)) . ').then(() => new FilamentNotification().title(' . Js::from(voightTrans('models.environment.system_details.copied')) . ').success().send())'),

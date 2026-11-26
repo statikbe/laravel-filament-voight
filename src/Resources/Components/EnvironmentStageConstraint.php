@@ -7,6 +7,7 @@ use Filament\Tables\Filters\QueryBuilder\Constraints\SelectConstraint;
 use Filament\Tables\Filters\QueryBuilder\Constraints\SelectConstraint\Operators\IsOperator;
 use Illuminate\Database\Eloquent\Builder;
 use Statikbe\FilamentVoight\Enums\EnvironmentStage;
+use Statikbe\FilamentVoight\Enums\VoightIcon;
 use Statikbe\FilamentVoight\Facades\FilamentVoight;
 
 /**
@@ -22,7 +23,7 @@ class EnvironmentStageConstraint
     {
         return SelectConstraint::make('environment_stage')
             ->label(voightTrans('models.environment.fields.stage'))
-            ->icon('heroicon-m-server-stack')
+            ->icon(VoightIcon::FilterEnvironmentStage->resolve())
             ->options(EnvironmentStage::options())
             ->multiple()
             ->operators([

@@ -3,8 +3,8 @@
 namespace Statikbe\FilamentVoight\Resources\PackageResource\Actions;
 
 use Filament\Actions\Action;
-use Filament\Support\Icons\Heroicon;
 use Statikbe\FilamentVoight\Enums\PackageType;
+use Statikbe\FilamentVoight\Enums\VoightIcon;
 use Statikbe\FilamentVoight\Models\Package;
 
 class OpenPackageWebsiteAction extends Action
@@ -19,7 +19,7 @@ class OpenPackageWebsiteAction extends Action
         parent::setUp();
 
         $this->label(voightTrans('models.package.actions.open_website'));
-        $this->icon(Heroicon::ArrowTopRightOnSquare);
+        $this->icon(VoightIcon::ActionOpenPackageWebsite->resolve());
         $this->url(fn (Package $record): string => self::buildUrl($record));
         $this->openUrlInNewTab();
     }

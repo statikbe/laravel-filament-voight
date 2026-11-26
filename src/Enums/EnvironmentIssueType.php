@@ -2,9 +2,11 @@
 
 namespace Statikbe\FilamentVoight\Enums;
 
+use BackedEnum;
 use Filament\Support\Contracts\HasColor;
 use Filament\Support\Contracts\HasIcon;
 use Filament\Support\Contracts\HasLabel;
+use Illuminate\Contracts\Support\Htmlable;
 
 enum EnvironmentIssueType: string implements HasColor, HasIcon, HasLabel
 {
@@ -42,13 +44,19 @@ enum EnvironmentIssueType: string implements HasColor, HasIcon, HasLabel
         };
     }
 
-    public function icon(): string
+    public function voightIcon(): VoightIcon
     {
         return match ($this) {
-            self::SyncFailed, self::ScanFailed => 'heroicon-o-x-circle',
-            self::SyncWarning => 'heroicon-o-exclamation-triangle',
-            self::NeverSynced => 'heroicon-o-information-circle',
+            self::SyncFailed => VoightIcon::EnvironmentIssueSyncFailed,
+            self::ScanFailed => VoightIcon::EnvironmentIssueScanFailed,
+            self::SyncWarning => VoightIcon::EnvironmentIssueSyncWarning,
+            self::NeverSynced => VoightIcon::EnvironmentIssueNeverSynced,
         };
+    }
+
+    public function icon(): string | BackedEnum | Htmlable
+    {
+        return $this->voightIcon()->resolve();
     }
 
     public function getLabel(): string
@@ -61,7 +69,7 @@ enum EnvironmentIssueType: string implements HasColor, HasIcon, HasLabel
         return $this->color();
     }
 
-    public function getIcon(): string
+    public function getIcon(): string | BackedEnum | Htmlable
     {
         return $this->icon();
     }

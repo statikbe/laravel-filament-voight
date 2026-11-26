@@ -4,6 +4,11 @@ All notable changes to `laravel-filament-voight` will be documented in this file
 
 ## Unreleased
 
+### Changed 2026-11-26
+- Every icon is configurable. Icons are cases of the new `VoightIcon` enum, exposed as Filament icon aliases (`voight::…`) and overridable via the new `icons` config key or `FilamentIcon::register()`. `php artisan voight:icons [--json]` lists them with a description of each.
+- **Breaking:** the package enums' `icon()` / `getIcon()` return `string | BackedEnum | Htmlable` instead of `string`; `McpClient::$icon` is widened the same way.
+- **Breaking:** package resources and relation managers no longer declare `$navigationIcon` / `$icon`; subclasses override `getNavigationIcon()` / `getIcon()` instead.
+
 ### Changed 2026-10-15
 - Environments can receive a server snapshot (PHP, OS, database, Laravel `about`) via `POST /api/voight/system-details`. The snapshot is stored in the new `voight_environment_system_details` table with indexed PHP / Laravel / Filament / Livewire versions; publish and run the `create_voight_environment_system_details_table` migration.
 - `voight:push-system-details` collects PHP/server values through a signed loopback request to the app's own web server (`push.loopback_url` / `VOIGHT_PUSH_LOOPBACK_URL`), falling back to the CLI, and reports richer server data (limits, php.ini, Xdebug/OPcache, load, CPU cores, commit, PHP user).
