@@ -3,6 +3,7 @@
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Once;
 use Statikbe\FilamentVoight\Models\Customer;
 use Statikbe\FilamentVoight\Models\Environment;
 use Statikbe\FilamentVoight\Models\Package;
@@ -10,6 +11,7 @@ use Statikbe\FilamentVoight\Models\Project;
 use Statikbe\FilamentVoight\Models\Tag;
 use Statikbe\FilamentVoight\Models\TagType;
 use Statikbe\FilamentVoight\Models\Vulnerability;
+use Statikbe\FilamentVoight\Resources\Components\TagOptions;
 
 it('stores assignments in voight_taggables with the morph alias', function () {
     $tag = Tag::factory()->create();
@@ -85,4 +87,43 @@ it('rejects a tag whose type does not exist', function () {
         'slug' => json_encode(['en' => 'orphan']),
         'type' => 'does-not-exist',
     ]))->toThrow(QueryException::class);
+});
+
+it('removes the tags of a project\'s environments when the project is deleted', function () {
+    $tag = Tag::factory()->create();
+    $environment = Environment::factory()->create();
+    $environment->attachTag($tag);
+    $environment->project->attachTag($tag);
+
+    $environment->project->delete();
+
+    expect(DB::table('voight_taggables')->count())->toBe(0);
+});
+
+it('ignores the host app\'s spatie-tags configuration', function () {
+    config([
+        'tags.taggable.morph_name' => 'labelled',
+        'tags.taggable.class_name' => 'App\\Missing\\Pivot',
+        'tags.slugger' => fn (string $name): string => 'custom-' . $name,
+    ]);
+
+    $tag = Tag::factory()->create(['name' => 'Very High']);
+    $project = Project::factory()->create();
+    $project->attachTag($tag);
+
+    expect($tag->slug)->toBe('very-high')
+        ->and($project->fresh()->tags->pluck('id')->all())->toBe([$tag->id]);
+});
+
+it('labels tags with the current tag type name on each request', function () {
+    $type = TagType::factory()->create(['name' => 'Old']);
+    $project = Project::factory()->create();
+    $project->attachTag(Tag::factory()->ofType($type)->create(['name' => 'X']));
+
+    expect(TagOptions::labels($project->fresh()))->toBe(['Old: X']);
+
+    $type->update(['name' => 'New']);
+    Once::flush();
+
+    expect(TagOptions::labels($project->fresh()))->toBe(['New: X']);
 });

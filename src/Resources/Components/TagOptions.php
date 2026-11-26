@@ -50,12 +50,10 @@ class TagOptions
 
     private static function typeName(string $key): string
     {
-        /** @var array<string, string>|null $names */
-        static $names = null;
-
-        $names ??= FilamentVoight::config()->getTagTypeModel()::query()->get()
+        // Once per request (flushed between Octane requests and tests), not per worker.
+        $names = once(fn (): array => FilamentVoight::config()->getTagTypeModel()::query()->get()
             ->mapWithKeys(fn (TagType $type): array => [$type->key => $type->name])
-            ->all();
+            ->all());
 
         return $names[$key] ?? $key;
     }

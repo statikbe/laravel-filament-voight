@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use Laravel\Sanctum\HasApiTokens;
 use Statikbe\FilamentVoight\Facades\FilamentVoight;
 use Statikbe\FilamentVoight\Models\Concerns\HasVoightTags;
@@ -42,6 +43,17 @@ class Project extends Model
     protected $table = 'voight_projects';
 
     protected $guarded = [];
+
+    protected static function booted(): void
+    {
+        // Environments go with the project through a foreign key cascade, which skips their tag cleanup.
+        static::deleting(function (self $project): void {
+            DB::table('voight_taggables')
+                ->where('taggable_type', (new (FilamentVoight::config()->getEnvironmentModel()))->getMorphClass())
+                ->whereIn('taggable_id', $project->environments()->select('id'))
+                ->delete();
+        });
+    }
 
     /**
      * @return array<string, string>

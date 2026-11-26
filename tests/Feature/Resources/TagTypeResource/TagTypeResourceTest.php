@@ -130,3 +130,23 @@ it('fills and saves a tag name in the edit action as plain text', function () {
 
     expect($tag->fresh()->name)->toBe('Very high');
 });
+
+it('refuses a tag type name whose key is already taken', function () {
+    TagType::factory()->create(['name' => 'Security level']);
+
+    Livewire::test(CreateTagType::class)
+        ->fillForm(['name' => 'Security Level'])
+        ->call('create')
+        ->assertHasFormErrors(['name']);
+
+    expect(TagType::query()->count())->toBe(1);
+});
+
+it('refuses a tag type name that yields no key', function () {
+    Livewire::test(CreateTagType::class)
+        ->fillForm(['name' => '安全'])
+        ->call('create')
+        ->assertHasFormErrors(['name']);
+
+    expect(TagType::query()->count())->toBe(0);
+});

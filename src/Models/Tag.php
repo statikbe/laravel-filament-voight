@@ -4,6 +4,7 @@ namespace Statikbe\FilamentVoight\Models;
 
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Str;
 use Spatie\Tags\Tag as SpatieTag;
 use Statikbe\FilamentVoight\Database\Factories\TagFactory;
 use Statikbe\FilamentVoight\Facades\FilamentVoight;
@@ -26,6 +27,14 @@ class Tag extends SpatieTag
     protected static function newFactory(): TagFactory
     {
         return TagFactory::new();
+    }
+
+    /**
+     * Always a plain slug, whatever `tags.slugger` the host configured: MCP matches tags on it.
+     */
+    protected function generateSlug(string $locale): string
+    {
+        return Str::slug($this->getTranslation('name', $locale));
     }
 
     /**

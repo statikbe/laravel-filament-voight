@@ -172,6 +172,8 @@ return [
             'still_assigned' => 'Records of these models still carry tags of this type: :models. Remove those tags first.',
             'several_tags' => ':count record(s) hold more than one tag of this type. Remove the extra tags first.',
             'duplicate_name' => 'This tag type already has a tag with this name.',
+            'key_empty' => 'Use a name with letters or digits (a-z, 0-9): it becomes the type\'s key.',
+            'key_taken' => 'A tag type with key ":key" already exists.',
         ],
     ],
 

@@ -9,6 +9,7 @@ use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
+use Illuminate\Support\Str;
 use Statikbe\FilamentVoight\Models\TagType;
 
 class TagTypeFormSchema
@@ -21,7 +22,8 @@ class TagTypeFormSchema
                     TextInput::make('name')
                         ->label(voightTrans('models.tag_type.fields.name'))
                         ->required()
-                        ->maxLength(255),
+                        ->maxLength(255)
+                        ->rule(fn (?TagType $record): Closure => self::keyRule($record)),
                     TextInput::make('key')
                         ->label(voightTrans('models.tag_type.fields.key'))
                         ->helperText(voightTrans('models.tag_type.fields.key_help'))
@@ -55,6 +57,26 @@ class TagTypeFormSchema
         return collect(TagType::taggableModels())
             ->map(fn (string $model, string $alias): string => TagType::modelLabel($alias))
             ->all();
+    }
+
+    /**
+     * On create, the name must give a usable key that no other type has; the key never changes afterwards.
+     */
+    private static function keyRule(?TagType $record): Closure
+    {
+        return function (string $attribute, mixed $value, Closure $fail) use ($record): void {
+            if ($record !== null) {
+                return;
+            }
+
+            $key = Str::slug((string) $value);
+
+            if ($key === '') {
+                $fail(voightTrans('tags.validation.key_empty'));
+            } elseif (TagType::query()->where('key', $key)->exists()) {
+                $fail(voightTrans('tags.validation.key_taken', ['key' => $key]));
+            }
+        };
     }
 
     /**
