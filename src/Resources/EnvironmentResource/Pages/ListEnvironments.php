@@ -7,7 +7,6 @@ use Filament\Resources\Concerns\HasTabs;
 use Filament\Schemas\Components\EmbeddedTable;
 use Filament\Schemas\Components\Tabs\Tab;
 use Filament\Schemas\Schema;
-use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Table;
@@ -31,9 +30,7 @@ class ListEnvironments extends Page implements HasTable
     use HasTabs;
     use InteractsWithTable;
 
-    protected static string | \BackedEnum | null $navigationIcon = Heroicon::OutlinedServerStack;
-
-    protected static ?int $navigationSort = 2;
+    protected static bool $shouldRegisterNavigation = false;
 
     protected static ?string $slug = 'environments';
 
@@ -48,30 +45,6 @@ class ListEnvironments extends Page implements HasTable
     public static function canAccess(): bool
     {
         return ProjectResource::canViewAny();
-    }
-
-    public static function getNavigationGroup(): ?string
-    {
-        return voightTrans('navigation.monitoring');
-    }
-
-    public static function getNavigationBadge(): ?string
-    {
-        $query = static::getBaseQuery();
-        Environment::constrainToFailing($query);
-        $count = $query->count();
-
-        return $count > 0 ? (string) $count : null;
-    }
-
-    public static function getNavigationBadgeColor(): string
-    {
-        return 'danger';
-    }
-
-    public static function getNavigationBadgeTooltip(): string | Htmlable | null
-    {
-        return voightTrans('navigation.badges.failing_environments');
     }
 
     /**

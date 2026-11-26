@@ -3,7 +3,6 @@
 namespace Statikbe\FilamentVoight\Resources;
 
 use Filament\Resources\Resource;
-use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
 use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Database\Eloquent\Builder;
@@ -19,14 +18,7 @@ class AuditRunResource extends Resource
 {
     protected static ?string $model = AuditRun::class;
 
-    protected static string | \BackedEnum | null $navigationIcon = Heroicon::OutlinedClipboardDocumentCheck;
-
-    protected static ?int $navigationSort = 3;
-
-    public static function getNavigationGroup(): ?string
-    {
-        return voightTrans('navigation.monitoring');
-    }
+    protected static bool $shouldRegisterNavigation = false;
 
     public static function getModelLabel(): string
     {

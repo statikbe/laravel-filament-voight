@@ -152,18 +152,6 @@ it('combines a tab with a query builder filter', function () {
         ->assertCanNotSeeTableRecords([$otherFailing]);
 });
 
-it('badges the navigation with the failing environment count', function () {
-    expect(ListEnvironments::getNavigationBadge())->toBeNull();
-
-    Environment::factory()->count(2)->create();
-    $healthy = Environment::factory()->create();
-    DependencySync::factory()->for($healthy)->create();
-
-    expect(ListEnvironments::getNavigationBadge())->toBe('2')
-        ->and(ListEnvironments::getNavigationBadgeColor())->toBe('danger')
-        ->and(ListEnvironments::getNavigationGroup())->toBe(voightTrans('navigation.monitoring'));
-});
-
 it('counts the records of each tab in its badge', function () {
     listEnvironmentsHealthFixture();
 

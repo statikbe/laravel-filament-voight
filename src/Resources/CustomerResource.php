@@ -29,7 +29,7 @@ class CustomerResource extends Resource
 
     public static function getNavigationGroup(): ?string
     {
-        return voightTrans('navigation.organisation');
+        return voightTrans('navigation.settings');
     }
 
     public static function getModelLabel(): string

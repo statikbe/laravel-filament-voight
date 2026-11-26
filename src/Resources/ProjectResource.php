@@ -30,14 +30,9 @@ class ProjectResource extends Resource
 
     protected static ?string $recordTitleAttribute = 'name';
 
-    protected static ?int $navigationSort = 1;
+    protected static ?int $navigationSort = 0;
 
     protected static ?SubNavigationPosition $subNavigationPosition = SubNavigationPosition::Top;
-
-    public static function getNavigationGroup(): ?string
-    {
-        return voightTrans('navigation.monitoring');
-    }
 
     public static function getModelLabel(): string
     {

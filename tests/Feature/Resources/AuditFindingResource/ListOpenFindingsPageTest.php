@@ -163,20 +163,6 @@ it('makes the tab badges follow the latest only filter', function () {
         ->and((int) $tabs['all']->getBadge())->toBe(5);
 });
 
-it('counts distinct critical vulnerabilities on production', function () {
-    expect(AuditFindingResource::getNavigationBadge())->toBeNull();
-
-    $critical = Vulnerability::factory()->critical()->create();
-    foreach (['production', 'production-eu', 'live-1'] as $name) {
-        openFindingsPageFinding(Environment::factory()->create(['name' => $name]), $critical);
-    }
-    openFindingsPageFinding(Environment::factory()->create(['name' => 'staging']), Vulnerability::factory()->critical()->create());
-    openFindingsPageFinding(Environment::factory()->create(['name' => 'production-b']), Vulnerability::factory()->high()->create());
-
-    expect(AuditFindingResource::getNavigationBadge())->toBe('1')
-        ->and(AuditFindingResource::getNavigationBadgeColor())->toBe('danger');
-});
-
 it('counts the records of each tab in its badge', function () {
     openFindingsPageFixture();
 
@@ -219,6 +205,4 @@ it('shows the previous completed run while a newer run is not completed', functi
     Livewire::test(ListOpenFindings::class)
         ->assertCanSeeTableRecords([$completed])
         ->assertCanNotSeeTableRecords([$hidden]);
-
-    expect(AuditFindingResource::getNavigationBadge())->toBe('1');
 })->with(['pending', 'running', 'failed']);

@@ -3,18 +3,12 @@
 namespace Statikbe\FilamentVoight\Resources;
 
 use Filament\Resources\Resource;
-use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Grouping\Group;
 use Filament\Tables\Table;
-use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Str;
-use Statikbe\FilamentVoight\Enums\EnvironmentStage;
-use Statikbe\FilamentVoight\Enums\Severity;
 use Statikbe\FilamentVoight\Facades\FilamentVoight;
 use Statikbe\FilamentVoight\Models\AuditFinding;
-use Statikbe\FilamentVoight\Models\Environment;
-use Statikbe\FilamentVoight\Models\Vulnerability;
 use Statikbe\FilamentVoight\Resources\AuditFindingResource\Pages\ListOpenFindings;
 use Statikbe\FilamentVoight\Resources\Components\AuditFindingTableSchema;
 use Statikbe\FilamentVoight\Resources\VulnerabilityResource\Actions\ViewFindingVulnerabilityAction;
@@ -23,11 +17,9 @@ class AuditFindingResource extends Resource
 {
     protected static ?string $model = AuditFinding::class;
 
-    protected static string | \BackedEnum | null $navigationIcon = Heroicon::OutlinedExclamationTriangle;
-
     protected static ?string $slug = 'open-findings';
 
-    protected static ?int $navigationSort = 1;
+    protected static bool $shouldRegisterNavigation = false;
 
     // Gated like the vulnerabilities it lists, so no extra Shield permission is needed.
     public static function canViewAny(): bool
@@ -40,11 +32,6 @@ class AuditFindingResource extends Resource
         return false;
     }
 
-    public static function getNavigationGroup(): ?string
-    {
-        return null;
-    }
-
     public static function getModelLabel(): string
     {
         return voightTrans('models.audit_finding.label');
@@ -53,30 +40,6 @@ class AuditFindingResource extends Resource
     public static function getPluralModelLabel(): string
     {
         return voightTrans('models.audit_finding.plural');
-    }
-
-    /**
-     * Counts distinct vulnerabilities, so one critical vulnerability on three production environments is one call to action.
-     */
-    public static function getNavigationBadge(): ?string
-    {
-        $count = AuditFinding::constrainToLatestCompleted(AuditFinding::query())
-            ->whereHas('auditRun.environment', fn (Builder $query) => Environment::constrainToStages($query, EnvironmentStage::Production))
-            ->whereHas('vulnerability', fn (Builder $query) => Vulnerability::constrainToSeverities($query, Severity::Critical))
-            ->distinct()
-            ->count('vulnerability_id');
-
-        return $count > 0 ? (string) $count : null;
-    }
-
-    public static function getNavigationBadgeColor(): string
-    {
-        return 'danger';
-    }
-
-    public static function getNavigationBadgeTooltip(): string | Htmlable | null
-    {
-        return voightTrans('navigation.badges.open_findings');
     }
 
     public static function table(Table $table): Table

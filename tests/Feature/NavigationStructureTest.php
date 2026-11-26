@@ -11,30 +11,30 @@ use Statikbe\FilamentVoight\Resources\TeamResource;
 use Statikbe\FilamentVoight\Resources\VulnerabilityResource;
 
 it('places resources in the expected navigation groups', function () {
-    expect(AuditFindingResource::getNavigationGroup())->toBeNull()
-        ->and(AuditRunResource::getNavigationGroup())->toBe(voightTrans('navigation.monitoring'))
-        ->and(ProjectResource::getNavigationGroup())->toBe(voightTrans('navigation.monitoring'))
-        ->and(ListEnvironments::getNavigationGroup())->toBe(voightTrans('navigation.monitoring'))
-        ->and(VulnerabilityResource::getNavigationGroup())->toBe(voightTrans('navigation.security'))
-        ->and(PackageResource::getNavigationGroup())->toBe(voightTrans('navigation.security'))
-        ->and(CustomerResource::getNavigationGroup())->toBe(voightTrans('navigation.organisation'))
-        ->and(TeamResource::getNavigationGroup())->toBe(voightTrans('navigation.organisation'));
+    expect(ProjectResource::getNavigationGroup())->toBeNull()
+        ->and(VulnerabilityResource::getNavigationGroup())->toBeNull()
+        ->and(PackageResource::getNavigationGroup())->toBeNull()
+        ->and(CustomerResource::getNavigationGroup())->toBe(voightTrans('navigation.settings'))
+        ->and(TeamResource::getNavigationGroup())->toBe(voightTrans('navigation.settings'));
 });
 
-it('registers the groups in security, monitoring, organisation, settings order', function () {
+it('registers the groups as settings only', function () {
     $labels = collect(filament()->getCurrentOrDefaultPanel()->getNavigationGroups())
         ->map(fn (NavigationGroup | string $group): string => $group instanceof NavigationGroup ? $group->getLabel() : $group)
         ->values()->all();
 
     expect($labels)->toBe([
-        voightTrans('navigation.security'),
-        voightTrans('navigation.monitoring'),
-        voightTrans('navigation.organisation'),
         voightTrans('navigation.settings'),
     ]);
 });
 
-it('orders the top navigation items', function () {
-    expect(ProjectResource::getNavigationSort())->toBeLessThan(ListEnvironments::getNavigationSort())
-        ->and(ListEnvironments::getNavigationSort())->toBeLessThan(AuditRunResource::getNavigationSort());
+it('orders projects, vulnerabilities, packages', function () {
+    expect(ProjectResource::getNavigationSort())->toBeLessThan(VulnerabilityResource::getNavigationSort())
+        ->and(VulnerabilityResource::getNavigationSort())->toBeLessThan(PackageResource::getNavigationSort());
+});
+
+it('keeps environments, audit runs and open findings out of the navigation', function () {
+    expect(ListEnvironments::shouldRegisterNavigation())->toBeFalse()
+        ->and(AuditRunResource::shouldRegisterNavigation())->toBeFalse()
+        ->and(AuditFindingResource::shouldRegisterNavigation())->toBeFalse();
 });

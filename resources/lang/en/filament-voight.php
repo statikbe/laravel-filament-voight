@@ -8,14 +8,7 @@ return [
 
     // Navigation
     'navigation' => [
-        'monitoring' => 'Monitoring',
-        'security' => 'Security',
-        'organisation' => 'Organisation',
         'settings' => 'Settings',
-        'badges' => [
-            'open_findings' => 'Critical vulnerabilities on production',
-            'failing_environments' => 'Failing environments',
-        ],
     ],
 
     // Tabs

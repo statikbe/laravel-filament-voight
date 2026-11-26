@@ -42,9 +42,6 @@ class FilamentVoightPlugin implements Plugin
 
         // Unregistered host groups sort after these; ungrouped items and the blank group stay first.
         $panel->navigationGroups([
-            NavigationGroup::make(fn (): string => voightTrans('navigation.security')),
-            NavigationGroup::make(fn (): string => voightTrans('navigation.monitoring')),
-            NavigationGroup::make(fn (): string => voightTrans('navigation.organisation')),
             NavigationGroup::make(fn (): string => voightTrans('navigation.settings')),
         ]);
 
