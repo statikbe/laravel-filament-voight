@@ -136,13 +136,17 @@ final class VersionKey
         $encoded = [];
 
         foreach ($identifiers as $identifier) {
-            if (ctype_digit($identifier) && strlen($identifier) > self::PART_DIGITS) {
+            if (! ctype_digit($identifier)) {
+                $encoded[] = '1' . $identifier;
+
+                continue;
+            }
+
+            if (strlen($identifier) > self::PART_DIGITS) {
                 return null;
             }
 
-            $encoded[] = ctype_digit($identifier)
-                ? '0' . str_pad($identifier, self::PART_DIGITS, '0', STR_PAD_LEFT)
-                : '1' . $identifier;
+            $encoded[] = '0' . str_pad($identifier, self::PART_DIGITS, '0', STR_PAD_LEFT);
         }
 
         $key = implode('.', $core) . $marker . implode('!', $encoded);

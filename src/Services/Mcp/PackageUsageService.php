@@ -16,6 +16,9 @@ use Statikbe\FilamentVoight\Support\VersionConstraint;
 class PackageUsageService
 {
     /**
+     * One usage per project, environment and version, however many nested copies are installed:
+     * direct when any copy is, dev only when every copy is.
+     *
      * @return array{usages: array<int, array<string, mixed>>, total: int, truncated: bool, next_offset: int|null}
      *
      * @throws McpToolError
@@ -24,8 +27,6 @@ class PackageUsageService
     {
         $constraint = self::versionConstraint($versionFilter);
 
-        // One usage per project, environment and version, however many nested copies are installed:
-        // direct when any copy is, dev only when every copy is.
         $usages = $this->installations($packageName, $type, $constraint)
             ->join('voight_projects as p', 'p.id', '=', 'e.project_id')
             ->groupBy('p.project_code', 'e.name', 'pk.type', 'ep.version')

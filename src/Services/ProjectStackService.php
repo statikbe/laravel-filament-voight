@@ -137,10 +137,8 @@ class ProjectStackService
     {
         return $query->whereExists(self::phpDetails()->where(function (Builder $details) use ($versions): void {
             foreach ($versions as $version) {
-                $parts = explode('.', $version);
-                $parts[array_key_last($parts)] = (string) ((int) end($parts) + 1);
                 $lower = VersionKey::core($version);
-                $upper = VersionKey::core(implode('.', $parts));
+                $upper = VersionKey::core(self::incrementLastPart($version));
 
                 if ($lower !== null && $upper !== null) {
                     $details->orWhere(fn (Builder $range): Builder => $range
@@ -149,6 +147,17 @@ class ProjectStackService
                 }
             }
         }));
+    }
+
+    /**
+     * The version with its last part raised by one (`8.3` is `8.4`), the exclusive upper bound of its range.
+     */
+    private static function incrementLastPart(string $version): string
+    {
+        $parts = explode('.', $version);
+        $parts[array_key_last($parts)] = (string) ((int) end($parts) + 1);
+
+        return implode('.', $parts);
     }
 
     /**

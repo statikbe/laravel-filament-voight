@@ -6,6 +6,7 @@ use Filament\Forms\Components\Select;
 use Filament\Schemas\Components\Grid;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Arr;
 use Statikbe\FilamentVoight\Enums\Severity;
 use Statikbe\FilamentVoight\Facades\FilamentVoight;
@@ -91,13 +92,10 @@ class ProjectPackageOperator extends InstalledVersionRangeOperator
      */
     private function projectsWithPackages(Collection $packages): Builder
     {
-        $config = FilamentVoight::config();
-        $installed = $config->getEnvironmentPackageModel()::query()->whereIn('package_id', $packages->modelKeys());
+        $installed = FilamentVoight::config()->getEnvironmentPackageModel()::query()->whereIn('package_id', $packages->modelKeys());
         $this->versionConstraint()->apply($installed, $installed->qualifyColumn('version_sort'));
 
-        return $config->getEnvironmentModel()::query()
-            ->select('project_id')
-            ->whereIn('id', $installed->select('environment_id'));
+        return $this->projectIdsOfEnvironments($installed->select('environment_id'));
     }
 
     /**
@@ -114,11 +112,22 @@ class ProjectPackageOperator extends InstalledVersionRangeOperator
             ->whereHas('vulnerability', fn (Builder $vulnerability) => Vulnerability::constrainToSeverities($vulnerability, ...$severities));
         $this->versionConstraint()->apply($findings, $findings->qualifyColumn('installed_version_sort'));
 
-        $config = FilamentVoight::config();
+        $environmentIds = FilamentVoight::config()->getAuditRunModel()::query()
+            ->select('environment_id')
+            ->whereIn('id', $findings->select('audit_run_id'));
 
-        return $config->getEnvironmentModel()::query()
+        return $this->projectIdsOfEnvironments($environmentIds);
+    }
+
+    /**
+     * @param  Builder<covariant Model>  $environmentIds  a query selecting environment ids
+     * @return Builder<Environment>
+     */
+    private function projectIdsOfEnvironments(Builder $environmentIds): Builder
+    {
+        return FilamentVoight::config()->getEnvironmentModel()::query()
             ->select('project_id')
-            ->whereIn('id', $config->getAuditRunModel()::query()->select('environment_id')->whereIn('id', $findings->select('audit_run_id')));
+            ->whereIn('id', $environmentIds);
     }
 
     /**
