@@ -15,6 +15,7 @@ use Statikbe\FilamentVoight\Enums\TagRuleStatus;
 use Statikbe\FilamentVoight\Enums\VoightIcon;
 use Statikbe\FilamentVoight\Models\TagRule;
 use Statikbe\FilamentVoight\Models\TagType;
+use Statikbe\FilamentVoight\Services\TagAssigner;
 use Statikbe\FilamentVoight\Services\TagRuleRunner;
 
 class RulesRelationManager extends RelationManager
@@ -79,22 +80,26 @@ class RulesRelationManager extends RelationManager
                     ->icon(fn (): string | BackedEnum | Htmlable => VoightIcon::ActionOpenTagRuleInTable->resolve())
                     ->url(fn (TagRule $record): string => self::openInTableUrl($record)),
                 Action::make('pause')
+                    ->authorize(fn (TagRule $record): bool => self::mayManage($record))
                     ->label(voightTrans('tags.rules.actions.pause'))
                     ->icon(fn (): string | BackedEnum | Htmlable => VoightIcon::ActionPauseTagRule->resolve())
                     ->color('gray')
                     ->visible(fn (TagRule $record): bool => $record->status === TagRuleStatus::Active)
                     ->action(fn (TagRule $record) => $record->update(['status' => TagRuleStatus::Paused])),
                 Action::make('resume')
+                    ->authorize(fn (TagRule $record): bool => self::mayManage($record))
                     ->label(voightTrans('tags.rules.actions.resume'))
                     ->icon(fn (): string | BackedEnum | Htmlable => VoightIcon::ActionResumeTagRule->resolve())
                     ->visible(fn (TagRule $record): bool => $record->status === TagRuleStatus::Paused)
                     ->action(fn (TagRule $record, TagRuleRunner $runner) => $runner->run($record)),
                 Action::make('retry')
+                    ->authorize(fn (TagRule $record): bool => self::mayManage($record))
                     ->label(voightTrans('tags.rules.actions.retry'))
                     ->icon(fn (): string | BackedEnum | Htmlable => VoightIcon::ActionRetryTagRule->resolve())
                     ->visible(fn (TagRule $record): bool => $record->status === TagRuleStatus::Failed)
                     ->action(fn (TagRule $record, TagRuleRunner $runner) => $runner->run($record)),
                 Action::make('deleteRule')
+                    ->authorize(fn (TagRule $record): bool => self::mayManage($record))
                     ->label(voightTrans('tags.rules.actions.delete'))
                     ->icon(fn (): string | BackedEnum | Htmlable => VoightIcon::ActionDeleteTagRule->resolve())
                     ->color('danger')
@@ -107,6 +112,14 @@ class RulesRelationManager extends RelationManager
                     ])
                     ->action(fn (TagRule $record, array $data, TagRuleRunner $runner) => $runner->removeRule($record, (bool) ($data['remove_tags'] ?? true))),
             ]);
+    }
+
+    /**
+     * Managing a rule needs the same permission as saving one: updating its tag's type.
+     */
+    private static function mayManage(TagRule $rule): bool
+    {
+        return TagAssigner::userMayTag(auth()->user(), $rule->tag->tagType);
     }
 
     /**

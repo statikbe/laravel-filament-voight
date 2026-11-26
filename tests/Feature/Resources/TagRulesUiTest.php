@@ -3,6 +3,7 @@
 use Filament\Actions\Testing\TestAction;
 use Illuminate\Foundation\Auth\User;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Livewire\Features\SupportTesting\Testable;
 use Livewire\Livewire;
 use Statikbe\FilamentVoight\Enums\TagRuleStatus;
@@ -88,3 +89,25 @@ it('shows rule counts, failed rules and automatic uses on the tag type page', fu
 
     expect(DB::table('voight_taggables')->where('is_manual', false)->count())->toBe(1);
 });
+
+it('only lets users who may manage the tag type pause, resume, retry or delete its rules', function () {
+    Gate::policy(TagType::class, DenyLabelsTagTypePolicy::class);
+
+    rulesManager($this->tag)
+        ->assertActionHidden(TestAction::make('pause')->table($this->rule))
+        ->assertActionHidden(TestAction::make('deleteRule')->table($this->rule));
+
+    $this->rule->update(['status' => TagRuleStatus::Failed]);
+
+    rulesManager($this->tag)->assertActionHidden(TestAction::make('retry')->table($this->rule));
+
+    expect(TagRule::query()->count())->toBe(1);
+});
+
+class DenyLabelsTagTypePolicy
+{
+    public function update(mixed $user, TagType $type): bool
+    {
+        return $type->name !== 'Labels';
+    }
+}
