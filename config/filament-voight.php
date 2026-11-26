@@ -215,6 +215,29 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Icons
+    |--------------------------------------------------------------------------
+    |
+    | Override any icon the package renders, keyed by its VoightIcon value
+    | (the `voight::` alias without the prefix). Values are an icon name
+    | string or a BackedEnum such as \Filament\Support\Icons\Heroicon.
+    | Anything not listed keeps its default.
+    |
+    | You can also use Filament's own alias system from a service provider:
+    | FilamentIcon::register(['voight::severity.critical' => ...]). That
+    | wins over this config.
+    |
+    | Run `php artisan voight:icons` (or `--json`) to list every icon with
+    | its default, current value and a description of what it represents.
+    |
+    */
+    'icons' => [
+        // 'severity.critical' => 'phosphor-fire',
+        // 'navigation.projects' => \Filament\Support\Icons\Heroicon::OutlinedFolder,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Morph Map
     |--------------------------------------------------------------------------
     |
