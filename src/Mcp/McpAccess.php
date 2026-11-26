@@ -4,6 +4,7 @@ namespace Statikbe\FilamentVoight\Mcp;
 
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Gate;
 use InvalidArgumentException;
 use Statikbe\FilamentVoight\Facades\FilamentVoight;
@@ -12,6 +13,7 @@ use Statikbe\FilamentVoight\Models\Environment;
 use Statikbe\FilamentVoight\Models\Package;
 use Statikbe\FilamentVoight\Models\Project;
 use Statikbe\FilamentVoight\Models\Vulnerability;
+use Statikbe\FilamentVoight\Services\TagAssigner;
 
 /**
  * Who is calling the MCP server, built once per request by the server. Decides which
@@ -89,6 +91,14 @@ final class McpAccess
         }
 
         return $query->visibleTo($this->user);
+    }
+
+    /**
+     * Whether the caller may change a record's tags: its model's `update` policy, unrestricted without one.
+     */
+    public function mayTag(Model $record): bool
+    {
+        return $this->isLocal || ($this->user !== null && TagAssigner::userMayTag($this->user, $record));
     }
 
     /**

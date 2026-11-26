@@ -9,6 +9,7 @@ use Laravel\Mcp\Server\Tool;
 use Statikbe\FilamentVoight\Mcp\Prompts\OnboardProjectPrompt;
 use Statikbe\FilamentVoight\Mcp\Prompts\SecurityDigestPrompt;
 use Statikbe\FilamentVoight\Mcp\Prompts\TriageProjectPrompt;
+use Statikbe\FilamentVoight\Mcp\Tools\AssignTagsTool;
 use Statikbe\FilamentVoight\Mcp\Tools\CreateProjectTokenTool;
 use Statikbe\FilamentVoight\Mcp\Tools\CreateProjectTool;
 use Statikbe\FilamentVoight\Mcp\Tools\FindPackageUsageTool;
@@ -60,6 +61,7 @@ class VoightServer extends Server
         CreateProjectTool::class,
         CreateProjectTokenTool::class,
         ListTagsTool::class,
+        AssignTagsTool::class,
     ];
 
     /**

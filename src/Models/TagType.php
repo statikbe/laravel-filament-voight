@@ -129,6 +129,14 @@ class TagType extends Model implements Sortable
     }
 
     /**
+     * The translated plural label of a taggable model, by morph alias.
+     */
+    public static function modelLabel(string $morphAlias): string
+    {
+        return voightTrans('models.' . str($morphAlias)->after('voight-')->replace('-', '_') . '.plural');
+    }
+
+    /**
      * How many records of each model carry tags of this type, keyed by morph alias.
      *
      * @return array<string, int>

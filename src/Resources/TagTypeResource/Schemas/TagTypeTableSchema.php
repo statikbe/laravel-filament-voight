@@ -27,7 +27,7 @@ class TagTypeTableSchema
                     ->label(voightTrans('models.tag_type.fields.taggable_types'))
                     ->state(fn (TagType $record): array => $record->taggable_types === null || $record->taggable_types === []
                         ? [voightTrans('models.tag_type.all_models')]
-                        : array_map(TagTypeFormSchema::modelLabel(...), $record->taggable_types))
+                        : array_map(TagType::modelLabel(...), $record->taggable_types))
                     ->badge(),
                 IconColumn::make('is_single')
                     ->label(voightTrans('models.tag_type.fields.is_single'))

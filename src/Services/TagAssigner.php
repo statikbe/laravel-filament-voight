@@ -116,7 +116,7 @@ class TagAssigner
             if (! $type->appliesTo($record)) {
                 $problems[] = voightTrans('tags.problems.not_applicable', [
                     'type' => $type->name,
-                    'model' => $record->getMorphClass(),
+                    'model' => TagType::modelLabel($record->getMorphClass()),
                 ]);
             } elseif ($type->is_single && $typeTags->count() > 1) {
                 $problems[] = voightTrans('tags.problems.single_value', ['type' => $type->name]);

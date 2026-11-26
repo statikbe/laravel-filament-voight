@@ -53,13 +53,8 @@ class TagTypeFormSchema
     public static function modelOptions(): array
     {
         return collect(TagType::taggableModels())
-            ->map(fn (string $model, string $alias): string => self::modelLabel($alias))
+            ->map(fn (string $model, string $alias): string => TagType::modelLabel($alias))
             ->all();
-    }
-
-    public static function modelLabel(string $alias): string
-    {
-        return voightTrans('models.' . str($alias)->after('voight-')->replace('-', '_') . '.plural');
     }
 
     /**
@@ -74,7 +69,7 @@ class TagTypeFormSchema
 
             $stillAssigned = collect($record->assignmentCountsByModel())
                 ->except($value)
-                ->map(fn (int $count, string $alias): string => self::modelLabel($alias) . ': ' . $count);
+                ->map(fn (int $count, string $alias): string => TagType::modelLabel($alias) . ': ' . $count);
 
             if ($stillAssigned->isNotEmpty()) {
                 $fail(voightTrans('tags.validation.still_assigned', ['models' => $stillAssigned->implode(', ')]));
