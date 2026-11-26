@@ -2,7 +2,6 @@
 
 namespace Statikbe\FilamentVoight\Resources\ProjectResource\RelationManagers;
 
-use Filament\Actions\CreateAction;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
@@ -75,22 +74,23 @@ class EnvironmentsRelationManager extends RelationManager
                     ->color(fn (string $state): string => EnvironmentIssueType::tryFrom($state)?->getColor() ?? 'success')
                     ->tooltip(fn (Environment $record): string => $this->issues($record)
                         ->map(fn (EnvironmentIssue $issue): string => $issue->message)
-                        ->implode("\n") ?: voightTrans('models.environment.healthy')),
+                        ->implode("\n") ?: voightTrans('models.environment.healthy'))
+                    ->toggleable(),
                 ToggleColumn::make('scan_nightly')
                     ->label(voightTrans('models.environment.fields.scan_nightly'))
-                    ->sortable(),
+                    ->sortable()
+                    ->toggleable(),
                 TextColumn::make('scanned_at')
                     ->label(voightTrans('models.environment.fields.scanned_at'))
                     ->dateTime()
                     ->sortable()
-                    ->placeholder(voightTrans('models.environment.never_scanned')),
+                    ->placeholder(voightTrans('models.environment.never_scanned'))
+                    ->toggleable(),
                 TextColumn::make('environment_packages_count')
                     ->label(voightTrans('models.package.plural'))
                     ->counts(['environmentPackages' => fn (Builder $query) => $query->select(DB::raw('count(distinct package_id)'))])
-                    ->sortable(),
-            ])
-            ->headerActions([
-                CreateAction::make(),
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->recordActions([
                 EditAction::make(),

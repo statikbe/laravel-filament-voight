@@ -147,18 +147,6 @@ it('filters projects by upgrade status', function (UpgradeStatus $status, string
     'unknown' => [UpgradeStatus::Unknown, 'unknown'],
 ]);
 
-it('filters projects by framework major version', function (string $operator, bool $v12Visible) {
-    $v12 = stackProject(laravel: '12.3.0');
-    $v13 = stackProject(laravel: '13.0.0');
-
-    filterStack('laravel_major', [12], $operator)
-        ->assertCanSeeTableRecords($v12Visible ? [$v12] : [$v13])
-        ->assertCanNotSeeTableRecords($v12Visible ? [$v13] : [$v12]);
-})->with([
-    'is' => ['is', true],
-    'is not' => ['is.inverse', false],
-]);
-
 it('filters projects by php version', function () {
     $match = stackProject(php: '8.3.12');
     $other = stackProject(php: '8.4.1');

@@ -24,6 +24,7 @@ use Statikbe\FilamentVoight\Models\AuditFinding;
 use Statikbe\FilamentVoight\Models\Project;
 use Statikbe\FilamentVoight\Resources\Components\EnvironmentStageConstraint;
 use Statikbe\FilamentVoight\Resources\Components\ProjectConstraint;
+use Statikbe\FilamentVoight\Resources\Components\ProjectPackageConstraint;
 use Statikbe\FilamentVoight\Resources\Components\ProjectStackConstraint;
 use Statikbe\FilamentVoight\Resources\Components\SeverityConstraint;
 use Statikbe\FilamentVoight\Resources\ProjectResource;
@@ -114,9 +115,9 @@ class ProjectTableSchema
                             ->label(voightTrans('models.environment.plural'))
                             ->multiple(),
                         EnvironmentStageConstraint::make('environments'),
-                        ...array_map(ProjectStackConstraint::majorVersion(...), Framework::cases()),
                         ProjectStackConstraint::phpVersion(),
                         ProjectStackConstraint::upgradeStatus(),
+                        ProjectPackageConstraint::make(),
                         // "Current" means a finding in an environment's latest audit run; matches projects with any such finding of the severity.
                         SeverityConstraint::make('current_severity', fn (Builder $query, Severity $severity) => $query
                             ->whereHas('environments.auditRuns.auditFindings', fn (Builder $finding) => AuditFinding::constrainToCurrent($finding)
@@ -124,6 +125,7 @@ class ProjectTableSchema
                             ->label(voightTrans('models.project.fields.current_severity')),
                     ]),
             ], layout: FiltersLayout::AboveContentCollapsible)
+            ->defaultSort('upgrade_status', 'asc')
             ->recordActions([
                 ViewAction::make()
                     ->url(fn ($record) => ProjectResource::getUrl('view', ['record' => $record])),

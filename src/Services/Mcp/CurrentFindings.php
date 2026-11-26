@@ -51,9 +51,10 @@ final class CurrentFindings
     /**
      * Select expressions counting the grouped findings per severity, plus `total` and `max_score`.
      *
+     * @param  bool  $distinctVulnerabilities  count each vulnerability once per group, even when several findings share it
      * @return array<int, Expression>
      */
-    public static function severityColumns(): array
+    public static function severityColumns(bool $distinctVulnerabilities = false): array
     {
         $columns = [];
         $upperBound = null;
@@ -61,7 +62,9 @@ final class CurrentFindings
         foreach ([Severity::Critical, Severity::High, Severity::Medium, Severity::Low] as $severity) {
             $condition = 'v.vulnerability_score >= ' . $severity->minimumScore()
                 . ($upperBound === null ? '' : ' and v.vulnerability_score < ' . $upperBound);
-            $columns[] = DB::raw("sum(case when {$condition} then 1 else 0 end) as {$severity->value}");
+            $columns[] = DB::raw($distinctVulnerabilities
+                ? "count(distinct case when {$condition} then f.vulnerability_id end) as {$severity->value}"
+                : "sum(case when {$condition} then 1 else 0 end) as {$severity->value}");
             $upperBound = $severity->minimumScore();
         }
 

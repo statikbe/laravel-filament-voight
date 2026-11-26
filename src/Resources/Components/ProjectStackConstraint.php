@@ -6,7 +6,6 @@ use Closure;
 use Filament\Tables\Filters\QueryBuilder\Constraints\SelectConstraint;
 use Filament\Tables\Filters\QueryBuilder\Constraints\SelectConstraint\Operators\IsOperator;
 use Illuminate\Database\Eloquent\Builder;
-use Statikbe\FilamentVoight\Enums\Framework;
 use Statikbe\FilamentVoight\Enums\UpgradeStatus;
 use Statikbe\FilamentVoight\Services\ProjectStackService;
 
@@ -16,16 +15,6 @@ use Statikbe\FilamentVoight\Services\ProjectStackService;
  */
 class ProjectStackConstraint
 {
-    public static function majorVersion(Framework $framework): SelectConstraint
-    {
-        return self::make(
-            strtolower($framework->name) . '_major',
-            voightTrans('models.project.fields.framework_major', ['framework' => $framework->label()]),
-            array_combine($majors = range($framework->latestMajor(), 1), $majors),
-            fn (Builder $query, array $values): Builder => ProjectStackService::constrainToMajors($query, $framework, $values),
-        );
-    }
-
     public static function phpVersion(): SelectConstraint
     {
         return self::make(

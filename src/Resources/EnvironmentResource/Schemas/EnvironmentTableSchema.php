@@ -50,11 +50,13 @@ class EnvironmentTableSchema
                 TextColumn::make('project.name')
                     ->label(voightTrans('models.environment.fields.project'))
                     ->searchable()
-                    ->visible($showProject),
+                    ->visible($showProject)
+                    ->toggleable(),
                 EnvironmentNameColumn::make('name')
                     ->label(voightTrans('models.environment.fields.name'))
                     ->searchable()
-                    ->sortable(),
+                    ->sortable()
+                    ->toggleable(),
                 TextColumn::make('url')
                     ->label(voightTrans('models.environment.fields.url'))
                     ->url(fn (Environment $record): ?string => $record->url, shouldOpenInNewTab: true)
@@ -63,13 +65,16 @@ class EnvironmentTableSchema
                 TextColumn::make('systemDetails.php_version')
                     ->label(voightTrans('models.environment.fields.php_version'))
                     ->placeholder('—')
-                    ->sortable(query: $sortBy('php_version')),
+                    ->sortable(query: $sortBy('php_version'))
+                    ->toggleable(),
                 TextColumn::make('systemDetails.received_at')
                     ->label(voightTrans('models.environment.fields.system_details_received_at'))
                     ->since()
                     ->placeholder(voightTrans('models.environment.never_reported'))
-                    ->sortable(query: $sortBy('received_at')),
+                    ->sortable(query: $sortBy('received_at'))
+                    ->toggleable(),
             ])
+            ->persistColumnsInSession()
             ->filters([
                 QueryBuilder::make()
                     ->constraints([

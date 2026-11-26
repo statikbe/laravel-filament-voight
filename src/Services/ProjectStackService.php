@@ -130,22 +130,6 @@ class ProjectStackService
 
     /**
      * @param  Builder<Project>  $query
-     * @param  array<int, int|string>  $majors
-     * @return Builder<Project>
-     */
-    public static function constrainToMajors(Builder $query, Framework $framework, array $majors): Builder
-    {
-        $number = self::versionNumber();
-
-        return $query->whereExists(self::installedPackages($framework)->where(function (Builder $installed) use ($majors, $number): void {
-            foreach ($majors as $major) {
-                $installed->orWhereRaw("{$number} >= ? and {$number} < ?", [(int) $major, (int) $major + 1]);
-            }
-        }));
-    }
-
-    /**
-     * @param  Builder<Project>  $query
      * @param  array<int, string>  $versions  Minor versions such as "8.3"
      * @return Builder<Project>
      */

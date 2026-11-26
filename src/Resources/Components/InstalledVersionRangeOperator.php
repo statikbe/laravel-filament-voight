@@ -21,6 +21,9 @@ class InstalledVersionRangeOperator extends Operator
 
     private const MAX_OPERATORS = ['<' => '<', '<=' => '<='];
 
+    /** Whether one version is required while the other is blank. */
+    protected bool $versionRequired = true;
+
     #[\Override]
     public function getLabel(): string
     {
@@ -44,22 +47,25 @@ class InstalledVersionRangeOperator extends Operator
     #[\Override]
     public function getFormSchema(): array
     {
-        return [
-            Grid::make(2)->schema([
-                Select::make('min_operator')
-                    ->label(voightTrans('models.package.installed_version.min_operator'))
-                    ->options(self::MIN_OPERATORS)
-                    ->default('>')
-                    ->selectablePlaceholder(false),
-                self::versionInput('min_version', 'max_version'),
-                Select::make('max_operator')
-                    ->label(voightTrans('models.package.installed_version.max_operator'))
-                    ->options(self::MAX_OPERATORS)
-                    ->default('<')
-                    ->selectablePlaceholder(false),
-                self::versionInput('max_version', 'min_version'),
-            ]),
-        ];
+        return [$this->versionGrid()];
+    }
+
+    protected function versionGrid(): Grid
+    {
+        return Grid::make(2)->schema([
+            Select::make('min_operator')
+                ->label(voightTrans('models.package.installed_version.min_operator'))
+                ->options(self::MIN_OPERATORS)
+                ->default('>')
+                ->selectablePlaceholder(false),
+            $this->versionInput('min_version', 'max_version'),
+            Select::make('max_operator')
+                ->label(voightTrans('models.package.installed_version.max_operator'))
+                ->options(self::MAX_OPERATORS)
+                ->default('<')
+                ->selectablePlaceholder(false),
+            $this->versionInput('max_version', 'min_version'),
+        ]);
     }
 
     #[\Override]
@@ -68,12 +74,12 @@ class InstalledVersionRangeOperator extends Operator
         return $query->whereIn($query->qualifyColumn('id'), $this->matchedInstallationIds($query), not: $this->isInverse());
     }
 
-    private static function versionInput(string $name, string $otherName): TextInput
+    private function versionInput(string $name, string $otherName): TextInput
     {
         return TextInput::make($name)
             ->label(voightTrans("models.package.installed_version.{$name}"))
             ->regex('/^v?\d\S*$/i')
-            ->required(fn (Get $get): bool => blank($get($otherName)));
+            ->required(fn (Get $get): bool => $this->versionRequired && blank($get($otherName)));
     }
 
     /**
@@ -99,10 +105,7 @@ class InstalledVersionRangeOperator extends Operator
      */
     private function matchedInstallationIds(Builder $query): array
     {
-        $constraint = VersionConstraint::between(
-            $this->bound('min', self::MIN_OPERATORS, '>'),
-            $this->bound('max', self::MAX_OPERATORS, '<'),
-        );
+        $constraint = $this->versionConstraint();
 
         return (clone $query)
             ->reorder()
@@ -110,5 +113,13 @@ class InstalledVersionRangeOperator extends Operator
             ->filter(fn (Model $installed): bool => $constraint->matches((string) $installed->getAttribute('version')))
             ->pluck('id')
             ->all();
+    }
+
+    protected function versionConstraint(): VersionConstraint
+    {
+        return VersionConstraint::between(
+            $this->bound('min', self::MIN_OPERATORS, '>'),
+            $this->bound('max', self::MAX_OPERATORS, '<'),
+        );
     }
 }
