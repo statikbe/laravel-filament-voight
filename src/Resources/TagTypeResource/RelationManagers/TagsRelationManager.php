@@ -7,6 +7,7 @@ use Closure;
 use Filament\Actions\CreateAction;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
+use Filament\Actions\ViewAction;
 use Filament\Forms\Components\TextInput;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Schemas\Schema;
@@ -16,9 +17,12 @@ use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
+use Statikbe\FilamentVoight\Enums\TagRuleStatus;
 use Statikbe\FilamentVoight\Enums\VoightIcon;
 use Statikbe\FilamentVoight\Models\Tag;
 use Statikbe\FilamentVoight\Models\TagType;
+use Statikbe\FilamentVoight\Resources\TagResource;
+use Statikbe\FilamentVoight\Resources\TagResource\Schemas\TagInfolistSchema;
 
 class TagsRelationManager extends RelationManager
 {
@@ -50,23 +54,39 @@ class TagsRelationManager extends RelationManager
     {
         return $table
             ->recordTitleAttribute('name')
-            ->modifyQueryUsing(fn (Builder $query): Builder => $query->addSelect([
-                'usage_count' => DB::table('voight_taggables')
-                    ->selectRaw('count(*)')
-                    ->whereColumn('voight_taggables.tag_id', 'voight_tags.id'),
-            ]))
+            ->modifyQueryUsing(fn (Builder $query): Builder => $query
+                ->addSelect([
+                    'usage_count' => DB::table('voight_taggables')
+                        ->selectRaw('count(*)')
+                        ->whereColumn('voight_taggables.tag_id', 'voight_tags.id'),
+                    'automatic_usage_count' => DB::table('voight_taggables')
+                        ->selectRaw('count(*)')
+                        ->whereColumn('voight_taggables.tag_id', 'voight_tags.id')
+                        ->where('is_manual', false),
+                ])
+                ->withCount(['rules', 'rules as failed_rules_count' => fn (Builder $rules) => $rules->where('status', TagRuleStatus::Failed)]))
             ->reorderable('order_column')
             ->defaultSort('order_column')
             ->columns([
                 TextColumn::make('name')
                     ->label(voightTrans('models.tag.fields.name')),
                 TextColumn::make('usage_count')
-                    ->label(voightTrans('models.tag.fields.usage_count')),
+                    ->label(voightTrans('models.tag.fields.usage_count'))
+                    ->formatStateUsing(fn (Tag $record): string => TagInfolistSchema::formatUsage((int) $record->getAttribute('usage_count'), (int) $record->getAttribute('automatic_usage_count'))),
+                TextColumn::make('rules_count')
+                    ->label(voightTrans('tags.rules.plural'))
+                    ->description(fn (Tag $record): ?string => $record->getAttribute('failed_rules_count') > 0
+                        ? voightTrans('tags.rules.failed_count', ['count' => $record->getAttribute('failed_rules_count')])
+                        : null)
+                    ->color(fn (Tag $record): ?string => $record->getAttribute('failed_rules_count') > 0 ? 'danger' : null),
             ])
             ->headerActions([
                 CreateAction::make(),
             ])
+            ->recordUrl(fn (Tag $record): string => TagResource::getUrl('view', ['record' => $record]))
             ->recordActions([
+                ViewAction::make()
+                    ->url(fn (Tag $record): string => TagResource::getUrl('view', ['record' => $record])),
                 EditAction::make()
                     ->mutateRecordDataUsing(fn (array $data, Tag $record): array => [...$data, 'name' => $record->name]),
                 DeleteAction::make()
