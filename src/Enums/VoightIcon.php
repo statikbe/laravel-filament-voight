@@ -45,6 +45,9 @@ enum VoightIcon: string
     #[IconDefinition(Heroicon::OutlinedShieldExclamation, 'Tab on an audit run page listing the findings (vulnerable packages) that run detected.')]
     case TabAuditRunFindings = 'tab.audit-run.findings';
 
+    #[IconDefinition(Heroicon::OutlinedEye, 'Tab on a project page with its general information and environments overview.')]
+    case TabProjectInfo = 'tab.project.info';
+
     #[IconDefinition(Heroicon::OutlinedClipboardDocumentCheck, 'Tab on a project page listing its audit runs (vulnerability scan history).')]
     case TabProjectAuditRuns = 'tab.project.audit-runs';
 

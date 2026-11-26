@@ -2,11 +2,11 @@
 
 namespace Statikbe\FilamentVoight\Resources\ProjectResource\Pages;
 
+use BackedEnum;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
 use Filament\Resources\Pages\ViewRecord;
 use Filament\Support\Enums\FontWeight;
-use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Contracts\HasTable;
@@ -18,6 +18,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 use Statikbe\FilamentVoight\Enums\PackageType;
 use Statikbe\FilamentVoight\Enums\Severity;
+use Statikbe\FilamentVoight\Enums\VoightIcon;
 use Statikbe\FilamentVoight\Models\Environment;
 use Statikbe\FilamentVoight\Resources\Components\EnvironmentNameColumn;
 use Statikbe\FilamentVoight\Resources\ProjectResource;
@@ -54,9 +55,9 @@ class ViewProject extends ViewRecord implements HasTable
         return voightTrans('models.project.sections.info_tab');
     }
 
-    public function getContentTabIcon(): Heroicon
+    public function getContentTabIcon(): string | BackedEnum | Htmlable
     {
-        return Heroicon::OutlinedEye;
+        return VoightIcon::TabProjectInfo->resolve();
     }
 
     public function includesNpm(): bool
