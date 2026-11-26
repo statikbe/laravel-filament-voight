@@ -8,7 +8,9 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Arr;
 use Statikbe\FilamentVoight\Enums\Severity;
+use Statikbe\FilamentVoight\Facades\FilamentVoight;
 use Statikbe\FilamentVoight\Models\AuditFinding;
+use Statikbe\FilamentVoight\Models\Environment;
 use Statikbe\FilamentVoight\Models\Package;
 use Statikbe\FilamentVoight\Models\Vulnerability;
 use Statikbe\FilamentVoight\Services\Mcp\PackageUsageService;
@@ -81,30 +83,30 @@ class ProjectPackageOperator extends InstalledVersionRangeOperator
                 $package->type->value,
                 $this->versionConstraint(),
             ))->unique()->all()
-            : $this->projectIdsWithCurrentFindings($packages, $severities);
+            : $this->projectsWithCurrentFindings($packages, $severities);
 
         return $query->whereIn($query->qualifyColumn('id'), $projectIds, not: $this->isInverse());
     }
 
     /**
+     * Project ids with a current finding of one of the severities on a selected package, installed in the version range.
+     *
      * @param  Collection<int, Package>  $packages
      * @param  array<int, Severity>  $severities
-     * @return array<int, int>
+     * @return Builder<Environment>
      */
-    private function projectIdsWithCurrentFindings(Collection $packages, array $severities): array
+    private function projectsWithCurrentFindings(Collection $packages, array $severities): Builder
     {
-        $constraint = $this->versionConstraint();
-
-        return AuditFinding::constrainToCurrent(AuditFinding::query())
+        $findings = AuditFinding::constrainToCurrent(AuditFinding::query())
             ->whereIn('package_id', $packages->modelKeys())
-            ->whereHas('vulnerability', fn (Builder $vulnerability) => Vulnerability::constrainToSeverities($vulnerability, ...$severities))
-            ->with('auditRun.environment:id,project_id')
-            ->get()
-            ->filter(fn (AuditFinding $finding): bool => $constraint->matches($finding->installed_version))
-            ->map(fn (AuditFinding $finding): int => $finding->auditRun->environment->project_id)
-            ->unique()
-            ->values()
-            ->all();
+            ->whereHas('vulnerability', fn (Builder $vulnerability) => Vulnerability::constrainToSeverities($vulnerability, ...$severities));
+        $this->versionConstraint()->apply($findings, $findings->qualifyColumn('installed_version_sort'));
+
+        $config = FilamentVoight::config();
+
+        return $config->getEnvironmentModel()::query()
+            ->select('project_id')
+            ->whereIn('id', $config->getAuditRunModel()::query()->select('environment_id')->whereIn('id', $findings->select('audit_run_id')));
     }
 
     /**

@@ -2,18 +2,20 @@
 
 namespace Statikbe\FilamentVoight\Resources\Components;
 
+use Closure;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Tables\Filters\QueryBuilder\Constraints\Operators\Operator;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Model;
 use Statikbe\FilamentVoight\Support\VersionConstraint;
+use Statikbe\FilamentVoight\Support\VersionKey;
 
 /**
- * Versions cannot be ordered in SQL, so the versions of the already scoped installation rows are
- * compared in PHP and the query is restricted to the matching rows. Meant for a query on environment_packages.
+ * Restricts installation rows to a version range on their version key (see VersionKey). The inverse keeps
+ * every row outside the range, including versions without a key such as `dev-main`. Meant for a query on
+ * environment_packages.
  */
 class InstalledVersionRangeOperator extends Operator
 {
@@ -71,7 +73,16 @@ class InstalledVersionRangeOperator extends Operator
     #[\Override]
     public function apply(Builder $query, string $qualifiedColumn): Builder
     {
-        return $query->whereIn($query->qualifyColumn('id'), $this->matchedInstallationIds($query), not: $this->isInverse());
+        $constraint = $this->versionConstraint();
+        $key = $query->qualifyColumn('version_sort');
+
+        if (! $this->isInverse()) {
+            return $constraint->apply($query, $key);
+        }
+
+        return $query->where(fn (Builder $outside): Builder => $outside
+            ->whereNot(fn (Builder $inside): Builder => $constraint->apply($inside, $key))
+            ->orWhereNull($key));
     }
 
     private function versionInput(string $name, string $otherName): TextInput
@@ -79,6 +90,11 @@ class InstalledVersionRangeOperator extends Operator
         return TextInput::make($name)
             ->label(voightTrans("models.package.installed_version.{$name}"))
             ->regex('/^v?\d\S*$/i')
+            ->rule(fn (): Closure => function (string $attribute, mixed $value, Closure $fail): void {
+                if (filled($value) && VersionKey::for((string) $value) === null) {
+                    $fail(voightTrans('models.package.installed_version.invalid'));
+                }
+            })
             ->required(fn (Get $get): bool => $this->versionRequired && blank($get($otherName)));
     }
 
@@ -98,21 +114,6 @@ class InstalledVersionRangeOperator extends Operator
             $allowedOperators[$settings["{$side}_operator"] ?? null] ?? $defaultOperator,
             $settings["{$side}_version"],
         ];
-    }
-
-    /**
-     * @return array<int, int|string>
-     */
-    private function matchedInstallationIds(Builder $query): array
-    {
-        $constraint = $this->versionConstraint();
-
-        return (clone $query)
-            ->reorder()
-            ->get([$query->qualifyColumn('id'), $query->qualifyColumn('version')])
-            ->filter(fn (Model $installed): bool => $constraint->matches((string) $installed->getAttribute('version')))
-            ->pluck('id')
-            ->all();
     }
 
     protected function versionConstraint(): VersionConstraint

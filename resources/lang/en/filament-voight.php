@@ -348,6 +348,7 @@ return [
                 'min_version' => 'Lower version',
                 'max_operator' => 'Upper bound',
                 'max_version' => 'Upper version',
+                'invalid' => 'Enter a version number, such as 2.4 or 1.0.0-beta.1.',
             ],
             'actions' => [
                 'open_website' => 'Open Website',

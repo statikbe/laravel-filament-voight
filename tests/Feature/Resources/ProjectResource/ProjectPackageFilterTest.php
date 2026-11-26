@@ -54,6 +54,14 @@ it('narrows the installed package to a version range', function () {
         ->assertCanNotSeeTableRecords([$this->new, $this->without]);
 });
 
+it('treats versions outside every range as not in range', function () {
+    $branch = projectWithPackage($this->package, 'dev-main');
+
+    filterPackage('installed.inverse', ['package_id' => [$this->package->id], 'min_operator' => '>=', 'min_version' => '1.0'])
+        ->assertCanSeeTableRecords([$branch, $this->without])
+        ->assertCanNotSeeTableRecords([$this->old, $this->new]);
+});
+
 it('inverts the package filter', function () {
     filterPackage('installed.inverse', ['package_id' => [$this->package->id]])
         ->assertCanSeeTableRecords([$this->without])
