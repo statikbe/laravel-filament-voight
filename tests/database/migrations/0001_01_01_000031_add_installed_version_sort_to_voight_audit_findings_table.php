@@ -3,6 +3,7 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
+use Statikbe\FilamentVoight\Services\VersionKeyRebuilder;
 
 return new class extends Migration
 {
@@ -26,6 +27,8 @@ return new class extends Migration
 
             $table->index(['package_id', 'installed_version_sort'], 'voight_audit_findings_version_sort_index');
         });
+
+        app(VersionKeyRebuilder::class)->rebuild('voight_audit_findings');
     }
 
     public function down(): void
