@@ -34,6 +34,7 @@ class AuditRunTableSchema
                 ->with('environment.project')
                 ->withCount('auditFindings')
                 ->withMax('vulnerabilities as max_vulnerability_score', 'vulnerability_score'))
+            ->stackedOnMobile()
             ->columns([
                 TextColumn::make('environment.project.name')
                     ->label(voightTrans('models.audit_run.fields.project'))

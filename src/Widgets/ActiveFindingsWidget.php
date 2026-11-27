@@ -39,6 +39,7 @@ class ActiveFindingsWidget extends TableWidget
                     ->orderByDesc('voight_vulnerabilities.vulnerability_score')
                     ->select('voight_audit_findings.*'),
             )
+            ->stackedOnMobile()
             ->columns([
                 TextColumn::make('vulnerability.severity')
                     ->label(voightTrans('models.package.view.columns.severity'))

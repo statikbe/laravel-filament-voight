@@ -56,6 +56,7 @@ class InstallationsRelationManager extends RelationManager
     {
         return $table
             ->modifyQueryUsing(fn (Builder $query) => $query->with(['environment.project', 'parents.package']))
+            ->stackedOnMobile()
             ->columns([
                 TextColumn::make('environment.project.name')
                     ->label(voightTrans('models.package.view.columns.project'))

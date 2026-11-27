@@ -122,6 +122,7 @@ class AlertSettingsRelationManager extends RelationManager
     public function table(Table $table): Table
     {
         return $table
+            ->stackedOnMobile()
             ->columns([
                 TextColumn::make('channel')
                     ->label(voightTrans('models.alert_setting.fields.channel'))

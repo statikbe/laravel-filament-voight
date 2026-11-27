@@ -34,6 +34,7 @@ class RecentAuditRunsWidget extends TableWidget
                     ->with('environment.project')
                     ->orderByDesc('started_at'),
             )
+            ->stackedOnMobile()
             ->columns([
                 TextColumn::make('status')
                     ->label(voightTrans('models.audit_run.fields.status'))

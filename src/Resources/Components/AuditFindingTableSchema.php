@@ -106,6 +106,7 @@ class AuditFindingTableSchema
                 'package',
                 'auditRun.environment.project',
             ]))
+            ->stackedOnMobile()
             ->columns([
                 TextColumn::make('vulnerability.severity')
                     ->label(voightTrans('models.package.view.columns.severity'))

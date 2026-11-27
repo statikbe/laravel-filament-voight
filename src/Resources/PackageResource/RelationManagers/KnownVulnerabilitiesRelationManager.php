@@ -41,6 +41,7 @@ class KnownVulnerabilitiesRelationManager extends RelationManager
             ->recordUrl(fn ($record): ?string => $record->vulnerability_id
                 ? VulnerabilityResource::getUrl('view', ['record' => $record->vulnerability_id])
                 : null)
+            ->stackedOnMobile()
             ->columns([
                 TextColumn::make('vulnerability.severity')
                     ->label(voightTrans('models.package.view.columns.severity'))

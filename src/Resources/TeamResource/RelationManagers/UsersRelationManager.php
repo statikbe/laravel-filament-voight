@@ -47,6 +47,7 @@ class UsersRelationManager extends RelationManager
     public function table(Table $table): Table
     {
         return $table
+            ->stackedOnMobile()
             ->columns([
                 TextColumn::make('name')
                     ->label(voightTrans('models.customer.fields.name'))

@@ -46,6 +46,7 @@ class ProjectTableSchema
     {
         return $table
             ->modifyQueryUsing(fn (Builder $query): Builder => ProjectStackService::withStack($query))
+            ->stackedOnMobile()
             ->columns([
                 ProjectFaviconColumn::make(fn (Project $record): Project => $record),
                 TextColumn::make('project_code')

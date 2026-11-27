@@ -67,6 +67,7 @@ class TagsRelationManager extends RelationManager
                 ->withCount(['rules', 'rules as failed_rules_count' => fn (Builder $rules) => $rules->where('status', TagRuleStatus::Failed)]))
             ->reorderable('order_column')
             ->defaultSort('order_column')
+            ->stackedOnMobile()
             ->columns([
                 TextColumn::make('name')
                     ->label(voightTrans('models.tag.fields.name')),

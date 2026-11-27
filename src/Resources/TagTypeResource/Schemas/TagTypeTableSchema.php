@@ -15,6 +15,7 @@ class TagTypeTableSchema
         return $table
             ->reorderable('order_column')
             ->defaultSort('order_column')
+            ->stackedOnMobile()
             ->columns([
                 TextColumn::make('name')
                     ->label(voightTrans('models.tag_type.fields.name'))

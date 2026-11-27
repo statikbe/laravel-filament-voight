@@ -32,6 +32,7 @@ class PackageTableSchema
     public static function configure(Table $table): Table
     {
         return $table
+            ->stackedOnMobile()
             ->columns([
                 TextColumn::make('name')
                     ->label(voightTrans('models.package.fields.name'))
