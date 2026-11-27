@@ -4,6 +4,9 @@ All notable changes to `laravel-filament-voight` will be documented in this file
 
 ## Unreleased
 
+### Added 2026-11-27
+- Auto-tag rules: save a filtered list table as a rule on a tag, and the tag follows the query (added when records match, removed when they stop, hand-set tags untouched). Rules re-run after changes, syncs and scans (queued `RunTagRulesJob`) and nightly (`voight:run-tag-rules`); failing rules are flagged and stop running until retried. Manage them on the new tag page. `list_tags` reports `rule_count` and `auto_usage_count`. Publish and run the new `create_voight_tag_rules_table`, `create_voight_tag_rule_matches_table` and `add_is_manual_to_voight_taggables_table` migrations.
+
 ### Added 2026-11-26
 - Tags: curated tag types (single or multi value, limited to some models or all) with their tags, on projects, environments, customers, packages and vulnerabilities. Assign them per record or in bulk, filter on them in every table (also through related models), and read and assign them over MCP (`list_tags`, `assign_tags`, `tags` filters). Requires `spatie/laravel-tags` (and `spatie/laravel-translatable`); publish and run the new `create_voight_tag_types_table`, `create_voight_tags_table` and `create_voight_taggables_table` migrations.
 

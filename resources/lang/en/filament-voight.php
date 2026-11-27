@@ -49,6 +49,11 @@ return [
 
     // Enums
     'enums' => [
+        'tag_rule_status' => [
+            'active' => 'Active',
+            'paused' => 'Paused',
+            'failed' => 'Failed',
+        ],
         'package_type' => [
             'composer' => 'Composer',
             'npm' => 'NPM',
@@ -167,6 +172,38 @@ return [
             'removed' => 'Tags removed from :count record(s).',
             'not_applied' => 'No tags were applied',
             'saved' => 'Tags saved.',
+        ],
+        'rules' => [
+            'save_action' => 'Save as auto-tag rule',
+            'save_heading' => 'Save as auto-tag rule',
+            'save_description' => 'Every record this filtered table shows gets the tag, now and whenever new data arrives. Records that stop matching lose it again, unless it was set by hand.',
+            'replace' => 'Replace the rule this table was opened from (:tag)',
+            'saved' => 'Rule saved: :count record(s) match.',
+            'failed' => 'The rule was saved but its query failed',
+            'not_allowed' => 'You may not add rules to this tag.',
+            'relative_dates' => 'Rules cannot use relative dates (e.g. "past week"): they would stay fixed at today\'s date. Use an absolute date instead.',
+            'tab' => 'Tab: :tab',
+            'search' => 'Search: :search',
+            'plural' => 'Rules',
+            'usage' => ':total (:automatic by rule)',
+            'failed_count' => ':count failed',
+            'remove_tags' => 'Also remove the tags this rule added',
+            'delete_description' => 'This rule added the tag to :count record(s). Removed tags stay where another rule matches or the tag was set by hand.',
+            'fields' => [
+                'conditions' => 'Conditions',
+                'table' => 'Table',
+                'status' => 'Status',
+                'matches' => 'Matches',
+                'last_run' => 'Last run',
+                'created_by' => 'Saved by',
+            ],
+            'actions' => [
+                'open_in_table' => 'Open in table',
+                'pause' => 'Pause',
+                'resume' => 'Resume',
+                'retry' => 'Retry',
+                'delete' => 'Delete',
+            ],
         ],
         'validation' => [
             'still_assigned' => 'Records of these models still carry tags of this type: :models. Remove those tags first.',

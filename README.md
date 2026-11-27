@@ -276,6 +276,7 @@ Response `204 No Content`. Voight keeps only the latest snapshot per environment
 | `voight:run-osv-scan` | Dispatch OSV scan jobs (all or filtered) |
 | `voight:fetch-favicons [--project=] [--force]` | Fetch project favicons from their environment URLs |
 | `voight:icons [--json]` | List every icon with its alias, default, current value and description |
+| `voight:run-tag-rules` | Re-run every active auto-tag rule (scheduled daily; also runs after changes) |
 | `voight:rebuild-version-keys` | Recompute the sortable version keys behind version filters and sorting |
 
 ### Version keys
@@ -350,6 +351,15 @@ Classify projects, environments, customers, packages and vulnerabilities with cu
 - **Assigning:** project and customer forms have a field per applicable type; environment, package and vulnerability pages have an **Edit tags** action. Every table has **Apply tags** and **Remove tags** bulk actions: filter the table, select all, apply.
 - **Filtering:** each table's query builder has a constraint per tag type, on its own records and on related ones, e.g. *Project › Security level* on vulnerabilities, packages, environments and open findings.
 - **Permissions:** tagging a record needs its model's `update` policy ability; without a policy for the model, anyone with panel access can tag it.
+
+### Auto-tag rules
+
+A tag can follow a query instead of being set by hand. Filter a list table (projects, environments, customers, packages or vulnerabilities), then use **Save as auto-tag rule** and pick a tag: every record the table shows gets the tag, and from then on the tag follows the query. Records that start matching get it; records that stop matching lose it, unless the tag was set by hand or another rule still matches. Hand-set tags always win, also on single-value types.
+
+- **Where they run:** right after saving, after any change to a project, environment, customer, package, vulnerability or tag, after every lockfile sync and scan (one queued `RunTagRulesJob` per burst of changes, so a queue worker is needed), and nightly via `voight:run-tag-rules`.
+- **Managing them:** a tag's page (click a tag on its tag type) lists its rules with their conditions, match count and status. **Open in table** shows the table with the rule's filter; saving there replaces the rule. Rules can be paused, resumed and deleted (optionally removing the tags they added).
+- **Failures:** each rule stores the SQL of the table query when it is saved. If that query later fails (e.g. after an upgrade changed a column), the rule is marked **Failed**, keeps its tags and stops running until you **Retry** it or save it again from the table.
+- **Scope:** the stored query includes the visibility of the admin who saved it. Saving a rule needs permission to update the tag's type.
 
 Tags live in Voight's own `voight_tag_types`, `voight_tags` and `voight_taggables` tables (built on [spatie/laravel-tags](https://github.com/spatie/laravel-tags)), so an app that uses spatie-tags itself is not affected.
 

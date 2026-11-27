@@ -99,6 +99,9 @@ enum VoightIcon: string
     #[IconDefinition(Heroicon::OutlinedTag, 'Tab on a tag type page listing the tags of that type.')]
     case TabTagTypeTags = 'tab.tag-type.tags';
 
+    #[IconDefinition(Heroicon::OutlinedBolt, 'Tab on a tag page listing its auto-tag rules.')]
+    case TabTagRules = 'tab.tag.rules';
+
     // -- Empty states --
 
     #[IconDefinition(Heroicon::OutlinedShieldCheck, 'Empty state of vulnerability/finding lists meaning "all clear": nothing vulnerable was found.')]
@@ -148,6 +151,24 @@ enum VoightIcon: string
 
     #[IconDefinition(Heroicon::OutlinedTag, 'Action on a record\'s page opening a modal to edit its tags.')]
     case ActionEditTags = 'action.edit-tags';
+
+    #[IconDefinition(Heroicon::OutlinedBookmarkSquare, 'Header action on a filtered list table saving the filter as an auto-tag rule on a tag.')]
+    case ActionSaveTagRule = 'action.save-tag-rule';
+
+    #[IconDefinition(Heroicon::OutlinedTableCells, 'Action on an auto-tag rule opening its source table with the saved filter applied.')]
+    case ActionOpenTagRuleInTable = 'action.open-tag-rule-in-table';
+
+    #[IconDefinition(Heroicon::OutlinedPause, 'Action pausing an auto-tag rule: it stops running and its tags stay.')]
+    case ActionPauseTagRule = 'action.pause-tag-rule';
+
+    #[IconDefinition(Heroicon::OutlinedPlay, 'Action resuming a paused auto-tag rule.')]
+    case ActionResumeTagRule = 'action.resume-tag-rule';
+
+    #[IconDefinition(Heroicon::OutlinedArrowPath, 'Action retrying a failed auto-tag rule\'s query.')]
+    case ActionRetryTagRule = 'action.retry-tag-rule';
+
+    #[IconDefinition(Heroicon::OutlinedTrash, 'Action deleting an auto-tag rule, optionally with the tags it added.')]
+    case ActionDeleteTagRule = 'action.delete-tag-rule';
 
     // -- Table filters --
 
@@ -375,6 +396,17 @@ enum VoightIcon: string
 
     #[IconDefinition('heroicon-o-information-circle', 'Environment health issue: no lockfile has ever been synced. Shown in health columns and callouts.')]
     case EnvironmentIssueNeverSynced = 'environment-issue.never-synced';
+
+    // -- Tag rule status --
+
+    #[IconDefinition('heroicon-o-play-circle', 'Auto-tag rule status "active": the rule keeps its tag on matching records.')]
+    case TagRuleStatusActive = 'tag-rule-status.active';
+
+    #[IconDefinition('heroicon-o-pause-circle', 'Auto-tag rule status "paused": the rule is switched off; its tags stay.')]
+    case TagRuleStatusPaused = 'tag-rule-status.paused';
+
+    #[IconDefinition('heroicon-o-exclamation-circle', 'Auto-tag rule status "failed": its stored query errored; it no longer runs until retried or saved again.')]
+    case TagRuleStatusFailed = 'tag-rule-status.failed';
 
     // -- Misc enums --
 

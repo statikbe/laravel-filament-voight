@@ -4,8 +4,10 @@ namespace Statikbe\FilamentVoight\Models\Concerns;
 
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Relations\MorphPivot;
+use Illuminate\Support\Facades\DB;
 use Spatie\Tags\HasTags;
 use Statikbe\FilamentVoight\Facades\FilamentVoight;
+use Statikbe\FilamentVoight\Jobs\RunTagRulesJob;
 use Statikbe\FilamentVoight\Models\TagType;
 
 /**
@@ -14,6 +16,22 @@ use Statikbe\FilamentVoight\Models\TagType;
 trait HasVoightTags
 {
     use HasTags;
+
+    /**
+     * Any change to a taggable record can change what auto-tag rules match.
+     */
+    public static function bootHasVoightTags(): void
+    {
+        static::saved(fn () => RunTagRulesJob::dispatchIfRulesExist());
+        static::deleted(function (self $record): void {
+            DB::table('voight_tag_rule_matches')
+                ->where('taggable_type', $record->getMorphClass())
+                ->where('taggable_id', (string) $record->getKey())
+                ->delete();
+
+            RunTagRulesJob::dispatchIfRulesExist();
+        });
+    }
 
     public static function getTagClassName(): string
     {
