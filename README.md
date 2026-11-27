@@ -192,7 +192,7 @@ VOIGHT_MCP_ENABLED=true
 claude mcp add voight -- php artisan mcp:start voight
 ```
 
-**Remote** at `/mcp/voight`. Users open **Set up MCP** from the user menu of the Voight panel: it has a card per client (Claude, ChatGPT, Cursor, VS Code, Claude Code, Codex CLI). Clients sign in with OAuth as the user who connects them; there are no personal tokens.
+**Remote** at `/mcp/voight`. Users open **MCP access** under **Settings** in the sidebar of the Voight panel: it has a card per client (Claude, ChatGPT, Cursor, VS Code, Claude Code, Codex CLI). Clients sign in with OAuth as the user who connects them; there are no personal tokens.
 
 The remote server needs [Laravel Passport](https://laravel.com/docs/passport) in your app, with an `api` guard using the `passport` driver, and the OAuth routes:
 

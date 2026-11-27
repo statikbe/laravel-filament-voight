@@ -35,17 +35,17 @@ it('is not accessible when MCP is disabled', function () {
     expect(McpAccess::canAccess())->toBeFalse();
 });
 
-it('is reached from the user menu instead of the navigation', function () {
-    $item = filament()->getCurrentOrDefaultPanel()->getUserMenuItems()['voight-mcp-access'] ?? null;
+it('is listed in the Settings navigation group only when accessible', function () {
+    $item = McpAccess::getNavigationItems()[0];
 
-    expect(McpAccess::shouldRegisterNavigation())->toBeFalse()
-        ->and($item)->not->toBeNull()
+    expect($item->getGroup())->toBe(voightTrans('navigation.settings'))
         ->and($item->getUrl())->toBe(McpAccess::getUrl())
-        ->and($item->getLabel())->toBe(voightTrans('pages.mcp_access.title'));
+        ->and($item->getLabel())->toBe(voightTrans('pages.mcp_access.title'))
+        ->and($item->isVisible())->toBeTrue();
 
     config(['filament-voight.mcp.enabled' => false]);
 
-    expect(filament()->getCurrentOrDefaultPanel()->getUserMenuItems())->not->toHaveKey('voight-mcp-access');
+    expect(McpAccess::getNavigationItems()[0]->isVisible())->toBeFalse();
 });
 
 it('reports OAuth as available once the OAuth routes are registered', function () {
