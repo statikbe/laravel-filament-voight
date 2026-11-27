@@ -107,3 +107,18 @@ it('indexes audit findings by run and vulnerability, and vulnerabilities by scor
     expect($indexNames('voight_audit_findings'))->toContain('voight_audit_findings_run_vulnerability_index')
         ->and($indexNames('voight_vulnerabilities'))->toContain('voight_vulnerabilities_score_index');
 });
+
+it('keeps every index and foreign key name within MySQL\'s 64 characters', function () {
+    $tooLong = collect(Schema::getTableListing())
+        ->map(fn (string $table): string => str($table)->afterLast('.')->toString())
+        ->filter(fn (string $table): bool => str_starts_with($table, 'voight_'))
+        ->flatMap(fn (string $table): array => [
+            ...array_column(Schema::getIndexes($table), 'name'),
+            ...array_filter(array_column(Schema::getForeignKeys($table), 'name')),
+        ])
+        ->filter(fn (string $name): bool => strlen($name) > 64)
+        ->values()
+        ->all();
+
+    expect($tooLong)->toBe([]);
+});

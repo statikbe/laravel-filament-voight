@@ -13,7 +13,7 @@ return new class extends Migration
             $table->string('taggable_type');
             $table->string('taggable_id', 36);
 
-            $table->unique(['tag_rule_id', 'taggable_type', 'taggable_id']);
+            $table->unique(['tag_rule_id', 'taggable_type', 'taggable_id'], 'voight_tag_rule_matches_unique');
             $table->index(['taggable_type', 'taggable_id']);
         });
     }
