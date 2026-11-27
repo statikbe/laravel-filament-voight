@@ -3,6 +3,7 @@
 use Filament\Support\Facades\FilamentIcon;
 use Statikbe\FilamentVoight\Enums\VoightIcon;
 use Statikbe\FilamentVoight\Models\Project;
+use Statikbe\FilamentVoight\Pages\McpAccess;
 use Statikbe\FilamentVoight\Resources\AuditRunResource\RelationManagers\FindingsRelationManager;
 use Statikbe\FilamentVoight\Resources\CustomerResource;
 use Statikbe\FilamentVoight\Resources\PackageResource;
@@ -69,11 +70,11 @@ it('resolves the project info tab icon through VoightIcon', function () {
     expect($page->getContentTabIcon())->toBe('heroicon-o-star');
 });
 
-it('resolves the MCP access user menu icon at render time, so host overrides made after the panel registers apply', function () {
+it('resolves the MCP access navigation icon at render time, so host overrides made after the panel registers apply', function () {
     $this->actingAs(mcpUser());
-    FilamentIcon::register([VoightIcon::UserMenuMcpAccess->alias() => 'heroicon-o-star']);
+    FilamentIcon::register([VoightIcon::NavigationMcpAccess->alias() => 'heroicon-o-star']);
 
-    $item = filament()->getCurrentOrDefaultPanel()->getUserMenuItems()['voight-mcp-access'];
+    $item = McpAccess::getNavigationItems()[0];
 
     expect($item->getIcon())->toBe('heroicon-o-star');
 });

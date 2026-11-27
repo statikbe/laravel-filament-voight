@@ -83,7 +83,7 @@ return [
     | Lets AI clients (Claude, ChatGPT, Cursor, ...) query Voight. When enabled,
     | a local server is available through `php artisan mcp:start voight` and a
     | remote one at `path`. Remote users sign in with OAuth from the "Set up
-    | MCP" page (user menu): the host installs Passport, defines the `api`
+    | MCP" page (Settings navigation group): the host installs Passport, defines the `api`
     | guard and calls Mcp::oauthRoutes().
     | `write_tools` exposes the tools that create projects and project tokens.
     |

@@ -40,8 +40,8 @@ enum VoightIcon: string
     #[IconDefinition(Heroicon::OutlinedTag, 'Sidebar navigation item for the tag types screen, where admins define classifications and their tags.')]
     case NavigationTagTypes = 'navigation.tag-types';
 
-    #[IconDefinition(Heroicon::OutlinedCommandLine, 'User menu item opening the MCP access page, where users connect AI assistants to Voight.')]
-    case UserMenuMcpAccess = 'user-menu.mcp-access';
+    #[IconDefinition(Heroicon::OutlinedCommandLine, 'Sidebar navigation item for the MCP access page, where users connect AI assistants to Voight.')]
+    case NavigationMcpAccess = 'navigation.mcp-access';
 
     // -- Relation manager / page tabs --
 
