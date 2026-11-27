@@ -100,3 +100,10 @@ it('backfills existing alert settings with every package type', function () {
     expect(json_decode(DB::table('voight_alert_settings')->where('id', $setting->id)->value('package_types'), true))
         ->toBe(array_column(PackageType::cases(), 'value'));
 });
+
+it('indexes audit findings by run and vulnerability, and vulnerabilities by score', function () {
+    $indexNames = fn (string $table): array => array_column(Schema::getIndexes($table), 'name');
+
+    expect($indexNames('voight_audit_findings'))->toContain('voight_audit_findings_run_vulnerability_index')
+        ->and($indexNames('voight_vulnerabilities'))->toContain('voight_vulnerabilities_score_index');
+});
