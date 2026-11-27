@@ -10,7 +10,6 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Statikbe\FilamentVoight\Enums\TagRuleStatus;
 use Statikbe\FilamentVoight\Facades\FilamentVoight;
-use Statikbe\FilamentVoight\Models\Tag;
 use Statikbe\FilamentVoight\Models\TagRule;
 use Statikbe\FilamentVoight\Models\TagType;
 
@@ -100,14 +99,7 @@ class TagRuleRunner
 
         DB::transaction(function () use ($rule, $removeTags): void {
             if (! $removeTags) {
-                DB::table('voight_taggables')
-                    ->where('tag_id', $rule->tag_id)
-                    ->where('is_manual', false)
-                    ->whereExists(fn ($match) => $match->from('voight_tag_rule_matches')
-                        ->where('tag_rule_id', $rule->getKey())
-                        ->whereColumn('voight_tag_rule_matches.taggable_type', 'voight_taggables.taggable_type')
-                        ->whereColumn('voight_tag_rule_matches.taggable_id', 'voight_taggables.taggable_id'))
-                    ->update(['is_manual' => true]);
+                $rule->automaticTaggablesQuery()->update(['is_manual' => true]);
             }
 
             $rule->delete();
@@ -127,13 +119,11 @@ class TagRuleRunner
                 ->unique()
                 ->values();
         } catch (QueryException $exception) {
-            $rule->timestamps = false;
-            $rule->forceFill([
+            self::saveRunState($rule, [
                 'status' => TagRuleStatus::Failed,
                 'last_error' => $exception->getMessage(),
                 'failed_at' => now(),
-            ])->saveQuietly();
-            $rule->timestamps = true;
+            ]);
 
             Log::warning('Voight tag rule failed and will not run again until retried or saved again.', [
                 'rule' => $rule->getKey(),
@@ -156,16 +146,13 @@ class TagRuleRunner
             }
         });
 
-        // Without timestamps: `updated_at` means "last saved" and decides which rule wins on single-value types.
-        $rule->timestamps = false;
-        $rule->forceFill([
+        self::saveRunState($rule, [
             'status' => TagRuleStatus::Active,
             'last_error' => null,
             'failed_at' => null,
             'last_run_at' => now(),
             'last_match_count' => $keys->count(),
-        ])->saveQuietly();
-        $rule->timestamps = true;
+        ]);
 
         return true;
     }
@@ -191,18 +178,18 @@ class TagRuleRunner
             ->whereIn('tag_id', $tagIds)
             ->get(['tag_id', 'taggable_type', 'taggable_id', 'is_manual']);
 
-        $existingKeys = $existing->mapWithKeys(fn (object $row): array => [self::pairKey($row->tag_id, $row->taggable_type, $row->taggable_id) => (bool) $row->is_manual]);
+        $existingKeys = $existing->keyBy(fn (object $row): string => self::pairKey($row));
         $manualRecords = $existing->filter(fn (object $row): bool => (bool) $row->is_manual)
-            ->mapWithKeys(fn (object $row): array => [$row->taggable_type . '|' . $row->taggable_id => true]);
+            ->keyBy(fn (object $row): string => self::recordKey($row));
 
         $inserts = $desired
-            ->reject(fn (object $pair): bool => $existingKeys->has(self::pairKey($pair->tag_id, $pair->taggable_type, $pair->taggable_id)))
-            ->reject(fn (object $pair): bool => $type->is_single && $manualRecords->has($pair->taggable_type . '|' . $pair->taggable_id));
+            ->reject(fn (object $pair): bool => $existingKeys->has(self::pairKey($pair)))
+            ->reject(fn (object $pair): bool => $type->is_single && $manualRecords->has(self::recordKey($pair)));
 
-        $desiredKeys = $kept->mapWithKeys(fn (object $pair): array => [self::pairKey($pair->tag_id, $pair->taggable_type, $pair->taggable_id) => true]);
+        $keptKeys = $kept->keyBy(fn (object $pair): string => self::pairKey($pair));
         $deletes = $existing
             ->reject(fn (object $row): bool => (bool) $row->is_manual)
-            ->reject(fn (object $row): bool => $desiredKeys->has(self::pairKey($row->tag_id, $row->taggable_type, $row->taggable_id)));
+            ->reject(fn (object $row): bool => $keptKeys->has(self::pairKey($row)));
 
         if ($inserts->isEmpty() && $deletes->isEmpty()) {
             return false;
@@ -249,8 +236,8 @@ class TagRuleRunner
             ->get(['r.tag_id', 'm.taggable_type', 'm.taggable_id']);
 
         $pairs = $isSingle
-            ? $pairs->unique(fn (object $pair): string => $pair->taggable_type . '|' . $pair->taggable_id)
-            : $pairs->unique(fn (object $pair): string => self::pairKey($pair->tag_id, $pair->taggable_type, $pair->taggable_id));
+            ? $pairs->unique(fn (object $pair): string => self::recordKey($pair))
+            : $pairs->unique(fn (object $pair): string => self::pairKey($pair));
 
         return $pairs->values();
     }
@@ -270,8 +257,32 @@ class TagRuleRunner
         return Cache::lock(self::LOCK, 600)->block(self::$lockWaitSeconds, $callback);
     }
 
-    private static function pairKey(string $tagId, string $taggableType, string | int $taggableId): string
+    /**
+     * Writes a rule's run state without touching `updated_at`: it means "last saved" and decides which rule wins on
+     * single-value types.
+     *
+     * @param  array<string, mixed>  $attributes
+     */
+    private static function saveRunState(TagRule $rule, array $attributes): void
     {
-        return $tagId . '|' . $taggableType . '|' . $taggableId;
+        $rule->timestamps = false;
+        $rule->forceFill($attributes)->saveQuietly();
+        $rule->timestamps = true;
+    }
+
+    /**
+     * Identifies a tag on a record, from a row with `tag_id`, `taggable_type` and `taggable_id`.
+     */
+    private static function pairKey(object $row): string
+    {
+        return $row->tag_id . '|' . self::recordKey($row);
+    }
+
+    /**
+     * Identifies a record, from a row with `taggable_type` and `taggable_id`.
+     */
+    private static function recordKey(object $row): string
+    {
+        return $row->taggable_type . '|' . $row->taggable_id;
     }
 }

@@ -7,7 +7,9 @@ use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use Statikbe\FilamentVoight\Enums\TagRuleStatus;
 use Statikbe\FilamentVoight\Facades\FilamentVoight;
 
@@ -78,5 +80,19 @@ class TagRule extends Model
     public function scopeActive(Builder $query): Builder
     {
         return $query->where('status', TagRuleStatus::Active);
+    }
+
+    /**
+     * Taggable rows of this rule's tag that a rule added (not set by hand) and that this rule matches.
+     */
+    public function automaticTaggablesQuery(): QueryBuilder
+    {
+        return DB::table('voight_taggables')
+            ->where('tag_id', $this->tag_id)
+            ->where('is_manual', false)
+            ->whereExists(fn (QueryBuilder $match) => $match->from('voight_tag_rule_matches')
+                ->where('tag_rule_id', $this->getKey())
+                ->whereColumn('voight_tag_rule_matches.taggable_type', 'voight_taggables.taggable_type')
+                ->whereColumn('voight_tag_rule_matches.taggable_id', 'voight_taggables.taggable_id'));
     }
 }

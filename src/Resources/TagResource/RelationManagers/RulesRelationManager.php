@@ -10,7 +10,6 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\DB;
 use Statikbe\FilamentVoight\Enums\TagRuleStatus;
 use Statikbe\FilamentVoight\Enums\VoightIcon;
 use Statikbe\FilamentVoight\Models\TagRule;
@@ -127,13 +126,6 @@ class RulesRelationManager extends RelationManager
      */
     private static function automaticCount(TagRule $rule): int
     {
-        return DB::table('voight_taggables')
-            ->where('tag_id', $rule->tag_id)
-            ->where('is_manual', false)
-            ->whereExists(fn ($match) => $match->from('voight_tag_rule_matches')
-                ->where('tag_rule_id', $rule->getKey())
-                ->whereColumn('voight_tag_rule_matches.taggable_type', 'voight_taggables.taggable_type')
-                ->whereColumn('voight_tag_rule_matches.taggable_id', 'voight_taggables.taggable_id'))
-            ->count();
+        return $rule->automaticTaggablesQuery()->count();
     }
 }

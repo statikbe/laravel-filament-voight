@@ -61,9 +61,13 @@ class SaveTagRuleAction
 
                 $rule = $recorder->record($livewire, $tag, ($data['replace'] ?? false) ? self::replaceableRule($livewire) : null);
 
-                $rule->status === TagRuleStatus::Failed
-                    ? Notification::make()->danger()->title(voightTrans('tags.rules.failed'))->body($rule->last_error)->send()
-                    : Notification::make()->success()->title(voightTrans('tags.rules.saved', ['count' => $rule->last_match_count ?? 0]))->send();
+                if ($rule->status === TagRuleStatus::Failed) {
+                    Notification::make()->danger()->title(voightTrans('tags.rules.failed'))->body($rule->last_error)->send();
+
+                    return;
+                }
+
+                Notification::make()->success()->title(voightTrans('tags.rules.saved', ['count' => $rule->last_match_count ?? 0]))->send();
             });
     }
 
