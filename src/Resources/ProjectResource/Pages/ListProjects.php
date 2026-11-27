@@ -8,6 +8,7 @@ use Filament\Schemas\Components\Tabs\Tab;
 use Illuminate\Database\Eloquent\Builder;
 use Statikbe\FilamentVoight\Enums\EnvironmentStage;
 use Statikbe\FilamentVoight\Enums\Severity;
+use Statikbe\FilamentVoight\Enums\VoightIcon;
 use Statikbe\FilamentVoight\Models\AuditFinding;
 use Statikbe\FilamentVoight\Models\Environment;
 use Statikbe\FilamentVoight\Models\Vulnerability;
@@ -40,10 +41,12 @@ class ListProjects extends ListRecords
             'all' => $this->allTab(),
             'my_team' => $this->countedTab(
                 'tabs.projects.my_team',
+                VoightIcon::ListTabProjectsMyTeam,
                 fn (Builder $query): Builder => $query->whereHas('team.users', fn (Builder $users): Builder => $users->whereKey(auth()->id())),
             ),
             'critical_high_on_production' => $this->countedTab(
                 'tabs.projects.critical_high_on_production',
+                VoightIcon::ListTabProjectsCriticalHighOnProduction,
                 fn (Builder $query): Builder => $query->whereHas(
                     'environments',
                     fn (Builder $environments): Builder => tap($environments, fn (Builder $environments) => Environment::constrainToStages($environments, EnvironmentStage::Production))

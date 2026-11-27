@@ -14,6 +14,7 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Statikbe\FilamentVoight\Enums\AuditRunStatus;
 use Statikbe\FilamentVoight\Enums\DependencySyncStatus;
+use Statikbe\FilamentVoight\Enums\VoightIcon;
 use Statikbe\FilamentVoight\Facades\FilamentVoight;
 use Statikbe\FilamentVoight\Models\Customer;
 use Statikbe\FilamentVoight\Models\Environment;
@@ -86,6 +87,7 @@ class EnvironmentTableSchema
                 QueryBuilder::make()
                     ->constraints([
                         SelectConstraint::make('name')
+                            ->icon(VoightIcon::FilterEnvironment->resolve())
                             ->label(voightTrans('models.environment.fields.name'))
                             ->options(fn (): array => $environmentModel::query()
                                 ->whereIn('project_id', $projectIds())
@@ -105,6 +107,7 @@ class EnvironmentTableSchema
                             ProjectConstraint::team('project.team_id'),
                         ] : []),
                         SelectConstraint::make('php_version')
+                            ->icon(VoightIcon::FilterPhpVersion->resolve())
                             ->label(voightTrans('models.environment.fields.php_version'))
                             ->attribute('systemDetails.php_version')
                             ->options(fn (): array => EnvironmentSystemDetail::query()
@@ -117,26 +120,33 @@ class EnvironmentTableSchema
                             ->searchable()
                             ->multiple(),
                         RelationshipConstraint::make('systemDetails')
+                            ->icon(VoightIcon::FilterSystemDetails->resolve())
                             ->label(voightTrans('models.environment.fields.system_details_received_at'))
                             ->emptyable(),
                         DateConstraint::make('systemDetails.received_at')
+                            ->icon(VoightIcon::FilterDate->resolve())
                             ->label(voightTrans('models.environment.fields.system_details_received_at')),
                         BooleanConstraint::make('scan_nightly')
+                            ->icon(VoightIcon::FilterNightlyScan->resolve())
                             ->label(voightTrans('models.environment.fields.scan_nightly')),
                         DateConstraint::make('scanned_at')
+                            ->icon(VoightIcon::FilterDate->resolve())
                             ->label(voightTrans('models.environment.fields.scanned_at'))
                             ->nullable(),
                         SelectConstraint::make('latest_audit_status')
+                            ->icon(VoightIcon::FilterAuditRunStatus->resolve())
                             ->label(voightTrans('models.environment.fields.latest_audit_status'))
                             ->attribute('latestFinishedAuditRun.status')
                             ->options(AuditRunStatus::class)
                             ->multiple(),
                         SelectConstraint::make('latest_sync_status')
+                            ->icon(VoightIcon::FilterSyncStatus->resolve())
                             ->label(voightTrans('models.environment.fields.latest_sync_status'))
                             ->attribute('latestFinishedDependencySync.status')
                             ->options(DependencySyncStatus::class)
                             ->multiple(),
                         DateConstraint::make('created_at')
+                            ->icon(VoightIcon::FilterDate->resolve())
                             ->label(voightTrans('models.environment.fields.created_at')),
                     ]),
             ], layout: FiltersLayout::AboveContentCollapsible)

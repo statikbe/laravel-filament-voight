@@ -7,6 +7,7 @@ use Filament\Tables\Filters\QueryBuilder\Constraints\SelectConstraint;
 use Filament\Tables\Filters\QueryBuilder\Constraints\SelectConstraint\Operators\IsOperator;
 use Illuminate\Database\Eloquent\Builder;
 use Statikbe\FilamentVoight\Enums\Severity;
+use Statikbe\FilamentVoight\Enums\VoightIcon;
 use Statikbe\FilamentVoight\Models\Vulnerability;
 
 /**
@@ -21,6 +22,7 @@ class SeverityConstraint
     public static function make(string $name, string | Closure | null $relation = null): SelectConstraint
     {
         return SelectConstraint::make($name)
+            ->icon(VoightIcon::FilterSeverity->resolve())
             ->options(Severity::options())
             ->multiple()
             ->operators([

@@ -7,6 +7,7 @@ use Filament\Schemas\Components\Tabs\Tab;
 use Illuminate\Database\Eloquent\Builder;
 use Statikbe\FilamentVoight\Enums\EnvironmentStage;
 use Statikbe\FilamentVoight\Enums\Severity;
+use Statikbe\FilamentVoight\Enums\VoightIcon;
 use Statikbe\FilamentVoight\Models\AuditFinding;
 use Statikbe\FilamentVoight\Models\Environment;
 use Statikbe\FilamentVoight\Models\Vulnerability;
@@ -43,16 +44,19 @@ class ListOpenFindings extends ListRecords
         return [
             'production_critical_high' => $this->countedTab(
                 'tabs.open_findings.production_critical_high',
+                VoightIcon::ListTabOpenFindingsProductionCriticalHigh,
                 fn (Builder $query): Builder => $query
                     ->whereHas('auditRun.environment', $production)
                     ->whereHas('vulnerability', fn (Builder $query) => Vulnerability::constrainToSeverities($query, Severity::Critical, Severity::High)),
             ),
             'production' => $this->countedTab(
                 'tabs.open_findings.production',
+                VoightIcon::ListTabOpenFindingsProduction,
                 fn (Builder $query): Builder => $query->whereHas('auditRun.environment', $production),
             ),
             'other_stages' => $this->countedTab(
                 'tabs.open_findings.other_stages',
+                VoightIcon::ListTabOpenFindingsOtherStages,
                 fn (Builder $query): Builder => $query->whereDoesntHave('auditRun.environment', $production),
             ),
             'all' => $this->allTab(),

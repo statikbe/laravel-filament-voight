@@ -93,10 +93,13 @@ class InstallationsRelationManager extends RelationManager
                         EnvironmentStageConstraint::make('environment'),
                         InstalledVersionConstraint::make(),
                         BooleanConstraint::make('is_direct')
+                            ->icon(VoightIcon::FilterDirectDependency->resolve())
                             ->label(voightTrans('models.package.view.columns.direct')),
                         BooleanConstraint::make('is_dev')
+                            ->icon(VoightIcon::FilterDevDependency->resolve())
                             ->label(voightTrans('models.package.view.columns.dev')),
                         DateConstraint::make('scanned_at')
+                            ->icon(VoightIcon::FilterDate->resolve())
                             ->label(voightTrans('models.package.view.columns.last_scan'))
                             ->attribute('environment.scanned_at')
                             ->nullable(),

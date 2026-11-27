@@ -5,6 +5,7 @@ namespace Statikbe\FilamentVoight\Resources\PackageResource\Pages;
 use Filament\Resources\Pages\ListRecords;
 use Filament\Schemas\Components\Tabs\Tab;
 use Illuminate\Database\Eloquent\Builder;
+use Statikbe\FilamentVoight\Enums\VoightIcon;
 use Statikbe\FilamentVoight\Models\AuditFinding;
 use Statikbe\FilamentVoight\Resources\Components\SaveTagRuleAction;
 use Statikbe\FilamentVoight\Resources\Concerns\HasCountedTabs;
@@ -27,6 +28,7 @@ class ListPackages extends ListRecords
             'all' => $this->allTab(),
             'vulnerable_in_use' => $this->countedTab(
                 'tabs.packages.vulnerable_in_use',
+                VoightIcon::ListTabPackagesVulnerableInUse,
                 fn (Builder $query): Builder => $query->whereHas('findings', fn (Builder $f): Builder => AuditFinding::constrainToCurrent($f)),
             ),
         ];

@@ -14,6 +14,7 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 use Statikbe\FilamentVoight\Enums\PackageType;
+use Statikbe\FilamentVoight\Enums\VoightIcon;
 use Statikbe\FilamentVoight\Models\Customer;
 use Statikbe\FilamentVoight\Models\Environment;
 use Statikbe\FilamentVoight\Models\Package;
@@ -58,14 +59,18 @@ class PackageTableSchema
                 QueryBuilder::make()
                     ->constraints([
                         TextConstraint::make('name')
+                            ->icon(VoightIcon::FilterPackage->resolve())
                             ->label(voightTrans('models.package.fields.name')),
                         SelectConstraint::make('type')
+                            ->icon(VoightIcon::FilterPackageType->resolve())
                             ->label(voightTrans('models.package.fields.type'))
                             ->options(PackageType::options())
                             ->multiple(),
                         TextConstraint::make('latest_version')
+                            ->icon(VoightIcon::FilterVersion->resolve())
                             ->label(voightTrans('models.package.fields.latest_version')),
                         DateConstraint::make('latest_version_updated_at')
+                            ->icon(VoightIcon::FilterDate->resolve())
                             ->label(voightTrans('models.package.fields.latest_version_updated_at')),
                         EnvironmentStageConstraint::make('environmentPackages.environment'),
                         ...TagConstraint::forModel(Package::class),
@@ -73,12 +78,15 @@ class PackageTableSchema
                         ...TagConstraint::forModel(Project::class, 'environmentPackages.environment.project', 'project'),
                         ...TagConstraint::forModel(Customer::class, 'environmentPackages.environment.project.customer', 'customer'),
                         RelationshipConstraint::make('environmentPackages')
+                            ->icon(VoightIcon::FilterInstallations->resolve())
                             ->label(voightTrans('models.package.fields.installations'))
                             ->multiple(),
                         RelationshipConstraint::make('findings')
+                            ->icon(VoightIcon::FilterFindings->resolve())
                             ->label(voightTrans('models.package.fields.findings'))
                             ->multiple(),
                         RelationshipConstraint::make('vulnerablePackageRanges')
+                            ->icon(VoightIcon::FilterVulnerabilities->resolve())
                             ->label(voightTrans('models.package.fields.known_vulnerabilities'))
                             ->multiple(),
                         ProjectConstraint::project('environmentPackages.environment.project_id'),

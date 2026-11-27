@@ -53,6 +53,7 @@ it('resolves relation manager tab icons through VoightIcon', function (string $r
     [AlertSettingsRelationManager::class, VoightIcon::TabProjectAlertSettings],
     [UsersRelationManager::class, VoightIcon::TabTeamUsers],
     [ProjectsRelationManager::class, VoightIcon::TabTeamProjects],
+    [CustomerResource\RelationManagers\ProjectRelationManager::class, VoightIcon::TabCustomerProjects],
     [AffectedPackagesRelationManager::class, VoightIcon::TabVulnerabilityAffectedPackages],
     [AffectedProjectsRelationManager::class, VoightIcon::TabVulnerabilityAffectedProjects],
     [ActiveFindingsRelationManager::class, VoightIcon::TabPackageActiveFindings],

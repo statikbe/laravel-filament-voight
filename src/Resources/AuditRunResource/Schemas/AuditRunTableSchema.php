@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Statikbe\FilamentVoight\Enums\AuditRunStatus;
 use Statikbe\FilamentVoight\Enums\AuditRunTrigger;
 use Statikbe\FilamentVoight\Enums\Severity;
+use Statikbe\FilamentVoight\Enums\VoightIcon;
 use Statikbe\FilamentVoight\Models\AuditRun;
 use Statikbe\FilamentVoight\Models\Project;
 use Statikbe\FilamentVoight\Resources\Components\EnvironmentNameColumn;
@@ -76,10 +77,12 @@ class AuditRunTableSchema
                         ...($showProject ? [ProjectConstraint::project('environment.project_id')] : []),
                         EnvironmentStageConstraint::make('environment'),
                         SelectConstraint::make('status')
+                            ->icon(VoightIcon::FilterAuditRunStatus->resolve())
                             ->label(voightTrans('models.audit_run.fields.status'))
                             ->options(AuditRunStatus::class)
                             ->multiple(),
                         SelectConstraint::make('trigger')
+                            ->icon(VoightIcon::FilterAuditRunTrigger->resolve())
                             ->label(voightTrans('models.audit_run.fields.trigger'))
                             ->options(AuditRunTrigger::class)
                             ->multiple(),
@@ -92,11 +95,14 @@ class AuditRunTableSchema
                                 ->whereDoesntHave('vulnerabilities', fn (Builder $vulnerability) => $vulnerability->where('vulnerability_score', '>', $maximum));
                         })->label(voightTrans('models.audit_run.fields.max_severity')),
                         DateConstraint::make('started_at')
+                            ->icon(VoightIcon::FilterDate->resolve())
                             ->label(voightTrans('models.audit_run.fields.started_at')),
                         DateConstraint::make('completed_at')
+                            ->icon(VoightIcon::FilterDate->resolve())
                             ->label(voightTrans('models.audit_run.fields.completed_at'))
                             ->nullable(),
                         RelationshipConstraint::make('auditFindings')
+                            ->icon(VoightIcon::FilterFindings->resolve())
                             ->label(voightTrans('models.audit_run.fields.findings_count'))
                             ->multiple(),
                     ]),

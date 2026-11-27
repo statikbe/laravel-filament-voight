@@ -13,6 +13,7 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Statikbe\FilamentVoight\Enums\PackageType;
 use Statikbe\FilamentVoight\Enums\Severity;
+use Statikbe\FilamentVoight\Enums\VoightIcon;
 use Statikbe\FilamentVoight\Enums\VulnerabilitySource;
 use Statikbe\FilamentVoight\Models\AuditFinding;
 use Statikbe\FilamentVoight\Models\Customer;
@@ -44,9 +45,11 @@ class AuditFindingTableSchema
 
         if ($showPackage) {
             $constraints[] = TextConstraint::make('package_name')
+                ->icon(VoightIcon::FilterPackage->resolve())
                 ->label(voightTrans('models.package.label'))
                 ->attribute('package.name');
             $constraints[] = SelectConstraint::make('package_type')
+                ->icon(VoightIcon::FilterPackageType->resolve())
                 ->label(voightTrans('widgets.active_findings.columns.package_type'))
                 ->attribute('package.type')
                 ->options(PackageType::options())
@@ -57,11 +60,13 @@ class AuditFindingTableSchema
             $constraints[] = SeverityConstraint::make('severity', 'vulnerability')
                 ->label(voightTrans('models.vulnerability.fields.severity'));
             $constraints[] = SelectConstraint::make('vulnerability_source')
+                ->icon(VoightIcon::FilterVulnerabilitySource->resolve())
                 ->label(voightTrans('models.vulnerability.fields.source'))
                 ->attribute('vulnerability.source')
                 ->options(VulnerabilitySource::options())
                 ->multiple();
             $constraints[] = TextConstraint::make('vulnerability_source_id')
+                ->icon(VoightIcon::FilterVulnerabilityId->resolve())
                 ->label(voightTrans('models.vulnerability.fields.source_id'))
                 ->attribute('vulnerability.source_id');
         }
@@ -76,14 +81,17 @@ class AuditFindingTableSchema
         );
 
         $constraints[] = TextConstraint::make('installed_version')
+            ->icon(VoightIcon::FilterVersion->resolve())
             ->label(voightTrans('models.package.view.columns.installed_version'));
         // "Is filled" / "is blank" doubles as "has a fix available".
         $constraints[] = TextConstraint::make('fixed_version')
+            ->icon(VoightIcon::FilterFixedVersion->resolve())
             ->label(voightTrans('models.package.view.columns.fixed_version'))
             ->nullable();
 
         if (! $singleRun) {
             $constraints[] = DateConstraint::make('observed_at')
+                ->icon(VoightIcon::FilterDate->resolve())
                 ->label(voightTrans('models.package.view.columns.observed'))
                 ->attribute('auditRun.started_at');
             $constraints[] = EnvironmentStageConstraint::make('auditRun.environment');

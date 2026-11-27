@@ -83,25 +83,32 @@ class KnownVulnerabilitiesRelationManager extends RelationManager
                         SeverityConstraint::make('severity', 'vulnerability')
                             ->label(voightTrans('models.package.view.columns.severity')),
                         SelectConstraint::make('source')
+                            ->icon(VoightIcon::FilterVulnerabilitySource->resolve())
                             ->label(voightTrans('models.package.view.columns.source'))
                             ->attribute('vulnerability.source')
                             ->options(VulnerabilitySource::options())
                             ->multiple(),
                         TextConstraint::make('source_id')
+                            ->icon(VoightIcon::FilterVulnerabilityId->resolve())
                             ->label(voightTrans('models.package.view.columns.source_id'))
                             ->attribute('vulnerability.source_id'),
                         TextConstraint::make('summary')
+                            ->icon(VoightIcon::FilterSummary->resolve())
                             ->label(voightTrans('models.package.view.columns.summary'))
                             ->attribute('vulnerability.summary'),
                         TextConstraint::make('affected_range')
+                            ->icon(VoightIcon::FilterVersion->resolve())
                             ->label(voightTrans('models.package.view.columns.affected_range')),
                         TextConstraint::make('fixed_version')
+                            ->icon(VoightIcon::FilterFixedVersion->resolve())
                             ->label(voightTrans('models.package.view.columns.fixed_version'))
                             ->nullable(),
                         DateConstraint::make('published_at')
+                            ->icon(VoightIcon::FilterDate->resolve())
                             ->label(voightTrans('models.package.view.columns.published'))
                             ->attribute('vulnerability.published_at'),
                         DateConstraint::make('modified_at')
+                            ->icon(VoightIcon::FilterDate->resolve())
                             ->label(voightTrans('models.package.view.columns.modified'))
                             ->attribute('vulnerability.modified_at'),
                     ]),

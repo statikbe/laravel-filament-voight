@@ -3,6 +3,7 @@
 namespace Statikbe\FilamentVoight\Resources\Components;
 
 use Filament\Tables\Filters\QueryBuilder\Constraints\SelectConstraint;
+use Statikbe\FilamentVoight\Enums\VoightIcon;
 use Statikbe\FilamentVoight\Models\Customer;
 use Statikbe\FilamentVoight\Models\Team;
 use Statikbe\FilamentVoight\Resources\ProjectResource;
@@ -15,6 +16,7 @@ class ProjectConstraint
     public static function project(string $attribute): SelectConstraint
     {
         return SelectConstraint::make('project')
+            ->icon(VoightIcon::FilterProject->resolve())
             ->label(voightTrans('models.audit_run.fields.project'))
             ->attribute($attribute)
             ->options(fn (): array => ProjectResource::getEloquentQuery()->orderBy('name')->pluck('name', 'id')->all())
@@ -25,6 +27,7 @@ class ProjectConstraint
     public static function customer(string $attribute): SelectConstraint
     {
         return SelectConstraint::make('customer')
+            ->icon(VoightIcon::FilterCustomer->resolve())
             ->label(voightTrans('models.project.fields.customer'))
             ->attribute($attribute)
             ->options(fn (): array => Customer::query()->whereIn('id', ProjectResource::getEloquentQuery()->select('customer_id'))->orderBy('name')->pluck('name', 'id')->all())
@@ -35,6 +38,7 @@ class ProjectConstraint
     public static function team(string $attribute): SelectConstraint
     {
         return SelectConstraint::make('team')
+            ->icon(VoightIcon::FilterTeam->resolve())
             ->label(voightTrans('models.project.fields.team'))
             ->attribute($attribute)
             ->options(fn (): array => Team::query()->whereIn('id', ProjectResource::getEloquentQuery()->select('team_id'))->orderBy('name')->pluck('name', 'id')->all())

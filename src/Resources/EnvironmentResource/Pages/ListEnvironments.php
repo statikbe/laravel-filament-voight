@@ -14,6 +14,7 @@ use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Database\Eloquent\Builder;
 use Livewire\Attributes\Url;
 use Statikbe\FilamentVoight\Enums\EnvironmentStage;
+use Statikbe\FilamentVoight\Enums\VoightIcon;
 use Statikbe\FilamentVoight\Facades\FilamentVoight;
 use Statikbe\FilamentVoight\Models\Environment;
 use Statikbe\FilamentVoight\Resources\Components\SaveTagRuleAction;
@@ -81,9 +82,9 @@ class ListEnvironments extends Page implements HasTable
     {
         return [
             'all' => $this->allTab(),
-            'production' => $this->countedTab('tabs.environments.production', fn (Builder $query) => Environment::constrainToStages($query, EnvironmentStage::Production)),
-            'failing' => $this->countedTab('tabs.environments.failing', Environment::constrainToFailing(...)),
-            'warnings' => $this->countedTab('tabs.environments.warnings', Environment::constrainToSyncWarnings(...)),
+            'production' => $this->countedTab('tabs.environments.production', VoightIcon::ListTabEnvironmentsProduction, fn (Builder $query) => Environment::constrainToStages($query, EnvironmentStage::Production)),
+            'failing' => $this->countedTab('tabs.environments.failing', VoightIcon::ListTabEnvironmentsFailing, Environment::constrainToFailing(...)),
+            'warnings' => $this->countedTab('tabs.environments.warnings', VoightIcon::ListTabEnvironmentsWarnings, Environment::constrainToSyncWarnings(...)),
         ];
     }
 

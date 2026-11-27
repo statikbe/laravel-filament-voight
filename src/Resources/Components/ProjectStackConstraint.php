@@ -7,6 +7,7 @@ use Filament\Tables\Filters\QueryBuilder\Constraints\SelectConstraint;
 use Filament\Tables\Filters\QueryBuilder\Constraints\SelectConstraint\Operators\IsOperator;
 use Illuminate\Database\Eloquent\Builder;
 use Statikbe\FilamentVoight\Enums\UpgradeStatus;
+use Statikbe\FilamentVoight\Enums\VoightIcon;
 use Statikbe\FilamentVoight\Services\ProjectStackService;
 
 /**
@@ -20,6 +21,7 @@ class ProjectStackConstraint
         return self::make(
             'php_version',
             voightTrans('models.project.fields.php_version'),
+            VoightIcon::FilterPhpVersion,
             ProjectStackService::phpVersionOptions(...),
             // Only offered versions are queried: the values are interpolated into a LIKE pattern.
             fn (Builder $query, array $values): Builder => ProjectStackService::constrainToPhpVersions(
@@ -34,6 +36,7 @@ class ProjectStackConstraint
         return self::make(
             'upgrade_status',
             voightTrans('models.project.fields.upgrade_status'),
+            VoightIcon::FilterUpgradeStatus,
             UpgradeStatus::options(),
             fn (Builder $query, array $values): Builder => ProjectStackService::constrainToUpgradeStatuses(
                 $query,
@@ -46,10 +49,11 @@ class ProjectStackConstraint
      * @param  array<int|string, string|int>|Closure(): array<int|string, string|int>  $options
      * @param  Closure(Builder, array<int, string>): Builder  $constrain
      */
-    private static function make(string $name, string $label, array | Closure $options, Closure $constrain): SelectConstraint
+    private static function make(string $name, string $label, VoightIcon $icon, array | Closure $options, Closure $constrain): SelectConstraint
     {
         return SelectConstraint::make($name)
             ->label($label)
+            ->icon($icon->resolve())
             ->options($options)
             ->multiple()
             ->operators([

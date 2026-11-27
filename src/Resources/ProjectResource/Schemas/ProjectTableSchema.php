@@ -20,6 +20,7 @@ use Illuminate\Support\HtmlString;
 use Statikbe\FilamentVoight\Enums\Framework;
 use Statikbe\FilamentVoight\Enums\Severity;
 use Statikbe\FilamentVoight\Enums\UpgradeStatus;
+use Statikbe\FilamentVoight\Enums\VoightIcon;
 use Statikbe\FilamentVoight\Models\AuditFinding;
 use Statikbe\FilamentVoight\Models\Customer;
 use Statikbe\FilamentVoight\Models\Project;
@@ -108,16 +109,21 @@ class ProjectTableSchema
                 QueryBuilder::make()
                     ->constraints([
                         TextConstraint::make('project_code')
+                            ->icon(VoightIcon::FilterProjectCode->resolve())
                             ->label(voightTrans('models.project.fields.project_code')),
                         TextConstraint::make('name')
+                            ->icon(VoightIcon::FilterProject->resolve())
                             ->label(voightTrans('models.project.fields.name')),
                         ProjectConstraint::customer('customer_id'),
                         ...($showTeam ? [ProjectConstraint::team('team_id')] : []),
                         BooleanConstraint::make('is_muted')
+                            ->icon(VoightIcon::FilterMuted->resolve())
                             ->label(voightTrans('models.project.fields.is_muted')),
                         DateConstraint::make('created_at')
+                            ->icon(VoightIcon::FilterDate->resolve())
                             ->label(voightTrans('fields.created_at')),
                         RelationshipConstraint::make('environments')
+                            ->icon(VoightIcon::FilterEnvironment->resolve())
                             ->label(voightTrans('models.environment.plural'))
                             ->multiple(),
                         EnvironmentStageConstraint::make('environments'),

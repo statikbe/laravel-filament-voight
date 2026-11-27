@@ -102,6 +102,53 @@ enum VoightIcon: string
     #[IconDefinition(Heroicon::OutlinedBolt, 'Tab on a tag page listing its auto-tag rules.')]
     case TabTagRules = 'tab.tag.rules';
 
+    #[IconDefinition(Heroicon::OutlinedFolder, 'Tab on a customer page listing the projects of that customer.')]
+    case TabCustomerProjects = 'tab.customer.projects';
+
+    // -- List page tabs --
+
+    #[IconDefinition(Heroicon::OutlinedQueueList, 'Preset tab on a list page showing all records, without a preset filter.')]
+    case ListTabAll = 'list-tab.all';
+
+    #[IconDefinition(Heroicon::OutlinedClock, 'Preset tab on the audit runs list showing only the latest run of each environment.')]
+    case ListTabAuditRunsLatestPerEnvironment = 'list-tab.audit-runs.latest-per-environment';
+
+    #[IconDefinition(Heroicon::OutlinedXCircle, 'Preset tab on the audit runs list showing only failed runs.')]
+    case ListTabAuditRunsFailed = 'list-tab.audit-runs.failed';
+
+    #[IconDefinition(Heroicon::OutlinedUserGroup, 'Preset tab on the projects list showing the projects of the current user\'s teams.')]
+    case ListTabProjectsMyTeam = 'list-tab.projects.my-team';
+
+    #[IconDefinition(Heroicon::OutlinedFire, 'Preset tab on the projects list showing projects with current critical or high findings on production.')]
+    case ListTabProjectsCriticalHighOnProduction = 'list-tab.projects.critical-high-on-production';
+
+    #[IconDefinition(Heroicon::OutlinedShieldExclamation, 'Preset tab on the vulnerabilities list showing those that currently affect an environment.')]
+    case ListTabVulnerabilitiesActive = 'list-tab.vulnerabilities.active';
+
+    #[IconDefinition(Heroicon::OutlinedGlobeAlt, 'Preset tab on the vulnerabilities list showing those that currently affect a production environment.')]
+    case ListTabVulnerabilitiesOnProduction = 'list-tab.vulnerabilities.on-production';
+
+    #[IconDefinition(Heroicon::OutlinedShieldExclamation, 'Preset tab on the packages list showing packages with open findings.')]
+    case ListTabPackagesVulnerableInUse = 'list-tab.packages.vulnerable-in-use';
+
+    #[IconDefinition(Heroicon::OutlinedFire, 'Preset tab on the open findings list showing critical and high findings on production.')]
+    case ListTabOpenFindingsProductionCriticalHigh = 'list-tab.open-findings.production-critical-high';
+
+    #[IconDefinition(Heroicon::OutlinedGlobeAlt, 'Preset tab on the open findings list showing findings on production environments.')]
+    case ListTabOpenFindingsProduction = 'list-tab.open-findings.production';
+
+    #[IconDefinition(Heroicon::OutlinedBeaker, 'Preset tab on the open findings list showing findings on non-production environments (staging, test, ...).')]
+    case ListTabOpenFindingsOtherStages = 'list-tab.open-findings.other-stages';
+
+    #[IconDefinition(Heroicon::OutlinedGlobeAlt, 'Preset tab on the environments list showing production environments.')]
+    case ListTabEnvironmentsProduction = 'list-tab.environments.production';
+
+    #[IconDefinition(Heroicon::OutlinedXCircle, 'Preset tab on the environments list showing environments whose last sync or scan failed.')]
+    case ListTabEnvironmentsFailing = 'list-tab.environments.failing';
+
+    #[IconDefinition(Heroicon::OutlinedExclamationTriangle, 'Preset tab on the environments list showing environments whose last sync had warnings.')]
+    case ListTabEnvironmentsWarnings = 'list-tab.environments.warnings';
+
     // -- Empty states --
 
     #[IconDefinition(Heroicon::OutlinedShieldCheck, 'Empty state of vulnerability/finding lists meaning "all clear": nothing vulnerable was found.')]
@@ -172,17 +219,101 @@ enum VoightIcon: string
 
     // -- Table filters --
 
-    #[IconDefinition('heroicon-m-server-stack', 'Query-builder filter constraint on environment stage (production, staging, ...).')]
+    #[IconDefinition(Heroicon::Flag, 'Query-builder filter constraint on environment stage (production, staging, ...).')]
     case FilterEnvironmentStage = 'filter.environment-stage';
 
-    #[IconDefinition('heroicon-m-tag', 'Query-builder filter constraint on an installed package version range.')]
+    #[IconDefinition(Heroicon::Hashtag, 'Query-builder filter constraint on an installed package version range.')]
     case FilterInstalledVersion = 'filter.installed-version';
 
-    #[IconDefinition('heroicon-m-cube', 'Query-builder filter constraint on an installed package, optionally within a version range.')]
+    #[IconDefinition(Heroicon::Cube, 'Query-builder filter constraint on an installed package, optionally within a version range.')]
     case FilterInstalledPackage = 'filter.installed-package';
 
-    #[IconDefinition(Heroicon::OutlinedTag, 'Query-builder filter constraint on tags of one tag type, on the record or a related model.')]
+    #[IconDefinition(Heroicon::Tag, 'Query-builder filter constraint on tags of one tag type, on the record or a related model.')]
     case FilterTag = 'filter.tag';
+
+    #[IconDefinition(Heroicon::Folder, 'Query-builder filter constraint on a project, by name or selection.')]
+    case FilterProject = 'filter.project';
+
+    #[IconDefinition(Heroicon::Identification, 'Query-builder filter constraint on a project code.')]
+    case FilterProjectCode = 'filter.project-code';
+
+    #[IconDefinition(Heroicon::BuildingOffice, 'Query-builder filter constraint on the customer a project belongs to.')]
+    case FilterCustomer = 'filter.customer';
+
+    #[IconDefinition(Heroicon::UserGroup, 'Query-builder filter constraint on the team responsible for a project.')]
+    case FilterTeam = 'filter.team';
+
+    #[IconDefinition(Heroicon::ServerStack, 'Query-builder filter constraint on environments: by name, or how many a project has.')]
+    case FilterEnvironment = 'filter.environment';
+
+    #[IconDefinition(Heroicon::Cube, 'Query-builder filter constraint on a package name, or on the affected packages of a vulnerability.')]
+    case FilterPackage = 'filter.package';
+
+    #[IconDefinition(Heroicon::Squares2x2, 'Query-builder filter constraint on package type (Composer, npm).')]
+    case FilterPackageType = 'filter.package-type';
+
+    #[IconDefinition(Heroicon::Hashtag, 'Query-builder filter constraint on a version string: installed, latest or affected range.')]
+    case FilterVersion = 'filter.version';
+
+    #[IconDefinition(Heroicon::Wrench, 'Query-builder filter constraint on the fixed version; "is filled" means a fix is available.')]
+    case FilterFixedVersion = 'filter.fixed-version';
+
+    #[IconDefinition(Heroicon::CodeBracket, 'Query-builder filter constraint on the PHP version of a project or environment.')]
+    case FilterPhpVersion = 'filter.php-version';
+
+    #[IconDefinition(Heroicon::ArrowUpCircle, 'Query-builder filter constraint on a project\'s upgrade status (how far behind its stack is).')]
+    case FilterUpgradeStatus = 'filter.upgrade-status';
+
+    #[IconDefinition(Heroicon::ExclamationTriangle, 'Query-builder filter constraint on vulnerability severity (critical, high, ...).')]
+    case FilterSeverity = 'filter.severity';
+
+    #[IconDefinition(Heroicon::ChartBar, 'Query-builder filter constraint on the numeric vulnerability (CVSS) score.')]
+    case FilterVulnerabilityScore = 'filter.vulnerability-score';
+
+    #[IconDefinition(Heroicon::Newspaper, 'Query-builder filter constraint on the advisory source of a vulnerability (OSV, GitHub, manual).')]
+    case FilterVulnerabilitySource = 'filter.vulnerability-source';
+
+    #[IconDefinition(Heroicon::FingerPrint, 'Query-builder filter constraint on the advisory identifier (e.g. CVE or GHSA id).')]
+    case FilterVulnerabilityId = 'filter.vulnerability-id';
+
+    #[IconDefinition(Heroicon::DocumentText, 'Query-builder filter constraint on the vulnerability summary text.')]
+    case FilterSummary = 'filter.summary';
+
+    #[IconDefinition(Heroicon::ShieldExclamation, 'Query-builder filter constraint on related vulnerabilities, e.g. how many known vulnerabilities a package has.')]
+    case FilterVulnerabilities = 'filter.vulnerabilities';
+
+    #[IconDefinition(Heroicon::BugAnt, 'Query-builder filter constraint on related audit findings, e.g. how many a run or package has.')]
+    case FilterFindings = 'filter.findings';
+
+    #[IconDefinition(Heroicon::ArrowDownTray, 'Query-builder filter constraint on how many environments install a package.')]
+    case FilterInstallations = 'filter.installations';
+
+    #[IconDefinition(Heroicon::Signal, 'Query-builder filter constraint on an audit run status (pending, running, completed, failed).')]
+    case FilterAuditRunStatus = 'filter.audit-run-status';
+
+    #[IconDefinition(Heroicon::Bolt, 'Query-builder filter constraint on what triggered an audit run (sync, nightly, manual).')]
+    case FilterAuditRunTrigger = 'filter.audit-run-trigger';
+
+    #[IconDefinition(Heroicon::ArrowPath, 'Query-builder filter constraint on the latest lockfile sync status of an environment.')]
+    case FilterSyncStatus = 'filter.sync-status';
+
+    #[IconDefinition(Heroicon::Calendar, 'Query-builder filter constraint on a date: created, started, published, scanned, ...')]
+    case FilterDate = 'filter.date';
+
+    #[IconDefinition(Heroicon::BellSlash, 'Query-builder filter constraint on whether a project\'s alerts are muted.')]
+    case FilterMuted = 'filter.muted';
+
+    #[IconDefinition(Heroicon::ArrowDown, 'Query-builder filter constraint on whether a package is a direct (not transitive) dependency.')]
+    case FilterDirectDependency = 'filter.direct-dependency';
+
+    #[IconDefinition(Heroicon::Beaker, 'Query-builder filter constraint on whether a package is a dev dependency.')]
+    case FilterDevDependency = 'filter.dev-dependency';
+
+    #[IconDefinition(Heroicon::Moon, 'Query-builder filter constraint on whether an environment is included in the nightly scan.')]
+    case FilterNightlyScan = 'filter.nightly-scan';
+
+    #[IconDefinition(Heroicon::CpuChip, 'Query-builder filter constraint on whether an environment has sent its system details.')]
+    case FilterSystemDetails = 'filter.system-details';
 
     // -- Widgets --
 
