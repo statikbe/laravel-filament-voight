@@ -98,9 +98,11 @@ class EnvironmentTableSchema
                             ->searchable()
                             ->multiple(),
                         EnvironmentStageConstraint::make(),
-                        ...TagConstraint::forModel(Environment::class),
-                        ...TagConstraint::forModel(Project::class, 'project', 'project'),
-                        ...TagConstraint::forModel(Customer::class, 'project.customer', 'customer'),
+                        TagConstraint::make([
+                            'environment' => [Environment::class],
+                            'project' => [Project::class, 'project'],
+                            'customer' => [Customer::class, 'project.customer'],
+                        ]),
                         ...($showProject ? [
                             ProjectConstraint::project('project_id'),
                             ProjectConstraint::customer('project.customer_id'),

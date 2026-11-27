@@ -71,14 +71,13 @@ class AuditFindingTableSchema
                 ->attribute('vulnerability.source_id');
         }
 
-        array_push(
-            $constraints,
-            ...TagConstraint::forModel(Vulnerability::class, 'vulnerability', 'vulnerability'),
-            ...TagConstraint::forModel(Package::class, 'package', 'package'),
-            ...TagConstraint::forModel(Environment::class, 'auditRun.environment', 'environment'),
-            ...TagConstraint::forModel(Project::class, 'auditRun.environment.project', 'project'),
-            ...TagConstraint::forModel(Customer::class, 'auditRun.environment.project.customer', 'customer'),
-        );
+        $constraints[] = TagConstraint::make([
+            'vulnerability' => [Vulnerability::class, 'vulnerability'],
+            'package' => [Package::class, 'package'],
+            'environment' => [Environment::class, 'auditRun.environment'],
+            'project' => [Project::class, 'auditRun.environment.project'],
+            'customer' => [Customer::class, 'auditRun.environment.project.customer'],
+        ]);
 
         $constraints[] = TextConstraint::make('installed_version')
             ->icon(VoightIcon::FilterVersion->resolve())

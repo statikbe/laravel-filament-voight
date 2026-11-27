@@ -73,10 +73,12 @@ class PackageTableSchema
                             ->icon(VoightIcon::FilterDate->resolve())
                             ->label(voightTrans('models.package.fields.latest_version_updated_at')),
                         EnvironmentStageConstraint::make('environmentPackages.environment'),
-                        ...TagConstraint::forModel(Package::class),
-                        ...TagConstraint::forModel(Environment::class, 'environmentPackages.environment', 'environment'),
-                        ...TagConstraint::forModel(Project::class, 'environmentPackages.environment.project', 'project'),
-                        ...TagConstraint::forModel(Customer::class, 'environmentPackages.environment.project.customer', 'customer'),
+                        TagConstraint::make([
+                            'package' => [Package::class],
+                            'environment' => [Environment::class, 'environmentPackages.environment'],
+                            'project' => [Project::class, 'environmentPackages.environment.project'],
+                            'customer' => [Customer::class, 'environmentPackages.environment.project.customer'],
+                        ]),
                         RelationshipConstraint::make('environmentPackages')
                             ->icon(VoightIcon::FilterInstallations->resolve())
                             ->label(voightTrans('models.package.fields.installations'))

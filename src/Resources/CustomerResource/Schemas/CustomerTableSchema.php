@@ -41,7 +41,7 @@ class CustomerTableSchema
             ])
             ->filters([
                 QueryBuilder::make()
-                    ->constraints(TagConstraint::forModel(Customer::class)),
+                    ->constraints([TagConstraint::make(['customer' => [Customer::class]])]),
             ], layout: FiltersLayout::AboveContentCollapsible)
             ->recordActions([
                 ViewAction::make(),

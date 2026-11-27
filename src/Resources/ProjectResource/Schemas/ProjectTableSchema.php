@@ -130,8 +130,10 @@ class ProjectTableSchema
                         ProjectStackConstraint::phpVersion(),
                         ProjectStackConstraint::upgradeStatus(),
                         ProjectPackageConstraint::make(),
-                        ...TagConstraint::forModel(Project::class),
-                        ...TagConstraint::forModel(Customer::class, 'customer', 'customer'),
+                        TagConstraint::make([
+                            'project' => [Project::class],
+                            'customer' => [Customer::class, 'customer'],
+                        ]),
                         // "Current" means a finding in an environment's latest audit run; matches projects with any such finding of the severity.
                         SeverityConstraint::make('current_severity', fn (Builder $query, Severity $severity) => $query
                             ->whereHas('environments.auditRuns.auditFindings', fn (Builder $finding) => AuditFinding::constrainToCurrent($finding)

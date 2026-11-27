@@ -33,7 +33,7 @@ function filteredVulnerabilities(array $tagIds): Testable
 {
     return Livewire::test(ListVulnerabilities::class)
         ->set('activeTab', 'all')
-        ->set('tableDeferredFilters.queryBuilder.rules', queryBuilderRule('tag_origin', 'is', ['values' => $tagIds]))
+        ->set('tableDeferredFilters.queryBuilder.rules', queryBuilderRule('tag', 'is', ['type' => 'vulnerability:' . test()->sourceType->key, 'values' => $tagIds]))
         ->call('applyTableFilters');
 }
 
@@ -92,7 +92,7 @@ it('replaces the rule it was opened from', function () {
     Livewire::withQueryParams(['tag_rule' => $existing->id])
         ->test(ListVulnerabilities::class)
         ->set('activeTab', 'all')
-        ->set('tableDeferredFilters.queryBuilder.rules', queryBuilderRule('tag_origin', 'is', ['values' => [$this->external->id]]))
+        ->set('tableDeferredFilters.queryBuilder.rules', queryBuilderRule('tag', 'is', ['type' => 'vulnerability:' . $this->sourceType->key, 'values' => [$this->external->id]]))
         ->call('applyTableFilters')
         ->callAction('saveTagRule', ['tag' => $this->needsTriage->id, 'replace' => true])
         ->assertHasNoFormErrors();
@@ -148,7 +148,7 @@ it('refuses to replace a rule on a tag type the user may not manage', function (
     Livewire::withQueryParams(['tag_rule' => $existing->id])
         ->test(ListVulnerabilities::class)
         ->set('activeTab', 'all')
-        ->set('tableDeferredFilters.queryBuilder.rules', queryBuilderRule('tag_origin', 'is', ['values' => [$this->external->id]]))
+        ->set('tableDeferredFilters.queryBuilder.rules', queryBuilderRule('tag', 'is', ['type' => 'vulnerability:' . $this->sourceType->key, 'values' => [$this->external->id]]))
         ->call('applyTableFilters')
         ->callAction('saveTagRule', ['tag' => $this->needsTriage->id, 'replace' => true]);
 

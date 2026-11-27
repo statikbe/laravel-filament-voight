@@ -18,6 +18,7 @@ use Statikbe\FilamentVoight\Resources\CustomerResource\Pages\ListCustomers;
 use Statikbe\FilamentVoight\Resources\EnvironmentResource\Pages\ListEnvironments;
 use Statikbe\FilamentVoight\Resources\PackageResource\Pages\ListPackages;
 use Statikbe\FilamentVoight\Resources\ProjectResource\Pages\ListProjects;
+use Statikbe\FilamentVoight\Resources\VulnerabilityResource\Pages\ListVulnerabilities;
 
 beforeEach(function () {
     $this->actingAs(new User);
@@ -27,16 +28,15 @@ beforeEach(function () {
     $this->low = Tag::factory()->ofType($this->level)->create(['name' => 'Low']);
 });
 
-function filterOnTag(string $page, string $constraint, string $operator, array $tagIds): Testable
+function filterOnTag(string $page, string $scope, string $operator, array $tagIds, ?TagType $type = null): Testable
 {
     return Livewire::test($page)
-        ->set('tableDeferredFilters.queryBuilder.rules', queryBuilderRule($constraint, $operator, ['values' => $tagIds]))
+        ->set('tableDeferredFilters.queryBuilder.rules', queryBuilderRule('tag', $operator, ['type' => $scope . ':' . ($type ?? test()->level)->key, 'values' => $tagIds]))
         ->call('applyTableFilters');
 }
 
-it('names constraints after the type and the related model', function () {
-    expect(TagConstraint::name($this->level))->toBe('tag_security_level')
-        ->and(TagConstraint::name($this->level, 'project'))->toBe('tag_project_security_level');
+it('names the one tag constraint', function () {
+    expect(TagConstraint::NAME)->toBe('tag');
 });
 
 it('filters projects on their own tags', function (string $operator, bool $taggedVisible) {
@@ -45,7 +45,7 @@ it('filters projects on their own tags', function (string $operator, bool $tagge
     $other = Project::factory()->create();
     $other->attachTag($this->low);
 
-    $test = filterOnTag(ListProjects::class, 'tag_security_level', $operator, [$this->high->id]);
+    $test = filterOnTag(ListProjects::class, 'project', $operator, [$this->high->id]);
 
     $taggedVisible
         ? $test->assertCanSeeTableRecords([$tagged])->assertCanNotSeeTableRecords([$other])
@@ -60,7 +60,7 @@ it('filters environments on their project tags', function () {
     $tagged->project->attachTag($this->high);
     $other = Environment::factory()->create();
 
-    filterOnTag(ListEnvironments::class, 'tag_project_security_level', 'is', [$this->high->id])
+    filterOnTag(ListEnvironments::class, 'project', 'is', [$this->high->id])
         ->assertCanSeeTableRecords([$tagged])
         ->assertCanNotSeeTableRecords([$other]);
 });
@@ -70,7 +70,7 @@ it('filters packages on the tags of projects installing them', function () {
     $tagged->environment->project->attachTag($this->high);
     $other = EnvironmentPackage::factory()->create();
 
-    filterOnTag(ListPackages::class, 'tag_project_security_level', 'is', [$this->high->id])
+    filterOnTag(ListPackages::class, 'project', 'is', [$this->high->id])
         ->assertCanSeeTableRecords([$tagged->package])
         ->assertCanNotSeeTableRecords([$other->package]);
 });
@@ -85,7 +85,7 @@ it('filters open findings on their project tags', function () {
     $tagged->auditRun->environment->project->attachTag($this->high);
     $other = $finding();
 
-    filterOnTag(ListOpenFindings::class, 'tag_project_security_level', 'is', [$this->high->id])
+    filterOnTag(ListOpenFindings::class, 'project', 'is', [$this->high->id])
         ->assertCanSeeTableRecords([$tagged])
         ->assertCanNotSeeTableRecords([$other]);
 });
@@ -97,7 +97,50 @@ it('offers a type that applies to all models on every table', function () {
     $tagged->attachTag($tag);
     $other = Customer::factory()->create();
 
-    filterOnTag(ListCustomers::class, 'tag_owner', 'is', [$tag->id])
+    filterOnTag(ListCustomers::class, 'customer', 'is', [$tag->id], $everywhere)
         ->assertCanSeeTableRecords([$tagged])
         ->assertCanNotSeeTableRecords([$other]);
+});
+
+it('filters vulnerabilities on the tags of projects they currently affect', function () {
+    $finding = fn (): AuditFinding => AuditFinding::factory()
+        ->for(AuditRun::factory()->for(Environment::factory()->create(['name' => 'production'])))
+        ->for(Vulnerability::factory()->critical())
+        ->create();
+
+    $tagged = $finding();
+    $tagged->auditRun->environment->project->attachTag($this->high);
+    $other = $finding();
+
+    filterOnTag(ListVulnerabilities::class, 'project', 'is', [$this->high->id])
+        ->assertCanSeeTableRecords([$tagged->vulnerability])
+        ->assertCanNotSeeTableRecords([$other->vulnerability]);
+
+    filterOnTag(ListVulnerabilities::class, 'project', 'is.inverse', [$this->high->id])
+        ->assertCanSeeTableRecords([$other->vulnerability])
+        ->assertCanNotSeeTableRecords([$tagged->vulnerability]);
+});
+
+it('lists the tag types per scope in the one tag filter', function () {
+    $customerOnly = TagType::factory()->appliesTo(['voight-customer'])->create(['name' => 'Tier']);
+
+    $operator = TagConstraint::make([
+        'project' => [Project::class],
+        'customer' => [Customer::class, 'customer'],
+    ])->getOperators()['is'];
+
+    $options = collect($operator->getFormSchema())->first()->getOptions();
+
+    expect($options)->toHaveCount(2)
+        ->and(array_keys(array_values($options)[0]))->toBe(['project:' . $this->level->key])
+        ->and(array_keys(array_values($options)[1]))->toBe(['customer:' . $customerOnly->key]);
+});
+
+it('lists a project-only type only under the project scope', function () {
+    $constraint = fn (array $scopes): array => collect(TagConstraint::make($scopes)->getOperators()['is']->getFormSchema())->first()->getOptions();
+    $key = 'project:' . $this->level->key;
+
+    expect($constraint(['customer' => [Customer::class]]))->toBe([])
+        ->and($constraint(['environment' => [Environment::class], 'customer' => [Customer::class, 'project.customer']]))->toBe([])
+        ->and(array_keys($constraint(['environment' => [Environment::class], 'project' => [Project::class, 'project']])['Project'] ?? []))->toBe([$key]);
 });
