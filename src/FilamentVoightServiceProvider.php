@@ -224,6 +224,7 @@ class FilamentVoightServiceProvider extends PackageServiceProvider
             'create_voight_tag_types_table',
             'create_voight_tags_table',
             'create_voight_taggables_table',
+            'add_audit_finding_and_score_indexes_to_voight_tables',
         ];
     }
 }

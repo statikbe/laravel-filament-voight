@@ -48,7 +48,10 @@ class AuditFinding extends Model
      */
     public static function constrainToCurrent(Builder $query): Builder
     {
-        return $query->whereIn('audit_run_id', FilamentVoight::config()->getAuditRunModel()::latestIdsPerEnvironment());
+        // Once per request (flushed between Octane requests and tests): the correlated subquery is slow on shared hosting.
+        $runIds = once(fn (): array => FilamentVoight::config()->getAuditRunModel()::latestIdsPerEnvironment()->pluck('id')->all());
+
+        return $query->whereIn('audit_run_id', $runIds);
     }
 
     /**
