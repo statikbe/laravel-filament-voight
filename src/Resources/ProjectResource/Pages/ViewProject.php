@@ -82,6 +82,7 @@ class ViewProject extends ViewRecord implements HasTable
             ->query(fn (): Builder => $this->project()->environments()->getQuery())
             ->defaultSort('name')
             ->paginated(false)
+            ->stackedOnMobile()
             ->columns([
                 EnvironmentNameColumn::make('name')
                     ->label(voightTrans('models.environment.label')),

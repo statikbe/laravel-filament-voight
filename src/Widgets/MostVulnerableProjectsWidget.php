@@ -42,6 +42,7 @@ class MostVulnerableProjectsWidget extends TableWidget
                     ->having('total_findings_count', '>', 0)
                     ->orderByDesc('total_findings_count'),
             )
+            ->stackedOnMobile()
             ->columns([
                 TextColumn::make('name')
                     ->label(voightTrans('models.project.label'))

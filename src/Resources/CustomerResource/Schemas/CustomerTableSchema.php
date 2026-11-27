@@ -20,6 +20,7 @@ class CustomerTableSchema
     public static function configure(Table $table): Table
     {
         return $table
+            ->stackedOnMobile()
             ->columns([
                 TextColumn::make('name')
                     ->label(voightTrans('models.customer.fields.name'))

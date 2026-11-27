@@ -52,6 +52,7 @@ class EnvironmentTableSchema
 
         return $table
             ->modifyQueryUsing(fn (Builder $query): Builder => $query->with(['project', 'systemDetails']))
+            ->stackedOnMobile()
             ->columns([
                 ProjectFaviconColumn::make(fn (Environment $record): Project => $record->project),
                 TextColumn::make('project.name')

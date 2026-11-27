@@ -49,6 +49,7 @@ class RulesRelationManager extends RelationManager
         return $table
             ->recordTitleAttribute('id')
             ->defaultSort('created_at')
+            ->stackedOnMobile()
             ->columns([
                 TextColumn::make('description')
                     ->label(voightTrans('tags.rules.fields.conditions'))
