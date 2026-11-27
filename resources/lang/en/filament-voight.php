@@ -47,6 +47,12 @@ return [
         'updated_at' => 'Updated',
     ],
 
+    // Exports
+    'exports' => [
+        'completed' => '{1} :count row exported.|[0,*] :count rows exported.',
+        'failed' => '{1} :count row failed to export.|[0,*] :count rows failed to export.',
+    ],
+
     // Enums
     'enums' => [
         'tag_rule_status' => [

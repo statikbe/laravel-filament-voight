@@ -2,6 +2,8 @@
 
 namespace Statikbe\FilamentVoight\Resources\PackageResource\Schemas;
 
+use Filament\Actions\ExportAction;
+use Filament\Actions\ExportBulkAction;
 use Filament\Actions\ViewAction;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Enums\FiltersLayout;
@@ -15,6 +17,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 use Statikbe\FilamentVoight\Enums\PackageType;
 use Statikbe\FilamentVoight\Enums\VoightIcon;
+use Statikbe\FilamentVoight\Exports\PackageExporter;
 use Statikbe\FilamentVoight\Models\Customer;
 use Statikbe\FilamentVoight\Models\Environment;
 use Statikbe\FilamentVoight\Models\Package;
@@ -99,7 +102,13 @@ class PackageTableSchema
                 ViewAction::make(),
                 OpenPackageWebsiteAction::make(),
             ])
+            ->headerActions([
+                ExportAction::make()
+                    ->exporter(PackageExporter::class),
+            ])
             ->toolbarActions([
+                ExportBulkAction::make()
+                    ->exporter(PackageExporter::class),
                 ApplyTagsBulkAction::make(),
                 RemoveTagsBulkAction::make(),
             ]);

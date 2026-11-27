@@ -3,6 +3,8 @@
 namespace Statikbe\FilamentVoight\Resources\EnvironmentResource\Schemas;
 
 use Closure;
+use Filament\Actions\ExportAction;
+use Filament\Actions\ExportBulkAction;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Enums\FiltersLayout;
 use Filament\Tables\Filters\QueryBuilder;
@@ -15,6 +17,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Statikbe\FilamentVoight\Enums\AuditRunStatus;
 use Statikbe\FilamentVoight\Enums\DependencySyncStatus;
 use Statikbe\FilamentVoight\Enums\VoightIcon;
+use Statikbe\FilamentVoight\Exports\EnvironmentExporter;
 use Statikbe\FilamentVoight\Facades\FilamentVoight;
 use Statikbe\FilamentVoight\Models\Customer;
 use Statikbe\FilamentVoight\Models\Environment;
@@ -153,7 +156,13 @@ class EnvironmentTableSchema
                             ->label(voightTrans('models.environment.fields.created_at')),
                     ]),
             ], layout: FiltersLayout::AboveContentCollapsible)
+            ->headerActions([
+                ExportAction::make()
+                    ->exporter(EnvironmentExporter::class),
+            ])
             ->toolbarActions([
+                ExportBulkAction::make()
+                    ->exporter(EnvironmentExporter::class),
                 ApplyTagsBulkAction::make(),
                 RemoveTagsBulkAction::make(),
             ])
