@@ -4,10 +4,13 @@ namespace Statikbe\FilamentVoight\Resources\TeamResource\Schemas;
 
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
+use Filament\Actions\ExportAction;
+use Filament\Actions\ExportBulkAction;
 use Filament\Actions\ViewAction;
 use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
+use Statikbe\FilamentVoight\Exports\TeamExporter;
 use Statikbe\FilamentVoight\Models\Team;
 
 class TeamTableSchema
@@ -44,7 +47,13 @@ class TeamTableSchema
                 ViewAction::make(),
                 EditAction::make(),
             ])
+            ->headerActions([
+                ExportAction::make()
+                    ->exporter(TeamExporter::class),
+            ])
             ->toolbarActions([
+                ExportBulkAction::make()
+                    ->exporter(TeamExporter::class),
                 DeleteBulkAction::make(),
             ]);
     }

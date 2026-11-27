@@ -2,6 +2,8 @@
 
 namespace Statikbe\FilamentVoight\Resources\AuditRunResource\Schemas;
 
+use Filament\Actions\ExportAction;
+use Filament\Actions\ExportBulkAction;
 use Filament\Actions\ViewAction;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Enums\FiltersLayout;
@@ -15,6 +17,7 @@ use Statikbe\FilamentVoight\Enums\AuditRunStatus;
 use Statikbe\FilamentVoight\Enums\AuditRunTrigger;
 use Statikbe\FilamentVoight\Enums\Severity;
 use Statikbe\FilamentVoight\Enums\VoightIcon;
+use Statikbe\FilamentVoight\Exports\AuditRunExporter;
 use Statikbe\FilamentVoight\Models\AuditRun;
 use Statikbe\FilamentVoight\Models\Project;
 use Statikbe\FilamentVoight\Resources\Components\EnvironmentNameColumn;
@@ -109,8 +112,16 @@ class AuditRunTableSchema
                     ]),
             ], layout: FiltersLayout::AboveContentCollapsible)
             ->defaultSort('started_at', 'desc')
+            ->headerActions([
+                ExportAction::make()
+                    ->exporter(AuditRunExporter::class),
+            ])
             ->recordActions([
                 ViewAction::make(),
+            ])
+            ->toolbarActions([
+                ExportBulkAction::make()
+                    ->exporter(AuditRunExporter::class),
             ]);
     }
 }

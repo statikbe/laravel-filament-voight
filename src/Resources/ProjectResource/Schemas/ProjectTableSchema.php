@@ -4,6 +4,8 @@ namespace Statikbe\FilamentVoight\Resources\ProjectResource\Schemas;
 
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
+use Filament\Actions\ExportAction;
+use Filament\Actions\ExportBulkAction;
 use Filament\Actions\ViewAction;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
@@ -21,6 +23,7 @@ use Statikbe\FilamentVoight\Enums\Framework;
 use Statikbe\FilamentVoight\Enums\Severity;
 use Statikbe\FilamentVoight\Enums\UpgradeStatus;
 use Statikbe\FilamentVoight\Enums\VoightIcon;
+use Statikbe\FilamentVoight\Exports\ProjectExporter;
 use Statikbe\FilamentVoight\Models\AuditFinding;
 use Statikbe\FilamentVoight\Models\Customer;
 use Statikbe\FilamentVoight\Models\Project;
@@ -148,7 +151,13 @@ class ProjectTableSchema
                     ->url(fn ($record) => ProjectResource::getUrl('view', ['record' => $record])),
                 EditAction::make(),
             ])
+            ->headerActions([
+                ExportAction::make()
+                    ->exporter(ProjectExporter::class),
+            ])
             ->toolbarActions([
+                ExportBulkAction::make()
+                    ->exporter(ProjectExporter::class),
                 ApplyTagsBulkAction::make(),
                 RemoveTagsBulkAction::make(),
                 DeleteBulkAction::make(),

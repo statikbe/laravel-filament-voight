@@ -4,11 +4,14 @@ namespace Statikbe\FilamentVoight\Resources\CustomerResource\Schemas;
 
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
+use Filament\Actions\ExportAction;
+use Filament\Actions\ExportBulkAction;
 use Filament\Actions\ViewAction;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Enums\FiltersLayout;
 use Filament\Tables\Filters\QueryBuilder;
 use Filament\Tables\Table;
+use Statikbe\FilamentVoight\Exports\CustomerExporter;
 use Statikbe\FilamentVoight\Models\Customer;
 use Statikbe\FilamentVoight\Resources\Components\ApplyTagsBulkAction;
 use Statikbe\FilamentVoight\Resources\Components\RemoveTagsBulkAction;
@@ -48,7 +51,13 @@ class CustomerTableSchema
                 ViewAction::make(),
                 EditAction::make(),
             ])
+            ->headerActions([
+                ExportAction::make()
+                    ->exporter(CustomerExporter::class),
+            ])
             ->toolbarActions([
+                ExportBulkAction::make()
+                    ->exporter(CustomerExporter::class),
                 ApplyTagsBulkAction::make(),
                 RemoveTagsBulkAction::make(),
                 DeleteBulkAction::make(),
